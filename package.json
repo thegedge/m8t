@@ -1,0 +1,19 @@
+{
+  "name": "m8t",
+  "version": "0.0.0",
+  "description": "A minimalist static site generator, and your best friend",
+  "keywords": [
+    "static site generator",
+    "markdown",
+    "react",
+    "tailwindcss",
+    "mdx",
+    "html"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thegedge/m8t.git"
+  },
+  "license": "MIT",
+  "type": "module"
+}
