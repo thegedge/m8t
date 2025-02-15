@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "outDir": "./out",
+
+    "noEmit": true,
+    "pretty": false,
+    "allowJs": false,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "alwaysStrict": true,
+
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+
+    "declaration": false,
+    "isolatedDeclarations": false,
+    "isolatedModules": true,
+
+    "strict": true,
+    "strictBindCallApply": false,
+    "useUnknownInCatchVariables": false,
+    "noImplicitOverride": true
+  },
+
+  "include": ["./src", "./types"]
+}
