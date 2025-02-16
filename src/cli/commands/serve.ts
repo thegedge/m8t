@@ -1,11 +1,13 @@
 import { stat, watch } from "fs/promises";
-import { compact, uniq } from "lodash";
+import { compact } from "lodash-es";
 import mime from "mime-types";
-import path from "path";
+import { createReadStream } from "node:fs";
+import { createServer } from "node:http";
+import path from "node:path";
 import { setTimeout } from "timers/promises";
-import { Pages, type RenderedPage } from "../../Pages";
-import { Redirects } from "../../Redirects";
-import type { Site } from "../../Site";
+import { Pages, type RenderedPage } from "../../Pages.ts";
+import { Redirects } from "../../Redirects.ts";
+import type { Site } from "../../Site.ts";
 
 // TODO make this configurable
 const REDIRECTS_PATH = "static/_redirects";
@@ -30,10 +32,10 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
         continue;
       }
 
-      for (const key of Object.keys(require.cache)) {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        delete require.cache[key];
-      }
+      // for (const key of Object.keys(require.cache)) {
+      //   // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      //   delete require.cache[key];
+      // }
 
       await setTimeout(500);
       if (!exiting.signal.aborted) {
@@ -45,40 +47,34 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
     void 0;
   });
 
-  const server = Bun.serve({
-    // Avoid "port already in use" errors during development
-    reusePort: true,
-
-    async fetch(request, _server) {
-      const url = new URL(request.url);
+  const server = createServer({}, async (request, response) => {
+    try {
+      const host = request.headers.host ?? "localhost";
+      const url = new URL(request.url ?? "", `https://${host}`);
       const pagePath = decodeURIComponent(url.pathname);
 
       let page: RenderedPage | undefined;
-      const urlsToTry = uniq(
-        compact([
-          pagePath,
-          pagePath.replace(/\/$/, ""),
-          path.join(pagePath, "index"),
-          path.join(pagePath, "index.html"),
-        ]),
-      );
+      const urlsToTry = compact([
+        pagePath,
+        pagePath.replace(/\/$/, ""),
+        path.join(pagePath, "index"),
+        path.join(pagePath, "index.html"),
+      ]);
       for (const url of urlsToTry) {
         page = await pages.page(url);
         if (page) {
-          return new Response(Bun.gzipSync(page.content), {
-            headers: {
-              "content-type": mime.lookup(request.url) || "text/html",
-              "content-encoding": "gzip",
-            },
-          });
+          response.writeHead(200, { "content-type": mime.lookup(url) || "text/html" });
+          response.end(page.content);
+          return;
         }
       }
 
       const staticFile = path.join(filesystem.path, "static", url.pathname);
       try {
         if ((await stat(staticFile)).isFile()) {
-          // // @ts-ignore bun-types are superceded by @types/node
-          return new Response(Bun.file(staticFile));
+          response.writeHead(200, { "content-encoding": "text/plain" });
+          createReadStream(staticFile).pipe(response);
+          return;
         }
       } catch (_e) {
         // fall through to 404
@@ -86,37 +82,40 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
 
       const redirect = redirects.match(pagePath);
       if (redirect) {
-        return new Response(null, {
-          status: redirect[1],
-          headers: {
-            location: redirect[0],
-          },
+        response.writeHead(redirect[1], {
+          location: redirect[0],
         });
+        response.end();
+        return;
       }
 
-      return new Response(
-        `Not found
+      response.writeHead(404);
+      response.end(`
+Not found
+  path: ${url.pathname}
 
-path: ${url.pathname}
-
-possible paths:
-- ${pages.urls().sort().join("\n- ")}
-        `,
-        { status: 404 },
-      );
-    },
+Possible paths:
+  - ${pages.urls().sort().join("\n  - ")}
+`);
+      return;
+    } catch (error) {
+      response.writeHead(500, {
+        "content-type": "text/plain",
+      });
+      response.end(`Internal Server Error\n\n${error.stack}`);
+    }
   });
 
   const shutdown = () => {
-    exiting.abort("process exiting");
-    server
-      .stop()
-      .then(() => {
-        process.exit(0);
-      })
-      .catch(console.error);
+    exiting.abort();
   };
-
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+
+  server.listen({
+    host: "0.0.0.0",
+    port: 3000,
+    // reusePort: true,
+    signal: exiting.signal,
+  });
 };

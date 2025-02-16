@@ -1,11 +1,11 @@
-import type { Site } from "../Site";
-import { PageComponentProps, PageData } from "../types";
+import type { Site } from "../Site.ts";
+import type { PageComponentProps, PageData } from "../types.ts";
 
-export { CssProcessor } from "./css";
-export { JsProcessor } from "./js";
-export { JsxProcessor } from "./jsx";
-export { MdxProcessor } from "./mdx";
-export { StaticJavascriptProcessor } from "./static-javascript";
+export { CssProcessor } from "./css.ts";
+export { JsProcessor } from "./js.ts";
+export { JsxProcessor } from "./jsx.ts";
+export { MdxProcessor } from "./mdx.ts";
+export { StaticJavascriptProcessor } from "./static-javascript.ts";
 
 export type ContentFunction = (props: PageComponentProps) => unknown;
 

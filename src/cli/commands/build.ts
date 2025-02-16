@@ -1,6 +1,6 @@
 import path from "path";
-import { Pages } from "../../Pages";
-import type { Site } from "../../Site";
+import { Pages } from "../../Pages.ts";
+import type { Site } from "../../Site.ts";
 
 export const run = async (site: Site, _args: { _: [string] }): Promise<void> => {
   await site.out.clear();

@@ -1,5 +1,5 @@
-import { DataPopulatedPage } from "./Pages";
-import { PageData } from "./types";
+import type { DataPopulatedPage } from "./Pages.ts";
+import type { PageData } from "./types.ts";
 
 export type SearchQuery = Record<string, unknown>;
 export type SearchSort = readonly [string, "asc" | "desc"];

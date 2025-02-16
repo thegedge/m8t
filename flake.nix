@@ -22,25 +22,9 @@
         in
         {
           packages = {
-            node = pkgs.nodejs; # needed for esbuild
-            bun = pkgs.bun.overrideAttrs (
-              final: prev: with pkgs; rec {
-                version = "1.2.2";
-                src =
-                  passthru.sources.${stdenvNoCC.hostPlatform.system}
-                    or (throw "Unsupported system: ${stdenvNoCC.hostPlatform.system}");
-                passthru = prev.passthru // {
-                  sources = prev.passthru.sources // {
-                    "aarch64-darwin" = fetchurl {
-                      url = "https://github.com/oven-sh/bun/releases/download/bun-v1.2.2/bun-darwin-aarch64.zip";
-                      hash = "sha256-xNWOBsXDOIW1JvTZGjjKnr25/D+0zVR/fTMCBVyY5Bw=";
-                    };
-                  };
-                };
-              }
-            );
             direnv = pkgs.direnv;
             nix-direnv = pkgs.nix-direnv;
+            node = pkgs.nodejs_23;
           };
 
           devShell = callPackage ./devShell.nix {

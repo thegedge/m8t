@@ -5,9 +5,9 @@ import postcss from "postcss";
 import postcssDiscardComments from "postcss-discard-comments";
 import postcssImport from "postcss-import";
 import tailwindcss from "tailwindcss";
-import { Processor } from ".";
-import { PageData } from "..";
-import type { Site } from "../Site";
+import type { PageData } from "../index.ts";
+import type { Site } from "../Site.ts";
+import type { Processor } from "./index.ts";
 
 export class CssProcessor<DataT extends PageData> implements Processor<DataT> {
   private processor!: postcss.Processor;
@@ -49,8 +49,9 @@ export class CssProcessor<DataT extends PageData> implements Processor<DataT> {
       return;
     }
 
+    // TODO search for various configs
     // TODO remove casts below (without we get error `Excessive stack depth comparing types A and B`)
-    const configFile = path.join(this.site.root.path, "tailwind.config.js");
+    const configFile = path.join(this.site.root.path, "tailwind.config.ts");
     const config: { options: tailwindcss.Config } = await import(configFile);
     this.processor = postcss(
       postcssImport({

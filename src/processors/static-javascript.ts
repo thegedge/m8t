@@ -1,8 +1,8 @@
 import * as esbuild from "esbuild";
 import path from "node:path";
-import { Processor } from ".";
-import type { Site } from "../Site";
-import { PageData } from "../types";
+import type { Site } from "../Site.ts";
+import type { PageData } from "../types.ts";
+import type { Processor } from "./index.ts";
 
 export class StaticJavascriptProcessor<DataT extends PageData> implements Processor<DataT> {
   private entrypoints: string[] = [];
@@ -76,8 +76,8 @@ export class StaticJavascriptProcessor<DataT extends PageData> implements Proces
       format: "esm",
       bundle: true,
       splitting: true,
-      minify: !!Bun.env.PUBLISH,
-      sourcemap: Bun.env.PUBLISH ? undefined : "inline",
+      minify: !!process.env.PUBLISH,
+      sourcemap: process.env.PUBLISH ? undefined : "inline",
       logLevel: "silent",
       write: false,
     });

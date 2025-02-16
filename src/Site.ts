@@ -1,12 +1,12 @@
 import path from "path";
-import { Filesystem } from "./Filesystem";
-import type { Processor, ProcessorConstructor } from "./processors";
-import { CssProcessor } from "./processors/css";
-import { JsProcessor } from "./processors/js";
-import { JsxProcessor } from "./processors/jsx";
-import { MdxProcessor } from "./processors/mdx";
-import { StaticJavascriptProcessor } from "./processors/static-javascript";
-import type { PageData } from "./types";
+import { Filesystem } from "./Filesystem.ts";
+import { CssProcessor } from "./processors/css.ts";
+import type { Processor, ProcessorConstructor } from "./processors/index.ts";
+import { JsProcessor } from "./processors/js.ts";
+import { JsxProcessor } from "./processors/jsx.ts";
+import { MdxProcessor } from "./processors/mdx.ts";
+import { StaticJavascriptProcessor } from "./processors/static-javascript.ts";
+import type { PageData } from "./types.ts";
 
 export type Config<DataT extends PageData = PageData> = {
   outDir?: string;

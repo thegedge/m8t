@@ -1,6 +1,6 @@
-import { Processor } from ".";
-import type { Site } from "../Site";
-import { PageData } from "../types";
+import type { Site } from "../Site.ts";
+import type { PageData } from "../types.ts";
+import type { Processor } from "./index.ts";
 
 export class JsProcessor<DataT extends PageData> implements Processor<DataT> {
   constructor(readonly site: Site) {}
@@ -10,11 +10,12 @@ export class JsProcessor<DataT extends PageData> implements Processor<DataT> {
   }
 
   async load(filename: string) {
-    const key = require.resolve(filename);
-    if (key in require.cache) {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete require.cache[key];
-    }
+    // TODO Figure out how to eject from the import cache
+    // const key = require.resolve(filename);
+    // if (key in require.cache) {
+    //   // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    //   delete require.cache[key];
+    // }
 
     const { default: content, ...data } = await import(filename);
     return {

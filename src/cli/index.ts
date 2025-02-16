@@ -1,12 +1,16 @@
-#!/usr/bin/env -S bun run
+#!/usr/bin/env NODE_NO_WARNINGS=1 node  --experimental-import-meta-resolve --experimental-vm-modules --experimental-transform-types
+import { register } from "module";
 import path from "path";
+import { fileURLToPath } from "url";
 import { parseArgs } from "util";
-import { Site } from "../Site";
+import { Site } from "../Site.ts";
+
+register("@nodejs-loaders/tsx", import.meta.url);
 
 const COMMANDS = {
-  build: await import("./commands/build"),
-  serve: await import("./commands/serve"),
-  validate: await import("./commands/validate"),
+  build: await import("./commands/build.ts"),
+  serve: await import("./commands/serve.ts"),
+  validate: await import("./commands/validate.ts"),
 };
 
 const isCommand = (command: string | undefined): command is keyof typeof COMMANDS => {
@@ -35,13 +39,15 @@ const main = async (command: string | undefined, args: Args) => {
   return 0;
 };
 
-if (import.meta.path !== Bun.main) {
+const entryFile = process.argv?.[1];
+const __filename = fileURLToPath(import.meta.url);
+if (entryFile !== __filename && !entryFile.endsWith("node_modules/.bin/mate")) {
   console.log("Can only run this file as a main script");
   process.exit(1);
 }
 
 const { positionals, values } = parseArgs({
-  args: Bun.argv.slice(2),
+  args: process.argv.slice(2),
   allowPositionals: true,
   // TODO enable strict once we can figure out how to define flags for the individual subcommands
   // strict: true,

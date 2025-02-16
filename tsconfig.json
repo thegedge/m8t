@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-    "outDir": "./out",
+    "outDir": "./dist",
 
-    "noEmit": true,
     "pretty": false,
     "allowJs": false,
     "checkJs": false,
@@ -10,13 +9,18 @@
     "alwaysStrict": true,
 
     "jsx": "react-jsx",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "target": "ESNext",
 
     "declaration": false,
     "isolatedDeclarations": false,
     "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "verbatimModuleSyntax": true,
 
     "strict": true,
     "strictBindCallApply": false,

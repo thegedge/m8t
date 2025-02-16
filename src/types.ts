@@ -1,7 +1,7 @@
-import type { ProcessorConstructor } from "./processors";
-import { Search } from "./Search";
+import type { ProcessorConstructor } from "./processors/index.ts";
+import { Search } from "./Search.ts";
 
-export type { Search } from "./Search";
+export type { Search } from "./Search.ts";
 
 export type MaybeArray<T> = T | T[];
 export type MaybePromise<T> = T | Promise<T>;

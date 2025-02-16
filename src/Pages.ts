@@ -1,16 +1,16 @@
 import type { Dirent } from "fs";
-import { merge } from "lodash";
+import { merge } from "lodash-es";
 import path from "path";
 import { isGeneratorFunction } from "util/types";
-import { Filesystem } from "./Filesystem";
-import { readingTime } from "./plugins/reading_time";
-import { preparePageData } from "./preparePageData";
-import { ContentFunction, Processor } from "./processors";
-import { StaticJavascriptProcessor } from "./processors/static-javascript";
-import { Search } from "./Search";
-import type { Site } from "./Site";
-import { PageData } from "./types";
-import { normalizeUrl } from "./utils";
+import { Filesystem } from "./Filesystem.ts";
+import { readingTime } from "./plugins/reading_time.ts";
+import { preparePageData } from "./preparePageData.ts";
+import type { ContentFunction, Processor } from "./processors/index.ts";
+import { StaticJavascriptProcessor } from "./processors/static-javascript.ts";
+import { Search } from "./Search.ts";
+import type { Site } from "./Site.ts";
+import type { PageData } from "./types.ts";
+import { normalizeUrl } from "./utils.ts";
 
 export type Page = {
   processor: Processor;
@@ -110,7 +110,7 @@ export class Pages {
 
       content = await processor.render(contentResult);
     } catch (error) {
-      if (Bun.env.PUBLISH) {
+      if (process.env.PUBLISH) {
         throw error;
       }
 

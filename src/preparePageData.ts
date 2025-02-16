@@ -1,7 +1,7 @@
 import { parameterize as slugify, titleize, underscore } from "inflected";
 import path from "path";
-import { PageData } from ".";
-import { normalizeUrl } from "./utils";
+import { type PageData } from "./index.ts";
+import { normalizeUrl } from "./utils.ts";
 
 const DATE_REGEX = /^(\d{4}).(\d{2}).(\d{2}).(.+)$/;
 

@@ -1,4 +1,4 @@
-import { MaybeArray, PageData } from "..";
+import type { MaybeArray, PageData } from "../index.ts";
 
 type ReadingTimeObject =
   | string

@@ -1,24 +1,23 @@
 import { compile } from "@mdx-js/mdx";
-import { readFile } from "fs/promises";
 import parseFrontmatter from "gray-matter";
-import { ElementContent, RootContent } from "hast";
-import { MDXComponents } from "mdx/types";
+import type { ElementContent, RootContent } from "hast";
+import type { MDXComponents } from "mdx/types.d.ts";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import vm, { createContext, SyntheticModule } from "node:vm";
 import rehypeKatex from "rehype-katex";
 import rehypeRewrite, { type RehypeRewriteOptions } from "rehype-rewrite";
 import remarkDefinitionList from "remark-definition-list";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import { ContentFunction, Processor } from ".";
-import { Fragment, createElement, jsxDEV, renderElementToHTML, type Node, type PropsWithChildren } from "../jsx";
-import type { Site } from "../Site";
-import { PageData } from "../types";
-
-// eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unsafe-member-access
-const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (
-  source?: string,
-) => (...args: unknown[]) => any;
+import { createElement, Fragment, renderElementToHTML, type Node, type PropsWithChildren } from "../jsx.ts";
+import type { Site } from "../Site.ts";
+import type { PageData } from "../types.ts";
+import type { ContentFunction, Processor } from "./index.ts";
 
 export class MdxProcessor<DataT extends PageData> implements Processor<DataT> {
+  providerImportSource = import.meta.resolve("../jsx.js");
+
   constructor(readonly site: Site) {}
 
   handles(extension: string) {
@@ -28,12 +27,14 @@ export class MdxProcessor<DataT extends PageData> implements Processor<DataT> {
   async load(filename: string) {
     const fileContents = await readFile(filename);
     const { data, content: mdxSource } = parseFrontmatter(fileContents);
+    const baseUrl = new URL(`file://` + filename);
 
     const compiled = await compile(mdxSource, {
       format: "mdx",
-      outputFormat: "function-body",
+      outputFormat: "program",
       development: process.env.NODE_ENV !== "production",
-      providerImportSource: undefined,
+      baseUrl,
+
       remarkPlugins: [remarkDefinitionList, remarkGfm, remarkMath],
       rehypePlugins: [
         rehypeKatex,
@@ -75,17 +76,41 @@ export class MdxProcessor<DataT extends PageData> implements Processor<DataT> {
       ],
     });
 
-    const { default: mdxContent, ...mdxData } = await new AsyncFunction(compiled.toString())({
-      baseUrl: new URL(`file://` + filename),
-      Fragment,
-      jsx: createElement,
-      jsxs: createElement,
-      jsxDEV,
-    });
+    const context = createContext({ parentURL: baseUrl });
+
+    let mdxData: any;
+    let mdxContent: any;
+    try {
+      const mdxModule = new vm.SourceTextModule(compiled.toString(), {
+        identifier: filename,
+        context,
+        initializeImportMeta(meta) {
+          meta.dirname = path.dirname(filename);
+          meta.filename = filename;
+          meta.url = baseUrl.toString();
+        },
+      });
+      await mdxModule.link(async (specifier, _referencingModule, _extra) => {
+        const resolved = import.meta.resolve(specifier, baseUrl.toString());
+        const mod = await import(resolved);
+        const exportNames = Object.keys(mod).filter((name) => name != "module.exports");
+        return new SyntheticModule(
+          exportNames,
+          function () {
+            for (const exportName of exportNames) {
+              this.setExport(exportName, mod[exportName]);
+            }
+          },
+          { context, identifier: specifier },
+        );
+      });
+      await mdxModule.evaluate();
+      ({ default: mdxContent, ...mdxData } = mdxModule.namespace as unknown as Record<string, any>);
+    } catch (e) {
+      throw e;
+    }
 
     const content: ContentFunction = (props) => {
-      // TODO figure out how to make TS happier here
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       return mdxContent({
         ...props,
         components: {

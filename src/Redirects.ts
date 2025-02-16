@@ -1,4 +1,4 @@
-import type { Filesystem } from "./Filesystem";
+import type { Filesystem } from "./Filesystem.ts";
 
 type Redirect = {
   from: string | RegExp;
