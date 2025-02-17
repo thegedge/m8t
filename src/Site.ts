@@ -1,3 +1,5 @@
+// @ts-ignore -- missing types
+import { registerHooks, type ResolveFnOutput, type ResolveHookContext } from "node:module";
 import path from "path";
 import { Filesystem } from "./Filesystem.ts";
 import { Pages } from "./Pages.ts";
@@ -23,6 +25,7 @@ export class Site<DataT extends PageData = PageData> {
   }
 
   readonly root: Filesystem;
+  #epoch = Date.now();
   #out!: Filesystem;
   #pages!: Pages<DataT>;
   #config!: Config<DataT>;
@@ -31,6 +34,30 @@ export class Site<DataT extends PageData = PageData> {
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
     this.root = new Filesystem(resolvedRoot);
+
+    registerHooks({
+      resolve: (
+        specifier: string,
+        context: ResolveHookContext,
+        nextResolve: (specifier: string, context?: Partial<ResolveHookContext>) => ResolveFnOutput,
+      ) => {
+        // TODO optimize this by having per-specifier timestamps, not a global
+        const result = nextResolve(specifier, context);
+        const url = new URL(result.url, context.parentURL);
+        if (result.format == "builtin" || url.protocol == "node:") {
+          return result;
+        }
+
+        return { ...result, url: `${url.protocol}//${url.pathname}?t=${this.#epoch}` };
+      },
+    });
+  }
+
+  /**
+   * Get the current reload epoch.
+   */
+  get epoch() {
+    return this.#epoch;
   }
 
   /**
@@ -53,6 +80,8 @@ export class Site<DataT extends PageData = PageData> {
    * TODO: would rather not have this be imperative
    */
   async reload() {
+    this.#epoch = Date.now();
+
     try {
       const importedConfig: ImportedConfig<DataT> = await import(this.root.absolute("site-config.ts"));
       if (importedConfig && typeof importedConfig === "object") {
