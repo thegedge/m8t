@@ -60,6 +60,7 @@ export class Site<DataT extends PageData = PageData> {
       }
     } catch (_error) {
       // May not exist, that's okay
+      // TODO check for ENOENT, and throw anything else
       console.log(_error);
     }
 
