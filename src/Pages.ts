@@ -260,8 +260,9 @@ export class Pages<DataT extends PageData = PageData> {
     await initData(this.pagesFs, {});
     await initPages(this.pagesFs);
 
-    // TODO maybe better way to handle this?
-    const processor = this.site.processorForType(StaticJavascriptProcessor);
+    // TODO introduce hooks so this doesn't have to be here
+    // TODO Make it so this doesn't have to be typed this way
+    const processor = this.site.processorForType(StaticJavascriptProcessor as any) as StaticJavascriptProcessor<DataT>;
     const chunks = await processor.chunks();
     for (const chunk of chunks) {
       const chunkName = path.basename(chunk.path);
