@@ -30,7 +30,6 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
         //   // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         //   delete require.cache[key];
         // }
-        console.log(filename);
         await site.reload();
       }
     }

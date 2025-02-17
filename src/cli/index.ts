@@ -8,9 +8,9 @@ import { Site } from "../Site.ts";
 register("@nodejs-loaders/tsx", import.meta.url);
 
 const COMMANDS = {
-  build: await import("./commands/build.ts"),
-  serve: await import("./commands/serve.ts"),
-  validate: await import("./commands/validate.ts"),
+  build: async () => await import("./commands/build.ts"),
+  serve: async () => await import("./commands/serve.ts"),
+  validate: async () => await import("./commands/validate.ts"),
 };
 
 const isCommand = (command: string | undefined): command is keyof typeof COMMANDS => {
@@ -33,7 +33,7 @@ const main = async (command: string | undefined, args: Args) => {
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
   const site = await Site.forRoot(root);
 
-  const commandModule = COMMANDS[command];
+  const commandModule = await COMMANDS[command]();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   await commandModule.run(site, args as any);
   return 0;
