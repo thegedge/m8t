@@ -35,7 +35,7 @@ export type PageData<OtherData = Record<string, any>> = {
   layout?: string | null;
 
   /** The layout file to use for this page */
-  processor?: ProcessorConstructor | null;
+  processor?: ProcessorConstructor<any> | null;
 
   /** An optional description of this page's contents */
   description?: string;

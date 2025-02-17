@@ -4,8 +4,7 @@ import mime from "mime-types";
 import { createReadStream } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
-import { setTimeout } from "timers/promises";
-import { Pages, type RenderedPage } from "../../Pages.ts";
+import { type RenderedPage } from "../../Pages.ts";
 import { Redirects } from "../../Redirects.ts";
 import type { Site } from "../../Site.ts";
 
@@ -13,33 +12,26 @@ import type { Site } from "../../Site.ts";
 const REDIRECTS_PATH = "static/_redirects";
 
 export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
-  const filesystem = site.pagesRoot;
-
-  let pages = await Pages.forSite(site);
-  let redirects = await Redirects.fromFilesystem(filesystem, REDIRECTS_PATH);
-
+  let redirects = await Redirects.fromFilesystem(site.pagesRoot, REDIRECTS_PATH);
   const exiting = new AbortController();
 
   // TODO better integrate this into `Pages` so we can avoid a full rebuild
   // TODO better way to do this other than an IIFE?
   (async () => {
     for await (const { filename } of watch(site.root.path, { recursive: true, signal: exiting.signal })) {
-      if (filename === REDIRECTS_PATH) {
-        await setTimeout(500);
-        if (!exiting.signal.aborted) {
-          redirects = await Redirects.fromFilesystem(filesystem, REDIRECTS_PATH);
-        }
-        continue;
+      if (exiting.signal.aborted) {
+        return;
       }
 
-      // for (const key of Object.keys(require.cache)) {
-      //   // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      //   delete require.cache[key];
-      // }
-
-      await setTimeout(500);
-      if (!exiting.signal.aborted) {
-        pages = await Pages.forSite(site);
+      if (filename === REDIRECTS_PATH) {
+        redirects = await Redirects.fromFilesystem(site.pagesRoot, REDIRECTS_PATH);
+      } else {
+        // for (const key of Object.keys(require.cache)) {
+        //   // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        //   delete require.cache[key];
+        // }
+        console.log(filename);
+        await site.reload();
       }
     }
   })().catch(() => {
@@ -61,7 +53,7 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
         path.join(pagePath, "index.html"),
       ]);
       for (const url of urlsToTry) {
-        page = await pages.page(url);
+        page = await site.pages.page(url);
         if (page) {
           response.writeHead(200, { "content-type": mime.lookup(url) || "text/html" });
           response.end(page.content);
@@ -69,7 +61,7 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
         }
       }
 
-      const staticFile = path.join(filesystem.path, "static", url.pathname);
+      const staticFile = path.join(site.pagesRoot.path, "static", url.pathname);
       try {
         if ((await stat(staticFile)).isFile()) {
           response.writeHead(200, { "content-encoding": "text/plain" });
@@ -95,7 +87,7 @@ Not found
   path: ${url.pathname}
 
 Possible paths:
-  - ${pages.urls().sort().join("\n  - ")}
+  - ${site.pages.urls().sort().join("\n  - ")}
 `);
       return;
     } catch (error) {

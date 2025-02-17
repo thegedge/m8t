@@ -35,7 +35,7 @@ export type RenderedPage = {
 
 // TODO have `Pages` know how to serve both generated and static content
 
-export class Pages {
+export class Pages<DataT extends PageData = PageData> {
   #search: Search;
   #pages = new Map<string, DataPopulatedPage>();
   #renderedPages = new Map<string, RenderedPage>();
@@ -43,13 +43,13 @@ export class Pages {
   private readonly pagesFs: Filesystem;
   private readonly layoutsFs: Filesystem;
 
-  static async forSite(site: Site): Promise<Pages> {
+  static async forSite<DataT extends PageData = PageData>(site: Site<DataT>): Promise<Pages<DataT>> {
     const pages = new Pages(site);
     await pages.init();
     return pages;
   }
 
-  constructor(readonly site: Site) {
+  constructor(readonly site: Site<DataT>) {
     this.pagesFs = site.pagesRoot.cd("pages");
     this.layoutsFs = site.pagesRoot.cd("layouts");
     this.#search = new Search(this.#pages);
@@ -132,9 +132,6 @@ export class Pages {
 
   private async init() {
     const dataMap = new Map<string, Partial<PageData>>();
-
-    // TODO instantiate processors in the constructor (or have them provided) so they will automatically reset
-    this.site.resetProcessors();
 
     const initData = async (fileSystem: Filesystem, parentData: Partial<PageData>) => {
       const listing = await fileSystem.ls();
