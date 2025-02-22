@@ -18,8 +18,8 @@ const isCommand = (command: string | undefined): command is keyof typeof COMMAND
 };
 
 type Args = {
-  directory?: string;
   _: string[];
+  directory?: string;
   [key: string]: unknown;
 };
 
@@ -49,8 +49,7 @@ if (entryFile !== __filename && !entryFile.endsWith("node_modules/.bin/mate")) {
 const { positionals, values } = parseArgs({
   args: process.argv.slice(2),
   allowPositionals: true,
-  // TODO enable strict once we can figure out how to define flags for the individual subcommands
-  // strict: true,
+  strict: true,
   options: {
     directory: {
       type: "string",

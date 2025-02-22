@@ -1,14 +1,13 @@
 import path from "path";
-import { Pages } from "../../Pages.ts";
 import type { Site } from "../../Site.ts";
 
 export const run = async (site: Site, _args: { _: [string] }): Promise<void> => {
   await site.out.clear();
+  await site.pages.init();
 
-  const pages = await Pages.forSite(site);
-  for (const url of pages.urls()) {
+  for (const url of site.pages.urls()) {
     process.stdout.write(`Building page for ${url}...`);
-    const page = await pages.page(url);
+    const page = await site.pages.page(url);
     if (!page) {
       throw new Error(`Could not build page for URL ${url}`);
     }

@@ -1,6 +1,5 @@
 import { link } from "ansi-escapes";
 import { HtmlValidate, type Result } from "html-validate/node";
-import { Pages } from "../../Pages.ts";
 import type { Site } from "../../Site.ts";
 
 export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean }): Promise<void> => {
@@ -16,9 +15,10 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
     },
   });
 
-  const pages = await Pages.forSite(site);
-  for (const url of pages.urls()) {
-    const page = await pages.page(url);
+  await site.pages.init();
+
+  for (const url of site.pages.urls()) {
+    const page = await site.pages.page(url);
     if (!page) {
       throw new Error(`Could not build page for URL ${url}`);
     }

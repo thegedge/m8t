@@ -1,6 +1,7 @@
 import { stat, watch } from "fs/promises";
 import { compact } from "lodash-es";
 import mime from "mime-types";
+import { fork, type ChildProcess } from "node:child_process";
 import { createReadStream } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";
@@ -11,32 +12,68 @@ import type { Site } from "../../Site.ts";
 // TODO make this configurable
 const REDIRECTS_PATH = "static/_redirects";
 
-export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
-  let redirects = await Redirects.fromFilesystem(site.pagesRoot, REDIRECTS_PATH);
+export const run = async (site: Site, args: { _: string[] }): Promise<void> => {
   const exiting = new AbortController();
 
-  // TODO better integrate this into `Pages` so we can avoid a full rebuild
-  // TODO better way to do this other than an IIFE?
+  const shutdown = () => {
+    exiting.abort();
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
+  // TODO fix args parsing so that this is args.server
+  if (args._.includes("--server")) {
+    await runServer(site, exiting.signal);
+  } else {
+    await watchFiles(site, exiting.signal);
+  }
+};
+
+export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
   (async () => {
-    for await (const { filename } of watch(site.root.path, { recursive: true, signal: exiting.signal })) {
-      if (exiting.signal.aborted) {
+    let currentServer = fork(`${import.meta.dirname}/../index.ts`, ["serve", "--", "--server"], {
+      signal: exiting,
+    });
+    let nextServer: ChildProcess | null = null;
+
+    for await (const _changeInfo of watch(site.root.path, { recursive: true, signal: exiting })) {
+      if (exiting.aborted) {
         return;
       }
 
-      if (filename === REDIRECTS_PATH) {
-        redirects = await Redirects.fromFilesystem(site.pagesRoot, REDIRECTS_PATH);
-      } else {
-        // for (const key of Object.keys(require.cache)) {
-        //   // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-        //   delete require.cache[key];
-        // }
-        await site.reload();
-      }
+      const newServer = fork(`${import.meta.dirname}/../index.ts`, ["serve", "--", "--server"], {
+        signal: exiting,
+      });
+      nextServer?.kill("SIGTERM");
+      nextServer = newServer;
+
+      nextServer.on("message", (message) => {
+        if (message === "ready") {
+          currentServer?.kill("SIGTERM");
+          currentServer = newServer;
+          if (nextServer == newServer) {
+            nextServer = null;
+          }
+        }
+      });
     }
   })().catch(() => {
     // We don't want to log the error thrown from the abort
     void 0;
   });
+
+  const interval = setInterval(() => {
+    // Do nothing, but this will keep the node process open
+  }, 60_000);
+
+  exiting.addEventListener("abort", () => {
+    clearInterval(interval);
+  });
+};
+
+export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
+  await site.pages.init();
+  const redirects = await Redirects.fromFilesystem(site.pagesRoot, REDIRECTS_PATH);
 
   const server = createServer({}, async (request, response) => {
     try {
@@ -97,16 +134,13 @@ Possible paths:
     }
   });
 
-  const shutdown = () => {
-    exiting.abort();
-  };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
-
   server.listen({
     host: "0.0.0.0",
     port: 3000,
     // reusePort: true,
-    signal: exiting.signal,
+    signal: exiting,
   });
+
+  process.send?.("ready");
+  console.log("listening on port 3000");
 };

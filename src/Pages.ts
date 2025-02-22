@@ -43,12 +43,6 @@ export class Pages<DataT extends PageData = PageData> {
   private readonly pagesFs: Filesystem;
   private readonly layoutsFs: Filesystem;
 
-  static async forSite<DataT extends PageData = PageData>(site: Site<DataT>): Promise<Pages<DataT>> {
-    const pages = new Pages(site);
-    await pages.init();
-    return pages;
-  }
-
   constructor(readonly site: Site<DataT>) {
     this.pagesFs = site.pagesRoot.cd("pages");
     this.layoutsFs = site.pagesRoot.cd("layouts");
@@ -130,7 +124,7 @@ export class Pages<DataT extends PageData = PageData> {
     return renderedPage;
   }
 
-  private async init() {
+  async init() {
     const dataMap = new Map<string, Partial<PageData>>();
 
     const initData = async (fileSystem: Filesystem, parentData: Partial<PageData>) => {
