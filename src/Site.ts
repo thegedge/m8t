@@ -1,20 +1,21 @@
-// @ts-ignore -- missing types
-import path from "path";
+import path from "node:path";
+import z from "zod";
 import { Filesystem } from "./Filesystem.ts";
 import { Pages } from "./Pages.ts";
 import type { Processor, ProcessorConstructor } from "./processors/index.ts";
 import type { PageData } from "./types.ts";
 
-export type Config<DataT extends PageData = PageData> = {
-  outDir?: string;
-  processors?: ProcessorConstructor<DataT>[];
-};
+const ConfigType = <DataT extends PageData = PageData>() =>
+  z.object({
+    outDir: z.string().default("./out"),
+    pagesDir: z.string().default("./pages"),
+    redirectsPath: z.string().default("_redirects"),
+    processors: z.array(z.custom<ProcessorConstructor<DataT>>()).default([]),
+  });
 
-type ImportedConfig<DataT extends PageData> =
-  | { default: Partial<Config<DataT>> }
-  | Partial<Config<DataT>>
-  | null
-  | undefined;
+type DeepReadonly<T> = T extends Record<string, unknown> ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
+
+export type Config<DataT extends PageData = PageData> = DeepReadonly<z.infer<ReturnType<typeof ConfigType<DataT>>>>;
 
 export class Site<DataT extends PageData = PageData> {
   static async forRoot<DataT extends PageData = PageData>(root: string): Promise<Site<DataT>> {
@@ -24,6 +25,7 @@ export class Site<DataT extends PageData = PageData> {
   }
 
   readonly root: Filesystem;
+
   #out!: Filesystem;
   #pages!: Pages<DataT>;
   #config!: Config<DataT>;
@@ -32,7 +34,6 @@ export class Site<DataT extends PageData = PageData> {
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
     this.root = new Filesystem(resolvedRoot);
-    this.#pages = new Pages(this);
   }
 
   /**
@@ -46,7 +47,15 @@ export class Site<DataT extends PageData = PageData> {
    * Get the collection of pages associated with this site.
    */
   get pages() {
+    this.#pages ??= new Pages(this);
     return this.#pages;
+  }
+
+  /**
+   * Get the config for this site
+   */
+  get config() {
+    return this.#config;
   }
 
   /**
@@ -55,18 +64,21 @@ export class Site<DataT extends PageData = PageData> {
    * TODO: would rather not have this be imperative
    */
   async reload() {
+    let importedConfig: unknown;
     try {
-      const importedConfig: ImportedConfig<DataT> = await import(this.root.absolute("site-config.ts"));
-      if (importedConfig && typeof importedConfig === "object") {
-        this.#config = "default" in importedConfig ? importedConfig.default : importedConfig;
-      }
+      importedConfig = await import(this.root.absolute("site-config.ts"));
     } catch (_error) {
       // May not exist, that's okay
       // TODO check for ENOENT, and throw anything else
       console.log(_error);
     }
 
-    this.#out = new Filesystem(path.resolve(this.root.path, this.#config.outDir ?? "out"));
+    if (importedConfig && typeof importedConfig === "object") {
+      const config = "default" in importedConfig ? importedConfig.default : importedConfig;
+      this.#config = ConfigType<DataT>().parse(config);
+    }
+
+    this.#out = new Filesystem(path.resolve(this.root.path, this.#config.outDir));
     this.#processors = new Map((this.#config.processors ?? []).map((Clazz) => [Clazz, new Clazz(this)]));
   }
 
@@ -99,7 +111,6 @@ export class Site<DataT extends PageData = PageData> {
   }
 
   get pagesRoot() {
-    // TODO have this be specified in the config
-    return this.root.cd("src");
+    return this.root.cd(this.#config.pagesDir);
   }
 }
