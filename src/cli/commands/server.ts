@@ -36,7 +36,9 @@ export const run = async (): Promise<void> => {
 
 export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
   await site.pages.init();
-  const redirects = await Redirects.fromFilesystem(site.pagesRoot, site.config.redirectsPath);
+  const redirects = site.config.devServer.redirectsPath
+    ? await Redirects.fromFilesystem(site.pagesRoot, site.config.devServer.redirectsPath)
+    : null;
 
   const server = createServer({}, async (request, response) => {
     try {
@@ -71,13 +73,15 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
         // fall through to 404
       }
 
-      const redirect = redirects.match(pagePath);
-      if (redirect) {
-        response.writeHead(redirect[1], {
-          location: redirect[0],
-        });
-        response.end();
-        return;
+      if (redirects) {
+        const redirect = redirects.match(pagePath);
+        if (redirect) {
+          response.writeHead(redirect[1], {
+            location: redirect[0],
+          });
+          response.end();
+          return;
+        }
       }
 
       response.writeHead(404);
@@ -99,13 +103,11 @@ Possible paths:
 
   server.listen({
     host: "0.0.0.0",
-    port: 3000,
-    // reusePort: true,
+    port: site.config.devServer.port,
     signal: exiting,
   });
 
   process.send?.("ready");
-  console.log("listening on port 3000");
 };
 
 const entryFile = process.argv?.[1];

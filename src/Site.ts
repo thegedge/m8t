@@ -1,21 +1,9 @@
 import path from "node:path";
-import z from "zod";
+import { ConfigType, type ResolvedConfig } from "./Config.ts";
 import { Filesystem } from "./Filesystem.ts";
 import { Pages } from "./Pages.ts";
 import type { Processor, ProcessorConstructor } from "./processors/index.ts";
 import type { PageData } from "./types.ts";
-
-const ConfigType = <DataT extends PageData = PageData>() =>
-  z.object({
-    outDir: z.string().default("./out"),
-    pagesDir: z.string().default("./pages"),
-    redirectsPath: z.string().default("_redirects"),
-    processors: z.array(z.custom<ProcessorConstructor<DataT>>()).default([]),
-  });
-
-type DeepReadonly<T> = T extends Record<string, unknown> ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
-
-export type Config<DataT extends PageData = PageData> = DeepReadonly<z.infer<ReturnType<typeof ConfigType<DataT>>>>;
 
 export class Site<DataT extends PageData = PageData> {
   static async forRoot<DataT extends PageData = PageData>(root: string): Promise<Site<DataT>> {
@@ -28,7 +16,7 @@ export class Site<DataT extends PageData = PageData> {
 
   #out!: Filesystem;
   #pages!: Pages<DataT>;
-  #config!: Config<DataT>;
+  #config!: ResolvedConfig<DataT>;
   #processors!: Map<ProcessorConstructor<DataT>, Processor>;
 
   constructor(root: string) {
