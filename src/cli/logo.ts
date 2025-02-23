@@ -55,7 +55,7 @@ export const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
   }
 };
 
-const stripAnsi = (str: string) => str.replace(/[\e\x1b\u001b]\[(.*?)m/g, "");
+const stripAnsi = (str: string) => str.replaceAll(/[\e\u001B]\[(?:(8;;.+?\u0007)|(.*?m))/g, "");
 
 const HI_BOX_CHAR = "\u2580";
 const LO_BOX_CHAR = "\u2584";

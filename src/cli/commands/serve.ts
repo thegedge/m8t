@@ -1,6 +1,9 @@
+import { link } from "ansi-escapes";
+import chalk from "chalk";
 import { watch } from "fs/promises";
 import { fork, type ChildProcess } from "node:child_process";
 import type { Site } from "../../Site.ts";
+import { printLogoWithLines } from "../logo.ts";
 
 export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
   const exiting = new AbortController();
@@ -25,6 +28,17 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
     });
     let nextServer: ChildProcess | null = null;
 
+    currentServer.on("message", (message) => {
+      if (message === "ready") {
+        const url = `http://localhost:${site.config.devServer.port}`;
+        printLogoWithLines(process.stdout, ["", `Server listening on ${chalk.bold(link(url, url))}`]);
+      }
+    });
+
+    currentServer.on("error", (message) => {
+      // suppress errors
+    });
+
     for await (const _changeInfo of watch(site.root.path, { recursive: true, signal: exiting })) {
       if (exiting.aborted) {
         return;
@@ -39,6 +53,10 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
       });
       nextServer?.kill("SIGTERM");
       nextServer = newServer;
+
+      nextServer.on("error", (message) => {
+        // suppress errors
+      });
 
       nextServer.on("message", (message) => {
         if (message === "ready") {
