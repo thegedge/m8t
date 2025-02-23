@@ -33,8 +33,6 @@ export type RenderedPage = {
   outputPath: string;
 };
 
-// TODO have `Pages` know how to serve both generated and static content
-
 export class Pages<DataT extends PageData = PageData> {
   #search: Search;
   #pages = new Map<string, DataPopulatedPage>();
@@ -153,7 +151,6 @@ export class Pages<DataT extends PageData = PageData> {
           await initData(fileSystem.cd(entry.name), parentData);
         } else {
           try {
-            console.log(`Loading ${entry.name} from ${fileSystem.path}`);
             const processor = parentData.processor
               ? this.site.processorForType(parentData.processor)
               : this.site.processorForFile(entry.name);
