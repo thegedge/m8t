@@ -9,6 +9,7 @@ register("@nodejs-loaders/tsx", import.meta.url);
 
 const COMMANDS = {
   build: async () => await import("./commands/build.ts"),
+  help: async () => await import("./commands/help.ts"),
   serve: async () => await import("./commands/serve.ts"),
   validate: async () => await import("./commands/validate.ts"),
 };
@@ -24,16 +25,17 @@ type Args = {
 };
 
 const main = async (command: string | undefined, args: Args) => {
-  if (!isCommand(command)) {
-    // TODO better usage;
-    console.log(`Subcommand required: build, serve, validate`);
-    return 1;
+  let actualCommand: keyof typeof COMMANDS;
+  if (isCommand(command)) {
+    actualCommand = command;
+  } else {
+    actualCommand = "help";
   }
 
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
   const site = await Site.forRoot(root);
 
-  const commandModule = await COMMANDS[command]();
+  const commandModule = await COMMANDS[actualCommand]();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   await commandModule.run(site, args as any);
   return 0;

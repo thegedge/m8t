@@ -49,7 +49,7 @@ export class MdxProcessor<DataT extends PageData> implements Processor<DataT> {
                     if (child.type == "doctype") {
                       nodes[0].push(child);
                     } else {
-                      nodes[1].push(child as any); // TODO fix this
+                      nodes[1].push(child as any); // TODO see if we can make this work without `as any
                     }
                     return nodes;
                   },
