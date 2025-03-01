@@ -1,4 +1,5 @@
 import path from "node:path";
+import { getSystemErrorName } from "node:util";
 import { ConfigType, type ResolvedConfig } from "./Config.ts";
 import { Filesystem } from "./Filesystem.ts";
 import { Pages } from "./Pages.ts";
@@ -55,10 +56,10 @@ export class Site<DataT extends PageData = PageData> {
     let importedConfig: unknown;
     try {
       importedConfig = await import(this.root.absolute("site-config.ts"));
-    } catch (_error) {
-      // May not exist, that's okay
-      // TODO check for ENOENT, and throw anything else
-      console.log(_error);
+    } catch (error) {
+      if (getSystemErrorName(error) !== "ENOENT") {
+        throw error;
+      }
     }
 
     if (importedConfig && typeof importedConfig === "object") {

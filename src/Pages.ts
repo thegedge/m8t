@@ -200,7 +200,6 @@ export class Pages<DataT extends PageData = PageData> {
           for await (const { content: generatedContent, ...data } of content({
             data: parentData,
             search: this.#search,
-            // TODO how to check if async generator?
           }) as unknown as AsyncGenerator<PageData>) {
             if (!data.url) {
               throw new Error("generator template didn't provide a url");
