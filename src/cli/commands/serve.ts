@@ -3,7 +3,7 @@ import chalk from "chalk";
 import { watch } from "fs/promises";
 import { fork, type ChildProcess } from "node:child_process";
 import type { Site } from "../../Site.ts";
-import { printLogoWithLines } from "../logo.ts";
+import { printLogoAndTitleWithLines } from "../logo.ts";
 
 export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
   const exiting = new AbortController();
@@ -31,7 +31,7 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
     currentServer.on("message", (message) => {
       if (message === "ready") {
         const url = `http://localhost:${site.config.devServer.port}`;
-        printLogoWithLines(process.stdout, ["", `Server listening on ${chalk.bold(link(url, url))}`]);
+        printLogoAndTitleWithLines(process.stdout, ["", `Server listening on ${chalk.bold(link(url, url))}`]);
       }
     });
 

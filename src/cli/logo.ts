@@ -15,6 +15,10 @@ export const printLogo = (stream: WriteStream) => {
 
 const LOGO_LINE_GAP = "  ";
 
+export const printLogoAndTitleWithLines = (stream: WriteStream, lines: string[]) => {
+  printLogoWithLines(stream, [...M8T_TITLE_LINES, "", ...lines]);
+};
+
 export const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
   if (!stream.isTTY) {
     stream.write(lines.join("\n"));
@@ -56,6 +60,17 @@ export const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
 };
 
 const stripAnsi = (str: string) => str.replaceAll(/[\e\u001B]\[(?:(8;;.+?\u0007)|(.*?m))/g, "");
+
+const C = chalk.bgHex("#F98C00")(" ");
+const S = " ";
+
+const M8T_TITLE_LINES = [
+  [S, S, S, S, S, S, S, S, S, C, C, S, S, S, S, S].join(""),
+  [C, S, S, S, S, S, S, S, C, S, S, C, S, S, C, S].join(""),
+  [C, C, C, S, C, C, S, S, S, C, C, S, S, C, C, C].join(""),
+  [C, S, S, C, S, S, C, S, C, S, S, C, S, S, C, S].join(""),
+  [C, S, S, C, S, S, C, S, S, C, C, S, S, S, C, S].join(""),
+];
 
 const HI_BOX_CHAR = "\u2580";
 const LO_BOX_CHAR = "\u2584";
