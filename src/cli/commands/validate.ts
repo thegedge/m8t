@@ -11,7 +11,6 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
     rules: {
       // REMOVEME once React renders these as proper boolean attributes
       "attribute-boolean-style": "off",
-      "long-title": "off",
     },
   });
 
