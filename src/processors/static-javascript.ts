@@ -58,20 +58,43 @@ export class StaticJavascriptProcessor<DataT extends PageData> implements Proces
     return content;
   }
 
+  async afterInitialRender() {
+    const chunks = await this.chunks();
+    return chunks.map((chunk) => {
+      const chunkName = path.basename(chunk.path);
+      const url = path.join(this.publicPath, chunkName);
+      return {
+        processor: this,
+        filename: chunkName,
+        content: () => chunk.text,
+        data: {
+          url,
+          outputPath: url,
+          title: chunkName,
+          date: new Date(),
+          slug: chunkName,
+        },
+      };
+    });
+  }
+
+  private get publicPath() {
+    // TODO pull this from the config
+    return "/js";
+  }
+
   private get buildResult() {
     this.buildResult_ ??= this.build();
     return this.buildResult_;
   }
 
   private async build() {
-    // TODO make the output paths more configurable
-    // TODO make entrypoints configurable, so we only bun
     const result = await esbuild.build({
       entryPoints: this.entrypoints,
       absWorkingDir: this.site.root.path,
       outbase: this.site.root.path,
       outdir: this.site.out.path,
-      publicPath: "/js",
+      publicPath: this.publicPath,
       target: "esnext",
       format: "esm",
       bundle: true,

@@ -5,7 +5,7 @@ import { isGeneratorFunction } from "util/types";
 import { Filesystem } from "./Filesystem.ts";
 import { readingTime } from "./plugins/reading_time.ts";
 import { preparePageData } from "./preparePageData.ts";
-import type { ContentFunction, Processor, StaticJavascriptProcessor } from "./processors/index.ts";
+import type { ContentFunction, Processor } from "./processors/index.ts";
 
 import { Search } from "./Search.ts";
 import type { Site } from "./Site.ts";
@@ -250,26 +250,13 @@ export class Pages<DataT extends PageData = PageData> {
     await initData(this.pagesFs, {});
     await initPages(this.pagesFs);
 
-    // TODO introduce hooks so this doesn't have to be here
-    // TODO Make it so this doesn't have to be typed this way
-    const { StaticJavascriptProcessor } = await import("./processors/static-javascript.ts");
-    const processor = this.site.processorForType(StaticJavascriptProcessor as any) as StaticJavascriptProcessor<DataT>;
-    const chunks = await processor.chunks();
-    for (const chunk of chunks) {
-      const chunkName = path.basename(chunk.path);
-      const url = path.join("/js", chunkName);
-      this.#pages.set(url, {
-        processor,
-        content: () => chunk.text,
-        filename: chunkName,
-        data: {
-          url,
-          outputPath: url,
-          title: chunkName,
-          date: new Date(),
-          slug: chunkName,
-        },
-      });
+    for (const processor of this.site.processors) {
+      const renderedPages = await processor.afterInitialRender?.();
+      if (renderedPages) {
+        for (const renderedPage of renderedPages) {
+          this.#pages.set(renderedPage.data.url, renderedPage);
+        }
+      }
     }
   }
 }

@@ -1,3 +1,4 @@
+import type { DataPopulatedPage } from "../Pages.ts";
 import type { Site } from "../Site.ts";
 import type { PageComponentProps, PageData } from "../types.ts";
 
@@ -18,6 +19,8 @@ export type Processor<DataT extends PageData = PageData> = {
   handles(extension: string): boolean;
   load(filename: string): Promise<LoadResult<DataT>>;
   render(content: unknown): Promise<string>;
+
+  afterInitialRender?(): Promise<DataPopulatedPage[]> | DataPopulatedPage[];
 };
 
 export type ProcessorConstructor<DataT extends PageData = PageData> = new (site: Site<DataT>) => Processor<DataT>;

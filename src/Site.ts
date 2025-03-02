@@ -18,7 +18,7 @@ export class Site<DataT extends PageData = PageData> {
   #out!: Filesystem;
   #pages!: Pages<DataT>;
   #config!: ResolvedConfig<DataT>;
-  #processors!: Map<ProcessorConstructor<DataT>, Processor>;
+  #processors!: Map<ProcessorConstructor<DataT>, Processor<DataT>>;
 
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
@@ -69,6 +69,10 @@ export class Site<DataT extends PageData = PageData> {
 
     this.#out = new Filesystem(path.resolve(this.root.path, this.#config.outDir));
     this.#processors = new Map((this.#config.processors ?? []).map((Clazz) => [Clazz, new Clazz(this)]));
+  }
+
+  get processors(): IteratorObject<Processor<DataT>> {
+    return this.#processors.values();
   }
 
   processorForType<T extends ProcessorConstructor<DataT> = ProcessorConstructor<DataT>>(type: T): InstanceType<T> {
