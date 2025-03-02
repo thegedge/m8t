@@ -4,9 +4,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import vm, { createContext, SyntheticModule } from "node:vm";
 import rehypeKatex from "rehype-katex";
-import remarkDefinitionList from "remark-definition-list";
+import remarkDefinitionList, { defListHastHandlers } from "remark-definition-list";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import remarkRehype from "remark-rehype";
 import { renderElementToHTML, type Node } from "../jsx.ts";
 import type { Site } from "../Site.ts";
 import type { PageData } from "../types.ts";
@@ -32,7 +33,18 @@ export class MdxProcessor<DataT extends PageData> implements Processor<DataT> {
       development: process.env.NODE_ENV !== "production",
       baseUrl,
 
-      remarkPlugins: [remarkDefinitionList, remarkGfm, remarkMath],
+      // TODO make these configurable
+      remarkPlugins: [
+        remarkDefinitionList,
+        remarkGfm,
+        remarkMath,
+        [
+          remarkRehype,
+          {
+            handlers: defListHastHandlers,
+          },
+        ],
+      ],
       rehypePlugins: [rehypeKatex],
     });
 
