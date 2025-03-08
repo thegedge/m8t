@@ -10,16 +10,14 @@ type ReadingTimeObject =
       };
     };
 
-export const readingTime = (
-  data: PageData<{ lang?: string }>,
-  content: unknown,
-  wordsPerMinute = 150,
-): { readingTimeMins?: number } => {
+export const readingTime = (data: PageData, content: unknown, wordsPerMinute = 150): { readingTimeMins?: number } => {
   if (typeof content != "string" && typeof content != "object") {
     return {};
   }
 
-  const segmenter = new Intl.Segmenter(data.lang || "en", { granularity: "word" });
+  const lang = typeof data.lang == "string" ? data.lang : "en";
+
+  const segmenter = new Intl.Segmenter(lang, { granularity: "word" });
   const wordCount = (obj: ReadingTimeObject): number => {
     if (typeof obj == "string") {
       const segments = Array.from(segmenter.segment(obj));

@@ -1,20 +1,19 @@
-import type { DataPopulatedPage } from "./Pages.ts";
 import type { PageData } from "./types.ts";
 
 export type SearchQuery = Record<string, unknown>;
 export type SearchSort = readonly [string, "asc" | "desc"];
 
-export class Search<DataT extends PageData = PageData> {
-  #pages: Map<string, DataPopulatedPage<DataT>>;
+export class Search {
+  #pages: Map<string, PageData>;
 
-  constructor(pages: Map<string, DataPopulatedPage<DataT>>) {
+  constructor(pages: Map<string, PageData>) {
     this.#pages = pages;
   }
 
-  pages(query: SearchQuery, sort?: SearchSort): DataT[] {
+  pages(query: SearchQuery, sort?: SearchSort): PageData[] {
     const filtered = Array.from(this.#pages.values()).filter((page) => {
       for (const [key, value] of Object.entries(query)) {
-        if (page.data[key] != value) {
+        if (page[key] != value) {
           return false;
         }
       }
@@ -25,9 +24,11 @@ export class Search<DataT extends PageData = PageData> {
     if (sort) {
       const [key, direction] = sort;
       filtered.sort((a, b) => {
-        if (a.data[key] < b.data[key]) {
+        const aVal: any = a[key];
+        const bVal: any = b[key];
+        if (aVal < bVal) {
           return direction == "asc" ? -1 : 1;
-        } else if (a.data[key] > b.data[key]) {
+        } else if (aVal > bVal) {
           return direction == "asc" ? 1 : -1;
         } else {
           return 0;
@@ -35,25 +36,25 @@ export class Search<DataT extends PageData = PageData> {
       });
     }
 
-    return filtered.map((p) => p.data);
+    return filtered;
   }
 
-  previousPage(url: string, query: SearchQuery, sort?: SearchSort): DataT | null {
+  previousPage(url: string, query: SearchQuery, sort?: SearchSort): PageData | null {
     const pages = this.pages(query, sort);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
       return null;
     }
-    return index > 0 ? (pages[index - 1] as DataT) : null;
+    return index > 0 ? (pages[index - 1] as PageData) : null;
   }
 
-  nextPage(url: string, query: SearchQuery, sort?: SearchSort): DataT | null {
+  nextPage(url: string, query: SearchQuery, sort?: SearchSort): PageData | null {
     const pages = this.pages(query, sort);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
       return null;
     }
 
-    return index < pages.length - 1 ? (pages[index + 1] as DataT) : null;
+    return index < pages.length - 1 ? (pages[index + 1] as PageData) : null;
   }
 }

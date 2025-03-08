@@ -7,9 +7,9 @@ import { createServer } from "node:http";
 import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type RenderedPage } from "../../Pages.ts";
 import { Redirects } from "../../Redirects.ts";
 import { Site } from "../../Site.ts";
+import type { PageData } from "../../types.ts";
 
 register("@nodejs-loaders/tsx", import.meta.url);
 
@@ -46,7 +46,7 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
       const url = new URL(request.url ?? "", `https://${host}`);
       const pagePath = decodeURIComponent(url.pathname);
 
-      let page: RenderedPage | undefined;
+      let page: PageData | undefined;
       const urlsToTry = compact([
         pagePath,
         pagePath.replace(/\/$/, ""),

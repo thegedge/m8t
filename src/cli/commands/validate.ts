@@ -1,5 +1,5 @@
 import { link } from "ansi-escapes";
-import { HtmlValidate, type Result } from "html-validate/node";
+import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
 import type { Site } from "../../Site.ts";
 
 export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean }): Promise<void> => {
@@ -22,12 +22,24 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
       throw new Error(`Could not build page for URL ${url}`);
     }
 
+    if (!page.outputPath || typeof page.outputPath !== "string") {
+      throw new Error(`Page ${url} does not have an output path`);
+    }
+
     if (!page.outputPath.endsWith(".html")) {
       continue;
     }
 
+    if (!page.filename || typeof page.filename !== "string") {
+      throw new Error(`Page ${url} does not have a filename`);
+    }
+
+    if (!page.content || typeof page.content !== "string") {
+      throw new Error(`Page ${url} does not have content`);
+    }
+
     const { valid, results } = await validator.validateString(page.content, page.filename, {
-      rules: page.data.htmlValidateRules,
+      rules: page.htmlValidateRules as RuleConfig,
     });
     if (!valid) {
       process.exitCode = 1;

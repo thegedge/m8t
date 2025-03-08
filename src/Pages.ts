@@ -5,45 +5,30 @@ import { isGeneratorFunction } from "util/types";
 import { Filesystem } from "./Filesystem.ts";
 import { readingTime } from "./plugins/reading_time.ts";
 import { preparePageData } from "./preparePageData.ts";
-import type { Renderer } from "./renderers/index.ts";
+import type { Renderer, RendererConstructor } from "./renderers/index.ts";
 
-import type { Loader, LoadResult } from "./loaders/index.ts";
+import type { Loader, LoaderConstructor } from "./loaders/index.ts";
 import { Search } from "./Search.ts";
 import type { Site } from "./Site.ts";
 import type { ContentFunction, PageData } from "./types.ts";
 import { normalizeUrl } from "./utils.ts";
 
-export type DataPopulatedPage<DataT extends PageData = PageData> = {
-  loader: Loader<DataT>;
-  renderer: Renderer<DataT>;
-  filename: string;
-  data: DataT;
-  content: unknown;
-};
-
-export type RenderedPage<DataT extends PageData = PageData> = {
-  filename: string;
-  data: DataT;
-  content: string;
-  outputPath: string;
-};
-
-export class Pages<DataT extends PageData = PageData> {
-  #search: Search<DataT>;
-  #pages = new Map<string, DataPopulatedPage<DataT>>();
-  #renderedPages = new Map<string, RenderedPage<DataT>>();
+export class Pages {
+  #search: Search;
+  #pages = new Map<string, PageData>();
+  #renderedPages = new Map<string, PageData>();
 
   private readonly pagesFs: Filesystem;
   private readonly layoutsFs: Filesystem;
 
-  constructor(readonly site: Site<DataT>) {
+  constructor(readonly site: Site) {
     // TODO make these two subdirs configurable
     this.pagesFs = site.pagesRoot.cd("pages");
     this.layoutsFs = site.pagesRoot.cd("layouts");
     this.#search = new Search(this.#pages);
   }
 
-  async page(url: string): Promise<RenderedPage | undefined> {
+  async page(url: string): Promise<PageData | undefined> {
     url = normalizeUrl(url);
 
     let page = this.#renderedPages.get(url);
@@ -69,27 +54,27 @@ export class Pages<DataT extends PageData = PageData> {
     }
 
     let content: string;
-    let renderer = page.renderer;
+    let renderer = page.renderer as Renderer;
     try {
       let contentResult =
         typeof page.content == "function"
           ? await page.content({
-              data: page.data,
+              data: page,
               search: this.#search,
             })
           : page.content;
 
-      let data = page.data;
-      let layout = page.data.layout;
+      let data = page;
+      let layout = page.layout;
       while (typeof layout == "string") {
         const layoutFile = path.join(this.layoutsFs.path, layout);
         const loader = this.site.loaderForFilename(layoutFile);
-        const { data: layoutData, content: layoutContent } = await loader.load(layoutFile);
+        const { content: layoutContent, ...layoutData } = await loader.load(layoutFile);
         const populatedLayoutData = preparePageData(layout, layoutData);
 
         data = merge({}, populatedLayoutData, data);
 
-        contentResult = await layoutContent({
+        contentResult = await (layoutContent as any)({
           data,
           search: this.#search,
           children: contentResult,
@@ -107,30 +92,30 @@ export class Pages<DataT extends PageData = PageData> {
       content = error instanceof Error ? error.toString() : JSON.stringify(error, null, 2);
     }
 
-    const renderedPage: RenderedPage<DataT> = {
+    const outputPath = page.outputPath;
+    if (!outputPath || typeof outputPath != "string") {
+      throw new Error(`Page ${url} has no outputPath`);
+    }
+
+    return this.addPage({
       ...page,
       content:
-        !page.data.outputPath.endsWith(".html") || content.startsWith("<!DOCTYPE")
-          ? content
-          : `<!DOCTYPE html>\n${content}`,
-      outputPath: page.data.outputPath,
-    };
-
-    this.#renderedPages.set(renderedPage.data.url, renderedPage);
-    return renderedPage;
+        !outputPath.endsWith(".html") || content.startsWith("<!DOCTYPE") ? content : `<!DOCTYPE html>\n${content}`,
+      outputPath,
+    });
   }
 
   async init() {
-    const dataMap = new Map<string, Partial<PageData>>();
+    const dataMap = new Map<string, PageData>();
 
-    const initData = async (fileSystem: Filesystem, parentData: Partial<PageData>) => {
+    const initData = async (fileSystem: Filesystem, parentData: PageData) => {
       const listing = await fileSystem.ls();
       const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
       if (dataFile) {
         try {
           const dataFilePath = path.join(fileSystem.path, dataFile.name);
           const loader = this.site.loaderForFilename(dataFilePath);
-          const { data: sharedData } = await loader.load(dataFilePath);
+          const sharedData = await loader.load(dataFilePath);
           parentData = merge({}, parentData, sharedData);
         } catch (error) {
           console.error(`Error loading _data from ${fileSystem.path}`);
@@ -152,7 +137,7 @@ export class Pages<DataT extends PageData = PageData> {
           try {
             const filePath = path.join(fileSystem.path, entry.name);
             const loader = parentData.loader
-              ? this.site.loaderForType(parentData.loader)
+              ? this.site.loaderForType(parentData.loader as LoaderConstructor)
               : this.site.loaderForFilename(filePath);
             await loader.load(filePath);
           } catch (error) {
@@ -181,9 +166,11 @@ export class Pages<DataT extends PageData = PageData> {
 
       const parentData = dataMap.get(root) ?? {};
       const filename = path.join(root, entry.name);
-      let loader: Loader<DataT>;
+      let loader: Loader;
       try {
-        loader = parentData.loader ? this.site.loaderForType(parentData.loader) : this.site.loaderForFilename(filename);
+        loader = parentData.loader
+          ? this.site.loaderForType(parentData.loader as LoaderConstructor)
+          : this.site.loaderForFilename(filename);
       } catch (_error) {
         // TODO ignoring for now, but maybe some kind of way of filtering out files we shouldn't process
         //      or a mode to warn when files are unhandled
@@ -202,24 +189,24 @@ export class Pages<DataT extends PageData = PageData> {
               throw new Error("generator template didn't provide a url");
             }
 
-            let content: ContentFunction<DataT>;
+            let content: ContentFunction;
             if (typeof generatedContent == "function") {
-              content = generatedContent;
+              content = generatedContent as ContentFunction;
             } else {
               content = () => generatedContent;
             }
 
             const populatedPage = await this.populatePageData(
               loader,
-              { filename, content, data: loadResult.data },
+              { ...loadResult, filename, content },
               parentData,
               data,
             );
-            this.#pages.set(populatedPage.data.url, populatedPage);
+            this.addPage(populatedPage);
           }
         } else {
           const populatedPage = await this.populatePageData(loader, loadResult, parentData);
-          this.#pages.set(populatedPage.data.url, populatedPage);
+          this.addPage(populatedPage);
         }
       } catch (error) {
         console.error(`Error loading ${filename}`);
@@ -235,36 +222,44 @@ export class Pages<DataT extends PageData = PageData> {
       if (additionalPages) {
         for (const additionalPage of additionalPages) {
           const additionalPageData = await this.populatePageData(loader, additionalPage, {});
-          this.#pages.set(additionalPageData.data.url, additionalPageData);
+          this.addPage(additionalPageData);
         }
       }
     }
   }
 
+  private addPage(data: PageData): PageData {
+    if (!data.url || typeof data.url !== "string") {
+      throw new Error("Data is missing a url");
+    }
+    this.#pages.set(data.url, data);
+    return data;
+  }
+
   private async populatePageData(
-    loader: Loader<DataT>,
-    loadResult: LoadResult<DataT>,
-    parentData: Partial<PageData>,
-    otherData?: Partial<PageData>,
-  ): Promise<DataPopulatedPage<DataT>> {
-    const relativePath = path.relative(this.pagesFs.path, loadResult.filename);
-    const fullData = preparePageData<DataT>(relativePath, merge({}, parentData, loadResult.data, otherData));
-    const contentResult = await loadResult.content({
+    loader: Loader,
+    data: PageData,
+    parentData: PageData,
+    otherData?: PageData,
+  ): Promise<PageData> {
+    const relativePath = path.relative(this.pagesFs.path, data.filename as string);
+    const fullData = preparePageData(relativePath, merge({}, parentData, data, otherData));
+    const contentResult = await (data.content as any)({
       data: fullData,
       search: this.#search,
     });
 
     const nearlyPopulatedPage = {
+      ...merge(fullData, readingTime(fullData, contentResult)),
       loader,
-      filename: loadResult.filename,
-      data: merge(fullData, readingTime(fullData, contentResult)),
+      filename: data.filename,
       content: contentResult,
     };
 
     return {
       ...nearlyPopulatedPage,
       renderer: fullData.renderer
-        ? this.site.rendererForType(fullData.renderer)
+        ? this.site.rendererForType(fullData.renderer as RendererConstructor)
         : this.site.rendererForPage(nearlyPopulatedPage),
     };
   }

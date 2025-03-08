@@ -1,12 +1,11 @@
-import type { DataPopulatedPage } from "../Pages.ts";
 import type { Site } from "../Site.ts";
 import type { PageData } from "../types.ts";
 import type { Renderer } from "./index.ts";
 
-export class StringRenderer<DataT extends PageData> implements Renderer<DataT> {
+export class StringRenderer implements Renderer {
   constructor(readonly site: Site) {}
 
-  handles(page: DataPopulatedPage<DataT>): boolean {
+  handles(_page: PageData): boolean {
     return true;
   }
 

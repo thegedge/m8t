@@ -2,17 +2,19 @@ import tailwindcssNesting from "@tailwindcss/nesting";
 import tailwindcssPlugin from "@tailwindcss/postcss";
 import postcss from "postcss";
 import postcssDiscardComments from "postcss-discard-comments";
-import type { PageData } from "../index.ts";
-import type { DataPopulatedPage } from "../Pages.ts";
 import type { Site } from "../Site.ts";
+import type { PageData } from "../types.ts";
 import type { Renderer } from "./index.ts";
 
-export class CssRenderer<DataT extends PageData> implements Renderer<DataT> {
+export class CssRenderer implements Renderer {
   private processor!: postcss.Processor;
 
   constructor(readonly site: Site) {}
 
-  handles(page: DataPopulatedPage<DataT>): boolean {
+  handles(page: PageData): boolean {
+    if (typeof page.filename !== "string") {
+      return false;
+    }
     return page.filename.endsWith(".css");
   }
 

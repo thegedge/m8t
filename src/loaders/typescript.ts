@@ -1,8 +1,7 @@
 import type { Site } from "../Site.ts";
-import type { PageData } from "../types.ts";
 import type { Loader } from "./index.ts";
 
-export class TypescriptLoader<DataT extends PageData> implements Loader<DataT> {
+export class TypescriptLoader implements Loader {
   constructor(readonly site: Site) {}
 
   handles(filename: string) {
@@ -11,6 +10,6 @@ export class TypescriptLoader<DataT extends PageData> implements Loader<DataT> {
 
   async load(filename: string) {
     const { default: content, ...data } = await import(filename);
-    return { filename, data, content };
+    return { ...data, filename, content };
   }
 }

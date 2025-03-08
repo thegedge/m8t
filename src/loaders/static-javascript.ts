@@ -2,12 +2,11 @@ import * as esbuild from "esbuild";
 import path from "node:path";
 import { StringRenderer } from "../renderers/string.ts";
 import type { Site } from "../Site.ts";
-import type { PageData } from "../types.ts";
-import type { Loader, LoadResult } from "./index.ts";
+import type { Loader } from "./index.ts";
 
 const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
 
-export class StaticJavascriptLoader<DataT extends PageData> implements Loader<DataT> {
+export class StaticJavascriptLoader implements Loader {
   private entrypoints: string[] = [];
   private buildResult_: Promise<Map<string, esbuild.OutputFile> | null> | null = null;
 
@@ -23,9 +22,7 @@ export class StaticJavascriptLoader<DataT extends PageData> implements Loader<Da
 
     return {
       filename,
-      data: {
-        url: "./" + toJSFile(path.basename(filename)),
-      } as Partial<DataT>,
+      url: "./" + toJSFile(path.basename(filename)),
       content: async () => {
         const relativePath = toJSFile(path.relative(this.site.root.path, filename));
         const buildResult = await this.buildResult;
@@ -42,7 +39,7 @@ export class StaticJavascriptLoader<DataT extends PageData> implements Loader<Da
     };
   }
 
-  async afterInitialLoad(): Promise<LoadResult<DataT>[]> {
+  async afterInitialLoad() {
     const chunks = await this.chunks();
     return chunks.map((chunk) => {
       const chunkName = path.basename(chunk.path);
@@ -50,14 +47,12 @@ export class StaticJavascriptLoader<DataT extends PageData> implements Loader<Da
       return {
         filename: chunkName,
         content: () => chunk.text,
-        data: {
-          url,
-          renderer: StringRenderer,
-          outputPath: url,
-          title: chunkName,
-          date: new Date(),
-          slug: chunkName,
-        } as unknown as PageData<DataT>,
+        url,
+        renderer: StringRenderer,
+        outputPath: url,
+        title: chunkName,
+        date: new Date(),
+        slug: chunkName,
       };
     });
   }

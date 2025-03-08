@@ -9,10 +9,9 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import type { Site } from "../Site.ts";
-import type { PageData } from "../types.ts";
-import type { Loader, LoadResult } from "./index.ts";
+import type { Loader } from "./index.ts";
 
-export class MdxLoader<DataT extends PageData> implements Loader<DataT> {
+export class MdxLoader implements Loader {
   providerImportSource = import.meta.resolve("../jsx.js");
 
   constructor(readonly site: Site) {}
@@ -21,7 +20,7 @@ export class MdxLoader<DataT extends PageData> implements Loader<DataT> {
     return filename.endsWith(".md") || filename.endsWith(".mdx");
   }
 
-  async load(filename: string): Promise<LoadResult<DataT>> {
+  async load(filename: string) {
     const fileContents = await readFile(filename);
     const { data, content: mdxSource } = parseFrontmatter(fileContents);
     const baseUrl = new URL(`file://` + filename);
@@ -82,12 +81,10 @@ export class MdxLoader<DataT extends PageData> implements Loader<DataT> {
     }
 
     return {
+      ...data,
+      ...mdxData,
       filename,
-      data: {
-        ...data,
-        ...mdxData,
-      },
-      content: (props) => {
+      content: (props: any) => {
         return mdxContent({
           ...props,
           components: props.data.components,

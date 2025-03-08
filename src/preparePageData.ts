@@ -5,10 +5,7 @@ import { normalizeUrl } from "./utils.ts";
 
 const DATE_REGEX = /^(\d{4}).(\d{2}).(\d{2}).(.+)$/;
 
-export const preparePageData = <DataT extends PageData = PageData>(
-  filename: string,
-  data: Partial<PageData>,
-): PageData<DataT> => {
+export const preparePageData = (filename: string, data: PageData): PageData => {
   const parsed = path.parse(filename);
 
   let name: string;
@@ -74,7 +71,7 @@ export const preparePageData = <DataT extends PageData = PageData>(
     url: normalizeUrl(url),
     outputPath,
     title,
-    slug: data.slug ?? slugify(title || parsed.name),
+    slug: data.slug ?? slugify(typeof title == "string" ? title || parsed.name : parsed.name),
     date: data.date ?? date,
-  } as DataT;
+  };
 };

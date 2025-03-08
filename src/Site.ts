@@ -3,13 +3,13 @@ import { getSystemErrorName } from "node:util";
 import { ConfigType, type ResolvedConfig } from "./Config.ts";
 import { Filesystem } from "./Filesystem.ts";
 import type { Loader, LoaderConstructor } from "./loaders/index.ts";
-import { Pages, type DataPopulatedPage } from "./Pages.ts";
+import { Pages } from "./Pages.ts";
 import type { Renderer, RendererConstructor } from "./renderers/index.ts";
 import type { PageData } from "./types.ts";
 
-export class Site<DataT extends PageData = PageData> {
-  static async forRoot<DataT extends PageData = PageData>(root: string): Promise<Site<DataT>> {
-    const site = new Site<DataT>(root);
+export class Site {
+  static async forRoot(root: string): Promise<Site> {
+    const site = new Site(root);
     await site.reload();
     return site;
   }
@@ -17,11 +17,11 @@ export class Site<DataT extends PageData = PageData> {
   readonly root: Filesystem;
 
   #out!: Filesystem;
-  #pages!: Pages<DataT>;
-  #config!: ResolvedConfig<DataT>;
+  #pages!: Pages;
+  #config!: ResolvedConfig;
 
-  #loaders!: Map<LoaderConstructor<DataT>, Loader<DataT>>;
-  #renderers!: Map<RendererConstructor<DataT>, Renderer<DataT>>;
+  #loaders!: Map<LoaderConstructor, Loader>;
+  #renderers!: Map<RendererConstructor, Renderer>;
 
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
@@ -67,7 +67,7 @@ export class Site<DataT extends PageData = PageData> {
 
     if (importedConfig && typeof importedConfig === "object") {
       const config = "default" in importedConfig ? importedConfig.default : importedConfig;
-      this.#config = ConfigType<DataT>().parse(config);
+      this.#config = ConfigType().parse(config);
     }
 
     this.#out = new Filesystem(path.resolve(this.root.path, this.#config.outDir));
@@ -75,15 +75,15 @@ export class Site<DataT extends PageData = PageData> {
     this.#renderers = new Map((this.#config.renderers ?? []).map((Clazz) => [Clazz, new Clazz(this)]));
   }
 
-  get loaders(): IteratorObject<Loader<DataT>> {
+  get loaders(): IteratorObject<Loader> {
     return this.#loaders.values();
   }
 
-  get renderers(): IteratorObject<Renderer<DataT>> {
+  get renderers(): IteratorObject<Renderer> {
     return this.#renderers.values();
   }
 
-  loaderForType<T extends LoaderConstructor<DataT> = LoaderConstructor<DataT>>(type: T): InstanceType<T> {
+  loaderForType<T extends LoaderConstructor = LoaderConstructor>(type: T): InstanceType<T> {
     const loader = this.#loaders.get(type);
     if (!loader) {
       throw new Error(`No loader registered for "${type.name}"`);
@@ -92,7 +92,7 @@ export class Site<DataT extends PageData = PageData> {
     return loader as InstanceType<T>;
   }
 
-  loaderForFilename(filename: string): Loader<DataT> {
+  loaderForFilename(filename: string): Loader {
     for (const loader of this.#loaders.values()) {
       if (loader.handles(filename)) {
         return loader;
@@ -102,7 +102,7 @@ export class Site<DataT extends PageData = PageData> {
     throw new Error(`No loader for extension "${filename}"`);
   }
 
-  rendererForType<T extends RendererConstructor<DataT> = RendererConstructor<DataT>>(type: T): InstanceType<T> {
+  rendererForType<T extends RendererConstructor = RendererConstructor>(type: T): InstanceType<T> {
     const renderer = this.#renderers.get(type);
     if (!renderer) {
       throw new Error(`No renderer registered for "${type.name}"`);
@@ -111,7 +111,7 @@ export class Site<DataT extends PageData = PageData> {
     return renderer as InstanceType<T>;
   }
 
-  rendererForPage(page: Omit<DataPopulatedPage<DataT>, "renderer">): Renderer<DataT> {
+  rendererForPage(page: PageData): Renderer {
     for (const renderer of this.#renderers.values()) {
       if (renderer.handles(page)) {
         return renderer;
