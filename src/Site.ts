@@ -2,8 +2,9 @@ import path from "node:path";
 import { getSystemErrorName } from "node:util";
 import { ConfigType, type ResolvedConfig } from "./Config.ts";
 import { Filesystem } from "./Filesystem.ts";
-import { Pages } from "./Pages.ts";
-import type { Processor, ProcessorConstructor } from "./processors/index.ts";
+import type { Loader, LoaderConstructor } from "./loaders/index.ts";
+import { Pages, type DataPopulatedPage } from "./Pages.ts";
+import type { Renderer, RendererConstructor } from "./renderers/index.ts";
 import type { PageData } from "./types.ts";
 
 export class Site<DataT extends PageData = PageData> {
@@ -18,7 +19,9 @@ export class Site<DataT extends PageData = PageData> {
   #out!: Filesystem;
   #pages!: Pages<DataT>;
   #config!: ResolvedConfig<DataT>;
-  #processors!: Map<ProcessorConstructor<DataT>, Processor<DataT>>;
+
+  #loaders!: Map<LoaderConstructor<DataT>, Loader<DataT>>;
+  #renderers!: Map<RendererConstructor<DataT>, Renderer<DataT>>;
 
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
@@ -68,39 +71,54 @@ export class Site<DataT extends PageData = PageData> {
     }
 
     this.#out = new Filesystem(path.resolve(this.root.path, this.#config.outDir));
-    this.#processors = new Map((this.#config.processors ?? []).map((Clazz) => [Clazz, new Clazz(this)]));
+    this.#loaders = new Map((this.#config.loaders ?? []).map((Clazz) => [Clazz, new Clazz(this)]));
+    this.#renderers = new Map((this.#config.renderers ?? []).map((Clazz) => [Clazz, new Clazz(this)]));
   }
 
-  get processors(): IteratorObject<Processor<DataT>> {
-    return this.#processors.values();
+  get loaders(): IteratorObject<Loader<DataT>> {
+    return this.#loaders.values();
   }
 
-  processorForType<T extends ProcessorConstructor<DataT> = ProcessorConstructor<DataT>>(type: T): InstanceType<T> {
-    const processor = this.#processors.get(type);
-    if (!processor) {
-      throw new Error(`No processor registered for "${type.name}"`);
+  get renderers(): IteratorObject<Renderer<DataT>> {
+    return this.#renderers.values();
+  }
+
+  loaderForType<T extends LoaderConstructor<DataT> = LoaderConstructor<DataT>>(type: T): InstanceType<T> {
+    const loader = this.#loaders.get(type);
+    if (!loader) {
+      throw new Error(`No loader registered for "${type.name}"`);
     }
 
-    return processor as InstanceType<T>;
+    return loader as InstanceType<T>;
   }
 
-  processorForFile(filename: string): Processor {
-    const ext = path.extname(filename).slice(1); // remove the leading "."
-    const applicableProcessor = this.#processors
-      .values()
-      .filter((processor) => processor.handles(ext))
-      .toArray();
-
-    if (applicableProcessor.length == 0) {
-      throw new Error(`No processor for file "${filename}"`);
+  loaderForFilename(filename: string): Loader<DataT> {
+    for (const loader of this.#loaders.values()) {
+      if (loader.handles(filename)) {
+        return loader;
+      }
     }
 
-    // TODO perhaps have a warn mode about this
-    // if (applicableProcessor.length > 1) {
-    //   throw new Error(`Multiple processors for file "${filename}"`);
-    // }
+    throw new Error(`No loader for extension "${filename}"`);
+  }
 
-    return applicableProcessor[0];
+  rendererForType<T extends RendererConstructor<DataT> = RendererConstructor<DataT>>(type: T): InstanceType<T> {
+    const renderer = this.#renderers.get(type);
+    if (!renderer) {
+      throw new Error(`No renderer registered for "${type.name}"`);
+    }
+
+    return renderer as InstanceType<T>;
+  }
+
+  rendererForPage(page: Omit<DataPopulatedPage<DataT>, "renderer">): Renderer<DataT> {
+    for (const renderer of this.#renderers.values()) {
+      if (renderer.handles(page)) {
+        return renderer;
+      }
+    }
+
+    throw new Error(`No processor for "${page.filename}"`);
   }
 
   get pagesRoot() {

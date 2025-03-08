@@ -4,14 +4,14 @@ import type { PageData } from "./types.ts";
 export type SearchQuery = Record<string, unknown>;
 export type SearchSort = readonly [string, "asc" | "desc"];
 
-export class Search {
-  #pages: Map<string, DataPopulatedPage>;
+export class Search<DataT extends PageData = PageData> {
+  #pages: Map<string, DataPopulatedPage<DataT>>;
 
-  constructor(pages: Map<string, DataPopulatedPage>) {
+  constructor(pages: Map<string, DataPopulatedPage<DataT>>) {
     this.#pages = pages;
   }
 
-  pages<DataT = PageData>(query: SearchQuery, sort?: SearchSort): DataT[] {
+  pages(query: SearchQuery, sort?: SearchSort): DataT[] {
     const filtered = Array.from(this.#pages.values()).filter((page) => {
       for (const [key, value] of Object.entries(query)) {
         if (page.data[key] != value) {
@@ -35,11 +35,10 @@ export class Search {
       });
     }
 
-    return filtered.map((p) => p.data as DataT);
+    return filtered.map((p) => p.data);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  previousPage<DataT = PageData>(url: string, query: SearchQuery, sort?: SearchSort): DataT | null {
+  previousPage(url: string, query: SearchQuery, sort?: SearchSort): DataT | null {
     const pages = this.pages(query, sort);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
@@ -48,8 +47,7 @@ export class Search {
     return index > 0 ? (pages[index - 1] as DataT) : null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
-  nextPage<DataT = PageData>(url: string, query: SearchQuery, sort?: SearchSort): DataT | null {
+  nextPage(url: string, query: SearchQuery, sort?: SearchSort): DataT | null {
     const pages = this.pages(query, sort);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {

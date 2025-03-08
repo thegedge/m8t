@@ -1,32 +1,20 @@
 import * as esbuild from "esbuild";
 import path from "node:path";
+import { StringRenderer } from "../renderers/string.ts";
 import type { Site } from "../Site.ts";
 import type { PageData } from "../types.ts";
-import type { Processor } from "./index.ts";
+import type { Loader, LoadResult } from "./index.ts";
 
-export class StaticJavascriptProcessor<DataT extends PageData> implements Processor<DataT> {
+const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
+
+export class StaticJavascriptLoader<DataT extends PageData> implements Loader<DataT> {
   private entrypoints: string[] = [];
   private buildResult_: Promise<Map<string, esbuild.OutputFile> | null> | null = null;
 
   constructor(readonly site: Site) {}
 
-  reset(): void {
-    this.buildResult_ = null;
-  }
-
-  async chunks(): Promise<esbuild.OutputFile[]> {
-    const buildResult = await this.buildResult;
-    if (!buildResult) {
-      return [];
-    }
-
-    return Array.from(buildResult.values()).filter((output) => {
-      return output.path.includes("/chunk-");
-    });
-  }
-
-  handles(extension: string): boolean {
-    return /^[mc]?[jt]s$/.test(extension);
+  handles(filename: string): boolean {
+    return JAVASCRIPT_FILE_REGEX.test(filename);
   }
 
   async load(filename: string) {
@@ -34,10 +22,10 @@ export class StaticJavascriptProcessor<DataT extends PageData> implements Proces
     this.entrypoints.push(filename);
 
     return {
+      filename,
       data: {
         url: "./" + toJSFile(path.basename(filename)),
       } as Partial<DataT>,
-
       content: async () => {
         const relativePath = toJSFile(path.relative(this.site.root.path, filename));
         const buildResult = await this.buildResult;
@@ -54,26 +42,22 @@ export class StaticJavascriptProcessor<DataT extends PageData> implements Proces
     };
   }
 
-  async render(content: string) {
-    return content;
-  }
-
-  async afterInitialRender() {
+  async afterInitialLoad(): Promise<LoadResult<DataT>[]> {
     const chunks = await this.chunks();
     return chunks.map((chunk) => {
       const chunkName = path.basename(chunk.path);
       const url = path.join(this.publicPath, chunkName);
       return {
-        processor: this,
         filename: chunkName,
         content: () => chunk.text,
         data: {
           url,
+          renderer: StringRenderer,
           outputPath: url,
           title: chunkName,
           date: new Date(),
           slug: chunkName,
-        },
+        } as unknown as PageData<DataT>,
       };
     });
   }
@@ -86,6 +70,17 @@ export class StaticJavascriptProcessor<DataT extends PageData> implements Proces
   private get buildResult() {
     this.buildResult_ ??= this.build();
     return this.buildResult_;
+  }
+
+  private async chunks(): Promise<esbuild.OutputFile[]> {
+    const buildResult = await this.buildResult;
+    if (!buildResult) {
+      return [];
+    }
+
+    return Array.from(buildResult.values()).filter((output) => {
+      return output.path.includes("/chunk-");
+    });
   }
 
   private async build() {
@@ -118,5 +113,5 @@ export class StaticJavascriptProcessor<DataT extends PageData> implements Proces
 }
 
 const toJSFile = (filename: string) => {
-  return filename.replace(/\.[cm]?[jt]sx?$/, ".js");
+  return filename.replace(JAVASCRIPT_FILE_REGEX, ".js");
 };

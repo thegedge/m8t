@@ -8,21 +8,20 @@ import remarkDefinitionList, { defListHastHandlers } from "remark-definition-lis
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
-import { renderElementToHTML, type Node } from "../jsx.ts";
 import type { Site } from "../Site.ts";
 import type { PageData } from "../types.ts";
-import type { ContentFunction, Processor } from "./index.ts";
+import type { Loader, LoadResult } from "./index.ts";
 
-export class MdxProcessor<DataT extends PageData> implements Processor<DataT> {
+export class MdxLoader<DataT extends PageData> implements Loader<DataT> {
   providerImportSource = import.meta.resolve("../jsx.js");
 
   constructor(readonly site: Site) {}
 
-  handles(extension: string) {
-    return extension == "md" || extension == "mdx";
+  handles(filename: string) {
+    return filename.endsWith(".md") || filename.endsWith(".mdx");
   }
 
-  async load(filename: string) {
+  async load(filename: string): Promise<LoadResult<DataT>> {
     const fileContents = await readFile(filename);
     const { data, content: mdxSource } = parseFrontmatter(fileContents);
     const baseUrl = new URL(`file://` + filename);
@@ -82,23 +81,18 @@ export class MdxProcessor<DataT extends PageData> implements Processor<DataT> {
       throw e;
     }
 
-    const content: ContentFunction = (props) => {
-      return mdxContent({
-        ...props,
-        components: props.data.components,
-      });
-    };
-
     return {
+      filename,
       data: {
         ...data,
         ...mdxData,
-      } as unknown as Partial<DataT>,
-      content,
+      },
+      content: (props) => {
+        return mdxContent({
+          ...props,
+          components: props.data.components,
+        });
+      },
     };
-  }
-
-  async render(content: Node) {
-    return renderElementToHTML(content);
   }
 }

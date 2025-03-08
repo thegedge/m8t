@@ -1,4 +1,5 @@
-import type { ProcessorConstructor } from "./processors/index.ts";
+import type { LoaderConstructor } from "./loaders/index.ts";
+import type { RendererConstructor } from "./renderers/index.ts";
 import { Search } from "./Search.ts";
 
 export type { Search } from "./Search.ts";
@@ -35,7 +36,10 @@ export type PageData<OtherData = Record<string, any>> = {
   layout?: string | null;
 
   /** The layout file to use for this page */
-  processor?: ProcessorConstructor<any> | null;
+  loader?: LoaderConstructor<any> | null;
+
+  /** The layout file to use for this page */
+  renderer?: RendererConstructor<any> | null;
 
   /** An optional description of this page's contents */
   description?: string;
@@ -49,6 +53,10 @@ export type PageData<OtherData = Record<string, any>> = {
 
 export type PageComponentProps<DataT extends Record<string, any> = Record<string, any>, ChildrenT = any> = {
   data: PageData<DataT>;
-  search: Search;
+  search: Search<PageData<DataT>>;
   children?: ChildrenT;
 };
+
+export type ContentFunction<DataT extends PageData = PageData> = (
+  props: PageComponentProps<DataT>,
+) => Promise<unknown> | unknown;

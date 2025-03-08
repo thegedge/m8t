@@ -1,12 +1,15 @@
 import z from "zod";
-import type { ProcessorConstructor } from "./processors/index.ts";
+import type { LoaderConstructor } from "./loaders/index.ts";
+import type { RendererConstructor } from "./renderers/index.ts";
 import type { PageData } from "./types.ts";
 
 export const ConfigType = <DataT extends PageData = PageData>() =>
   z.object({
     outDir: z.string().default("./out"),
     pagesDir: z.string().default("./pages"),
-    processors: z.array(z.custom<ProcessorConstructor<DataT>>()).default([]),
+
+    loaders: z.array(z.custom<LoaderConstructor<DataT>>()).default([]),
+    renderers: z.array(z.custom<RendererConstructor<DataT>>()).default([]),
 
     devServer: z
       .object({

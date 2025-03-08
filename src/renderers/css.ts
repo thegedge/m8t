@@ -1,29 +1,19 @@
 import tailwindcssNesting from "@tailwindcss/nesting";
 import tailwindcssPlugin from "@tailwindcss/postcss";
-import { readFile } from "fs/promises";
 import postcss from "postcss";
 import postcssDiscardComments from "postcss-discard-comments";
 import type { PageData } from "../index.ts";
+import type { DataPopulatedPage } from "../Pages.ts";
 import type { Site } from "../Site.ts";
-import type { Processor } from "./index.ts";
+import type { Renderer } from "./index.ts";
 
-export class CssProcessor<DataT extends PageData> implements Processor<DataT> {
+export class CssRenderer<DataT extends PageData> implements Renderer<DataT> {
   private processor!: postcss.Processor;
 
   constructor(readonly site: Site) {}
 
-  handles(extension: string) {
-    return extension === "css";
-  }
-
-  async load(filename: string) {
-    await this.init();
-
-    const content = await readFile(filename, "utf8");
-    return {
-      data: {},
-      content: () => ({ content, filename }),
-    };
+  handles(page: DataPopulatedPage<DataT>): boolean {
+    return page.filename.endsWith(".css");
   }
 
   async render(content: { content: string; filename: string }) {
