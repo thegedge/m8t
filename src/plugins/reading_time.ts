@@ -1,4 +1,5 @@
-import type { MaybeArray, PageData } from "../index.ts";
+import type { MaybeArray } from "../index.ts";
+import type { PageData } from "../PageData.ts";
 
 type ReadingTimeObject =
   | string
@@ -10,9 +11,9 @@ type ReadingTimeObject =
       };
     };
 
-export const readingTime = (data: PageData, content: unknown, wordsPerMinute = 150): { readingTimeMins?: number } => {
+export const readingTime = (data: PageData, content: unknown, wordsPerMinute = 150): number | undefined => {
   if (typeof content != "string" && typeof content != "object") {
-    return {};
+    return undefined;
   }
 
   const lang = typeof data.lang == "string" ? data.lang : "en";
@@ -33,5 +34,5 @@ export const readingTime = (data: PageData, content: unknown, wordsPerMinute = 1
     return 0;
   };
 
-  return { readingTimeMins: wordCount(content) / wordsPerMinute };
+  return wordCount(content) / wordsPerMinute;
 };

@@ -7,9 +7,9 @@ import { createServer } from "node:http";
 import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { stringOrThrow, type PageData } from "../../PageData.ts";
 import { Redirects } from "../../Redirects.ts";
 import { Site } from "../../Site.ts";
-import type { PageData } from "../../types.ts";
 
 register("@nodejs-loaders/tsx", import.meta.url);
 
@@ -37,7 +37,7 @@ export const run = async (): Promise<void> => {
 export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
   await site.pages.init();
   const redirects = site.config.devServer.redirectsPath
-    ? await Redirects.fromFilesystem(site.pagesRoot, site.config.devServer.redirectsPath)
+    ? await Redirects.fromFilesystem(site.root, site.config.devServer.redirectsPath)
     : null;
 
   const server = createServer({}, async (request, response) => {
@@ -56,13 +56,15 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
       for (const url of urlsToTry) {
         page = await site.pages.page(url);
         if (page) {
+          const content = stringOrThrow(page.content);
           response.writeHead(200, { "content-type": mime.lookup(url) || "text/html" });
-          response.end(page.content);
+          response.end(content);
           return;
         }
       }
 
-      const staticFile = path.join(site.pagesRoot.path, "static", url.pathname);
+      // TODO make this configurable
+      const staticFile = path.join(site.root.path, "src/static", url.pathname);
       try {
         if ((await stat(staticFile)).isFile()) {
           response.writeHead(200, { "content-encoding": "text/plain" });
@@ -76,9 +78,7 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
       if (redirects) {
         const redirect = redirects.match(pagePath);
         if (redirect) {
-          response.writeHead(redirect[1], {
-            location: redirect[0],
-          });
+          response.writeHead(redirect[1], { location: redirect[0] });
           response.end();
           return;
         }
@@ -94,9 +94,7 @@ Possible paths:
 `);
       return;
     } catch (error) {
-      response.writeHead(500, {
-        "content-type": "text/plain",
-      });
+      response.writeHead(500, { "content-type": "text/plain" });
       response.end(`Internal Server Error\n\n${error.stack}`);
     }
   });

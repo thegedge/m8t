@@ -1,31 +1,53 @@
 import * as esbuild from "esbuild";
 import path from "node:path";
-import { StringRenderer } from "../renderers/string.ts";
+import type { PageData } from "../PageData.ts";
 import type { Site } from "../Site.ts";
-import type { Loader } from "./index.ts";
+import type { Processor } from "./index.ts";
+import { StringRenderer } from "./renderers/string.ts";
 
 const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
+const needsRender = Symbol("needsRender");
 
-export class StaticJavascriptLoader implements Loader {
+/**
+ * A processor that collects many entrypoints and runs them through esbuild.
+ *
+ * This processor not only produces javascript files for the entrypoints, but also produces additional
+ * chunks that load up all the libraries they reference.
+ */
+export class StaticJavascriptProcessor implements Processor {
   private entrypoints: string[] = [];
   private buildResult_: Promise<Map<string, esbuild.OutputFile> | null> | null = null;
 
   constructor(readonly site: Site) {}
 
-  handles(filename: string): boolean {
-    return JAVASCRIPT_FILE_REGEX.test(filename);
-  }
+  async process(data: PageData) {
+    if (!JAVASCRIPT_FILE_REGEX.test(data.filename)) {
+      return;
+    }
 
-  async load(filename: string) {
+    if (data.content) {
+      return;
+    }
+
+    // TODO this processor needs to take a dual-pass approach, with the first pass collecting all
+    //   of the entrypoints, and the second pass spitting out javascript (which includes the chunks)
+
     // TODO make it easier to not make every JS file an entrypoint
+    const filename = data.filename;
     this.entrypoints.push(filename);
 
+    const self = this;
+    const url = toJSFile("/" + path.relative(this.site.pagesRoot.path, filename));
+
     return {
-      filename,
-      url: "./" + toJSFile(path.basename(filename)),
-      content: async () => {
-        const relativePath = toJSFile(path.relative(this.site.root.path, filename));
-        const buildResult = await this.buildResult;
+      ...data,
+      url,
+      mimeType: "text/javascript",
+      content: async function* staticJavascriptContent() {
+        const first = !self.buildResult_;
+
+        const relativePath = toJSFile(path.relative(self.site.root.path, filename));
+        const buildResult = await self.buildResult;
         if (!buildResult) {
           throw new Error(`could not build static JS bundle for ${filename}`);
         }
@@ -34,27 +56,31 @@ export class StaticJavascriptLoader implements Loader {
         if (!artifact) {
           throw new Error(`could not find artifact for ${relativePath}`);
         }
-        return artifact.text;
+
+        yield {
+          url,
+          content: artifact.text,
+        };
+
+        if (first) {
+          const chunks = await self.chunks();
+          for (const chunk of chunks) {
+            const chunkName = path.basename(chunk.path);
+            const url = path.join(self.publicPath, chunkName);
+            yield {
+              filename: chunkName,
+              url,
+              renderer: StringRenderer,
+              outputPath: url,
+              title: chunkName,
+              date: new Date(),
+              slug: chunkName,
+              content: () => chunk.text,
+            };
+          }
+        }
       },
     };
-  }
-
-  async afterInitialLoad() {
-    const chunks = await this.chunks();
-    return chunks.map((chunk) => {
-      const chunkName = path.basename(chunk.path);
-      const url = path.join(this.publicPath, chunkName);
-      return {
-        filename: chunkName,
-        content: () => chunk.text,
-        url,
-        renderer: StringRenderer,
-        outputPath: url,
-        title: chunkName,
-        date: new Date(),
-        slug: chunkName,
-      };
-    });
   }
 
   private get publicPath() {

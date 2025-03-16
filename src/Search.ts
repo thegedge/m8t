@@ -1,4 +1,4 @@
-import type { PageData } from "./types.ts";
+import type { PageData } from "./PageData.ts";
 
 export type SearchQuery = Record<string, unknown>;
 export type SearchSort = readonly [string, "asc" | "desc"];
@@ -17,7 +17,6 @@ export class Search {
           return false;
         }
       }
-
       return true;
     });
 

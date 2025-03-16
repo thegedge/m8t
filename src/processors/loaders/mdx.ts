@@ -8,21 +8,34 @@ import remarkDefinitionList, { defListHastHandlers } from "remark-definition-lis
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
-import type { Site } from "../Site.ts";
-import type { Loader } from "./index.ts";
+import type { PageData } from "../../PageData.ts";
+import type { Site } from "../../Site.ts";
+import type { Processor } from "../index.ts";
 
-export class MdxLoader implements Loader {
+const rendered = Symbol("mdxRendered");
+
+/**
+ * A loader that processes markdown and MDX files.
+ *
+ * The resulting content will be a React element.
+ */
+export class MdxLoader implements Processor {
   providerImportSource = import.meta.resolve("../jsx.js");
 
   constructor(readonly site: Site) {}
 
-  handles(filename: string) {
-    return filename.endsWith(".md") || filename.endsWith(".mdx");
-  }
+  async process(data: PageData) {
+    if (rendered in data) {
+      return;
+    }
 
-  async load(filename: string) {
+    const filename = data.filename;
+    if (!filename.endsWith(".md") && !filename.endsWith(".mdx")) {
+      return;
+    }
+
     const fileContents = await readFile(filename);
-    const { data, content: mdxSource } = parseFrontmatter(fileContents);
+    const { data: frontmatterData, content: mdxSource } = parseFrontmatter(fileContents);
     const baseUrl = new URL(`file://` + filename);
 
     const compiled = await compile(mdxSource, {
@@ -82,8 +95,9 @@ export class MdxLoader implements Loader {
 
     return {
       ...data,
+      ...frontmatterData,
       ...mdxData,
-      filename,
+      [rendered]: true,
       content: (props: any) => {
         return mdxContent({
           ...props,

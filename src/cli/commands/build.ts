@@ -1,4 +1,5 @@
 import path from "path";
+import { stringOrThrow } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 
 export const run = async (site: Site, _args: { _: [string] }): Promise<void> => {
@@ -12,16 +13,11 @@ export const run = async (site: Site, _args: { _: [string] }): Promise<void> => 
       throw new Error(`Could not build page for URL ${url}`);
     }
 
-    if (!page.outputPath || typeof page.outputPath !== "string") {
-      throw new Error(`Page ${url} has no output path`);
-    }
+    const outputPath = stringOrThrow(page.outputPath);
+    const content = stringOrThrow(page.content);
 
-    if (!page.content || typeof page.content !== "string") {
-      throw new Error(`Page ${url} has no content`);
-    }
-
-    await site.out.writeFile(page.outputPath, page.content);
-    process.stdout.write(`Done!\n\tStored in ${page.outputPath}\n`);
+    await site.out.writeFile(outputPath, content);
+    process.stdout.write(`Done!\n\tStored in ${outputPath}\n`);
   }
 
   const staticFilesFs = site.pagesRoot.cd("static");
