@@ -44,6 +44,8 @@ export class StaticJavascriptProcessor implements Processor {
       url,
       mimeType: "text/javascript",
       content: async function* staticJavascriptContent() {
+        await self.site.pages.idle;
+
         const first = !self.buildResult_;
 
         const relativePath = toJSFile(path.relative(self.site.root.path, filename));

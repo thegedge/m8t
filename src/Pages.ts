@@ -5,16 +5,30 @@ import type { PageData } from "./PageData.ts";
 import { Search } from "./Search.ts";
 import type { Site } from "./Site.ts";
 import type { MaybeArray } from "./types.ts";
+import { counterPromise } from "./utils/counterPromise.ts";
+import { restartableTimeout } from "./utils/restartableTimeout.ts";
 
 export class Pages {
-  #pages = new Map<string, PageData>();
+  /** The filesystem of the pages directory */
   #pagesFs: Filesystem;
+
+  /** Any pages that have been processed enough to the point that they have a url, but may still be incomplete */
+  #pages = new Map<string, PageData>();
+
+  /** The search index */
   #search: Search;
+
+  /** Whether the processing pipeline is idle */
+  #idle: Promise<void>;
+  #idleResolve!: () => void;
 
   constructor(readonly site: Site) {
     // TODO make this subdir configurable
     this.#pagesFs = site.pagesRoot;
-    this.#search = new Search(this.#pages);
+    this.#search = new Search(this.site, this.#pages);
+    this.#idle = new Promise((resolve) => {
+      this.#idleResolve = resolve;
+    });
   }
 
   async page(url: string): Promise<PageData | undefined> {
@@ -25,53 +39,92 @@ export class Pages {
     return Array.from(this.#pages.keys());
   }
 
-  get search(): Search {
+  get search() {
     return this.#search;
   }
 
-  async init() {
-    const data: PageData[] = [];
-    for await (const result of this.initData(this.#pagesFs)) {
-      if (Array.isArray(result)) {
-        data.push(...result);
-      } else if (result) {
-        data.push(result);
-      }
-    }
+  get idle() {
+    return this.#idle;
+  }
 
+  async init() {
     // We have an issue where pages that aren't fully rendered aren't in the pages map, so search queries
     // will have trouble finding them. Should search also look through the data we're actively processing?
     // Or should we have rendering be more explicit, perhaps some way of processors being able to say "hey,
     // I will handle this, but not until you've gone as far as you can with everything else".
 
-    for (let iteration = 0; iteration < 50 && data.length > 0; iteration++) {
-      const currentData = data.splice(0);
-      for (const pageData of currentData) {
-        const result = await this.site.processData(pageData);
-        if (result) {
-          const newPageData = Array.isArray(result) ? result : [result];
-          for (const newPageDatum of newPageData) {
-            data.push(newPageDatum);
+    const { increment: workStarted, decrement: workCompleted, promise: allWorkDone } = counterPromise();
+    const { restart, promise: workTimedOut } = restartableTimeout(5000);
 
-            // Remove the entry for the previous page
-            if (typeof pageData.url === "string") {
-              this.#pages.delete(pageData.url);
-            }
+    let processedDataSinceLastCheck = false;
+    const interval = setInterval(() => {
+      if (processedDataSinceLastCheck) {
+        processedDataSinceLastCheck = false;
+      } else {
+        this.#idleResolve();
+        this.#idle = new Promise((resolve) => {
+          this.#idleResolve = resolve;
+        });
+      }
+    }, 200);
 
-            // We also `addPage` in here to ensure that the page is added to the search index, so intermediate phases
-            // can still find pages. This does mean pages will need to largely have searchable metadata available up
-            // front in the early stages of processing.
-            if (typeof newPageDatum.url === "string") {
-              this.#pages.set(newPageDatum.url, newPageDatum);
+    const processWork = (pageData: PageData) => {
+      workStarted();
+
+      Promise.resolve(pageData)
+        .then((data) => this.site.processData(data))
+        .then((result) => {
+          if (result) {
+            const newPageData = Array.isArray(result) ? result : [result];
+            for (const newPageDatum of newPageData) {
+              // Remove the entry for the previous page
+              if (typeof pageData.url === "string") {
+                this.#pages.delete(pageData.url);
+              }
+
+              // We also `addPage` in here to ensure that the page is added to the search index, so intermediate phases
+              // can still find pages. This does mean pages will need to largely have searchable metadata available up
+              // front in the early stages of processing.
+              if (typeof newPageDatum.url === "string") {
+                this.#pages.set(newPageDatum.url, newPageDatum);
+              }
+
+              // We've finished processing this page, so we can start on the next one
+              Promise.resolve().then(() => processWork(newPageDatum));
             }
+          } else if (typeof pageData.url === "string") {
+            this.#pages.set(pageData.url, pageData);
+          } else {
+            // TODO warn during development, throw on build
+            console.warn(`Skipping page ${pageData.filename} has no URL`);
           }
-        } else if (typeof pageData.url === "string") {
-          this.#pages.set(pageData.url, pageData);
-        } else {
-          // TODO warn during development, throw on build
-          console.warn(`Skipping page ${pageData.filename} has no URL`);
+        })
+        .catch((err) => {
+          // Maybe reject if we're building vs in development?
+          console.warn(`Error processing page ${pageData.filename}`);
+          console.warn(err);
+        })
+        .finally(() => {
+          workCompleted();
+          restart();
+          processedDataSinceLastCheck = true;
+        });
+    };
+
+    try {
+      for await (const result of this.initData(this.#pagesFs)) {
+        if (Array.isArray(result)) {
+          for (const pageData of result) {
+            processWork(pageData);
+          }
+        } else if (result) {
+          processWork(result);
         }
       }
+
+      await Promise.race([allWorkDone, workTimedOut]);
+    } finally {
+      clearInterval(interval);
     }
   }
 

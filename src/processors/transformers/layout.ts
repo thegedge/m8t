@@ -1,7 +1,7 @@
+import type { PropsWithChildren } from "react";
 import type { Filesystem } from "../../Filesystem.ts";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { PageComponentProps } from "../../types.ts";
 import type { Processor } from "../index.ts";
 
 /**
@@ -29,9 +29,9 @@ export class LayoutTransformer implements Processor {
       return originalData;
     }
 
-    const content = async ({ data, search }: PageComponentProps) => {
+    const content = async (props: PropsWithChildren) => {
       if (typeof layoutData.content === "function") {
-        return await layoutData.content({ data, search, children: originalData.content });
+        return await layoutData.content({ ...props, children: originalData.content });
       } else {
         return await layoutData.content;
       }

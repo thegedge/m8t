@@ -9,10 +9,11 @@ export { CssRenderer } from "./renderers/css.ts";
 export { StringRenderer } from "./renderers/string.ts";
 export { StaticJavascriptProcessor } from "./static_javascript.ts";
 export { ContentFunctionRenderer } from "./transformers/content_function.ts";
-export { LayoutTransformer as LayoutRenderer } from "./transformers/layout.ts";
+export { LayoutTransformer } from "./transformers/layout.ts";
 export { PageDefaultsTransformer } from "./transformers/page_defaults.ts";
 export { ReactRenderer } from "./transformers/react.ts";
-export { ReadingTimeProcessor } from "./transformers/reading_time.ts";
+export { ReadingTimeTransformer } from "./transformers/reading_time.ts";
+export { SearchTransformer } from "./transformers/search.ts";
 
 /**
  * A processor that takes data, transforms it in some way, and then produces new data.

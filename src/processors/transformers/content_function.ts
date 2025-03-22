@@ -16,10 +16,7 @@ export class ContentFunctionRenderer implements Processor {
 
     if (isGeneratorFunction(data.content)) {
       const pages: PageData[] = [];
-      for await (const result of data.content({
-        data,
-        search: this.site.pages.search,
-      })) {
+      for await (const result of data.content(data)) {
         switch (typeof result) {
           case "object":
             if (!result) {
@@ -47,10 +44,7 @@ export class ContentFunctionRenderer implements Processor {
       return pages;
     }
 
-    const content = await data.content({
-      data,
-      search: this.site.pages.search,
-    });
+    const content = await data.content(data);
 
     return {
       ...data,

@@ -101,7 +101,7 @@ export class MdxLoader implements Processor {
       content: (props: any) => {
         return mdxContent({
           ...props,
-          components: props.data.components,
+          components: props.components,
         });
       },
     };

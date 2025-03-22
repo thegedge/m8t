@@ -1,18 +1,34 @@
 import type { PageData } from "./PageData.ts";
+import type { Site } from "./Site.ts";
+import type { Search as SearchInterface } from "./types.ts";
 
-export type SearchQuery = Record<string, unknown>;
-export type SearchSort = readonly [string, "asc" | "desc"];
+export type Query = {
+  where: Record<string, unknown>;
+  sort?: readonly [string, "asc" | "desc"];
+  priority?: number;
+};
 
-export class Search {
+type ActiveQuery = {
+  query: Query;
+  resolve: (pages: PageData[]) => void;
+};
+
+export class Search implements SearchInterface {
+  /** The pages that have been processed enough to the point that they have a url, but may still be incomplete */
   #pages: Map<string, PageData>;
 
-  constructor(pages: Map<string, PageData>) {
+  constructor(
+    readonly site: Site,
+    pages: Map<string, PageData>,
+  ) {
     this.#pages = pages;
   }
 
-  pages(query: SearchQuery, sort?: SearchSort): PageData[] {
+  async pages(query: Query): Promise<PageData[]> {
+    await this.site.pages.idle;
+
     const filtered = Array.from(this.#pages.values()).filter((page) => {
-      for (const [key, value] of Object.entries(query)) {
+      for (const [key, value] of Object.entries(query.where)) {
         if (page[key] != value) {
           return false;
         }
@@ -20,8 +36,9 @@ export class Search {
       return true;
     });
 
-    if (sort) {
-      const [key, direction] = sort;
+    if (query.sort) {
+      // TODO support multiple sort keys
+      const [key, direction] = query.sort;
       filtered.sort((a, b) => {
         const aVal: any = a[key];
         const bVal: any = b[key];
@@ -38,8 +55,8 @@ export class Search {
     return filtered;
   }
 
-  previousPage(url: string, query: SearchQuery, sort?: SearchSort): PageData | null {
-    const pages = this.pages(query, sort);
+  async previousPage(url: string, query: Query): Promise<PageData | null> {
+    const pages = await this.pages(query);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
       return null;
@@ -47,8 +64,8 @@ export class Search {
     return index > 0 ? (pages[index - 1] as PageData) : null;
   }
 
-  nextPage(url: string, query: SearchQuery, sort?: SearchSort): PageData | null {
-    const pages = this.pages(query, sort);
+  async nextPage(url: string, query: Query): Promise<PageData | null> {
+    const pages = await this.pages(query);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
       return null;
