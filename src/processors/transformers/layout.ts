@@ -24,7 +24,7 @@ export class LayoutTransformer implements Processor {
     }
 
     const layoutFile = this.layoutsFs.absolute(originalData.layout);
-    const layoutData = await this.site.processData({ filename: layoutFile });
+    const layoutData = await this.site.pages.processOnce({ filename: layoutFile });
     if (!layoutData || Array.isArray(layoutData)) {
       return originalData;
     }

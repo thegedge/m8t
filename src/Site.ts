@@ -5,7 +5,6 @@ import { Filesystem } from "./Filesystem.ts";
 import type { PageData } from "./PageData.ts";
 import { Pages } from "./Pages.ts";
 import type { Processor, ProcessorConstructor } from "./processors/index.ts";
-import type { MaybeArray } from "./types.ts";
 
 export class Site {
   static async forRoot(root: string): Promise<Site> {
@@ -71,18 +70,7 @@ export class Site {
     this.#processors = new Map((this.#config.processors ?? []).map((Clazz) => [Clazz, new Clazz(this)]));
   }
 
-  async processData(data: PageData): Promise<MaybeArray<PageData> | null> {
-    const processors = this.processorsFor(data);
-    for (const processor of processors) {
-      const result = await processor.process(data);
-      if (result) {
-        return result;
-      }
-    }
-    return null;
-  }
-
-  private processorsFor(data: PageData): IteratorObject<Processor> {
+  processorsFor(data: PageData): IteratorObject<Processor> {
     const processors = data.processors;
     if (processors) {
       for (const processor of processors) {
