@@ -45,7 +45,6 @@ export class ContentFunctionRenderer implements Processor {
     }
 
     const content = await data.content(data);
-
     return {
       ...data,
       content,

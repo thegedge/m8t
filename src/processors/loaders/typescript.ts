@@ -2,6 +2,8 @@ import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { Processor } from "../index.ts";
 
+const processedFor = Symbol.for("processedFor");
+
 /**
  * A loader that loads TypeScript files.
  *
@@ -11,7 +13,7 @@ export class TypescriptLoader implements Processor {
   constructor(readonly site: Site) {}
 
   async process(data: PageData) {
-    if (data.content) {
+    if (data[processedFor] === data.filename) {
       return;
     }
 
@@ -20,6 +22,11 @@ export class TypescriptLoader implements Processor {
     }
 
     const { default: content, ...otherData } = await import(data.filename);
-    return { ...data, ...otherData, content };
+    return {
+      [processedFor]: data.filename,
+      ...data,
+      ...otherData,
+      content,
+    };
   }
 }

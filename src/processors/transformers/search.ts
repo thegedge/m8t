@@ -14,7 +14,6 @@ export class SearchTransformer implements Processor {
     }
 
     const searchData = await data.search(this.site.pages.search, data);
-
     return {
       ...data,
       ...searchData,
