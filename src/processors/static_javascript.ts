@@ -61,6 +61,7 @@ export class StaticJavascriptProcessor implements Processor {
 
         yield {
           url,
+          outputPath: url,
           content: artifact.text,
         };
 
