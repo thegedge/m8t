@@ -12,7 +12,7 @@ import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { Processor } from "../index.ts";
 
-const rendered = Symbol("mdxRendered");
+const processed = Symbol("mdxProcessed");
 
 /**
  * A loader that processes markdown and MDX files.
@@ -25,7 +25,7 @@ export class MdxLoader implements Processor {
   constructor(readonly site: Site) {}
 
   async process(data: PageData) {
-    if (rendered in data) {
+    if (processed in data) {
       return;
     }
 
@@ -97,7 +97,7 @@ export class MdxLoader implements Processor {
       ...data,
       ...frontmatterData,
       ...mdxData,
-      [rendered]: true,
+      [processed]: true,
       content: (props: any) => {
         return mdxContent({
           ...props,

@@ -72,7 +72,7 @@ export class Pages {
       workStarted();
 
       Promise.resolve(pageData)
-        .then((data) => this.site.processData(data))
+        .then((result) => this.processOnce(result))
         .then((result) => {
           if (result) {
             const newPageData = Array.isArray(result) ? result : [result];
@@ -139,7 +139,7 @@ export class Pages {
       try {
         const dataFilePath = path.join(fileSystem.path, dataFile.name);
         const data: PageData = { ...parentData, filename: dataFilePath };
-        const sharedData = (await this.site.processData(data)) ?? data;
+        const sharedData = (await this.processDataFile(data)) ?? data;
         if (Array.isArray(sharedData)) {
           // TODO know which processor used so we can have it as part of the error message
           console.warn(`Processing of data file ${dataFilePath} unexpectedly returned an array. Ignoring...`);
@@ -164,12 +164,46 @@ export class Pages {
         try {
           const filePath = path.join(fileSystem.path, entry.name);
           const pageData: PageData = { ...parentData, filename: filePath };
-          yield (await this.site.processData(pageData)) ?? pageData;
+          yield (await this.processDataFile(pageData)) ?? pageData;
         } catch (error) {
           console.error(`Error loading ${entry.name} from ${fileSystem.path}`);
           console.error(error);
         }
       }
     }
+  }
+
+  private async processOnce(data: PageData) {
+    const processors = this.site.processorsFor(data);
+    for (const processor of processors) {
+      const result = await processor.process(data);
+      if (result) {
+        return result;
+      }
+    }
+    return null;
+  }
+
+  private async processDataFile(data: PageData) {
+    const processors = this.site.processorsFor(data);
+
+    let result = data;
+    for (let i = 0; i < 100; i++) {
+      for (const processor of processors) {
+        const newResult = await processor.process(result);
+        if (newResult) {
+          if (Array.isArray(newResult)) {
+            throw new Error(
+              `processor ${processor.constructor.name} unexpected returned an array when processing ${data.filename}`,
+            );
+          }
+          result = newResult;
+        } else {
+          return result;
+        }
+      }
+    }
+
+    throw new Error(`could not process data fully: ${data.filename}`);
   }
 }

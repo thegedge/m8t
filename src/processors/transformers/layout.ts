@@ -1,4 +1,3 @@
-import type { PropsWithChildren } from "react";
 import type { Filesystem } from "../../Filesystem.ts";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
@@ -23,25 +22,27 @@ export class LayoutTransformer implements Processor {
       return;
     }
 
-    const layoutFile = this.layoutsFs.absolute(originalData.layout);
-    const layoutData = await this.site.processData({ filename: layoutFile });
-    if (!layoutData || Array.isArray(layoutData)) {
-      return originalData;
-    }
-
-    const content = async (props: PropsWithChildren) => {
-      if (typeof layoutData.content === "function") {
-        return await layoutData.content({ ...props, children: originalData.content });
-      } else {
-        return await layoutData.content;
-      }
-    };
-
     return {
-      ...layoutData,
-      ...originalData,
-      layout: layoutData.layout,
-      content,
+      filename: this.layoutsFs.absolute(originalData.layout),
+      content: async (layoutData: PageData) => {
+        let content: unknown;
+        if (typeof layoutData.content === "function") {
+          content = await layoutData.content({
+            ...layoutData,
+            ...originalData,
+            layout: layoutData.layout,
+          });
+        } else {
+          content = await layoutData.content;
+        }
+
+        return {
+          ...layoutData,
+          ...originalData,
+          layout: layoutData.layout,
+          content,
+        };
+      },
     };
   }
 }

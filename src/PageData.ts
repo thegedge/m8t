@@ -3,7 +3,7 @@ import type { ProcessorConstructor } from "./index.ts";
 export type PageData = {
   filename: string;
   processors?: ProcessorConstructor[];
-  [key: string]: unknown;
+  [key: string | symbol]: unknown;
 };
 
 export const stringOrThrow = (value: unknown): string => {
