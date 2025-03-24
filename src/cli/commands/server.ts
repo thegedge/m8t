@@ -63,8 +63,7 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
         }
       }
 
-      // TODO make this configurable
-      const staticFile = path.join(site.root.path, "src/static", url.pathname);
+      const staticFile = path.join(site.root.path, site.config.staticDir, url.pathname);
       try {
         if ((await stat(staticFile)).isFile()) {
           response.writeHead(200, { "content-encoding": "text/plain" });

@@ -23,7 +23,6 @@ export class Pages {
   #idleResolve!: () => void;
 
   constructor(readonly site: Site) {
-    // TODO make this subdir configurable
     this.#pagesFs = site.pagesRoot;
     this.#search = new Search(this.site, this.#pages);
     this.#idle = new Promise((resolve) => {

@@ -4,7 +4,8 @@ import type { ProcessorConstructor } from "./processors/index.ts";
 export const ConfigType = () =>
   z.object({
     outDir: z.string().default("./out"),
-    pagesDir: z.string().default("./"),
+    pagesDir: z.string().default("./pages"),
+    staticDir: z.string().default("./static"),
 
     processors: z.array(z.custom<ProcessorConstructor>()).default([]),
 

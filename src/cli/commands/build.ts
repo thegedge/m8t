@@ -20,7 +20,7 @@ export const run = async (site: Site, _args: { _: [string] }): Promise<void> => 
     process.stdout.write(`Done!\n\tStored in ${outputPath}\n`);
   }
 
-  const staticFilesFs = site.pagesRoot.cd("static");
+  const staticFilesFs = site.root.cd(site.config.staticDir);
   const staticFiles = await staticFilesFs.ls(true);
   for (const file of staticFiles) {
     if (file.isFile()) {
