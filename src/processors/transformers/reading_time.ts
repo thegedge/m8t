@@ -7,6 +7,11 @@ import type { Processor } from "../index.ts";
  * A processor that computes the reading time of the content.
  */
 export class ReadingTimeTransformer implements Processor {
+  /**
+   * @param wordsPerMinute - an estimate of the number of words per minute to use for the reading time.
+   */
+  constructor(readonly wordsPerMinute = 150) {}
+
   async process(_site: Site, data: PageData) {
     if ("readingTimeMins" in data) {
       return;
@@ -14,7 +19,7 @@ export class ReadingTimeTransformer implements Processor {
 
     return {
       ...data,
-      readingTimeMins: readingTime(data, data.content),
+      readingTimeMins: readingTime(data, data.content, this.wordsPerMinute),
     };
   }
 }
@@ -29,8 +34,7 @@ type ReadingTimeObject =
       };
     };
 
-// TODO make wordsPerMinute configurable
-const readingTime = (data: PageData, content: unknown, wordsPerMinute = 150): number | undefined => {
+const readingTime = (data: PageData, content: unknown, wordsPerMinute: number): number | undefined => {
   if (typeof content != "string" && typeof content != "object") {
     return undefined;
   }
