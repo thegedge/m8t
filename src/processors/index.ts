@@ -8,7 +8,7 @@ export { TypescriptLoader } from "./loaders/typescript.ts";
 export { CssRenderer } from "./renderers/css.ts";
 export { StringRenderer } from "./renderers/string.ts";
 export { StaticJavascriptProcessor } from "./static_javascript.ts";
-export { ContentFunctionRenderer } from "./transformers/content_function.ts";
+export { ContentFunctionTransformer } from "./transformers/content_function.ts";
 export { LayoutTransformer } from "./transformers/layout.ts";
 export { PageDefaultsTransformer } from "./transformers/page_defaults.ts";
 export { ReactRenderer } from "./transformers/react.ts";

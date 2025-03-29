@@ -4,9 +4,9 @@ import type { Site } from "../../Site.ts";
 import type { Processor } from "../index.ts";
 
 /**
- * A renderer that will call `content` if it is a function.
+ * A transformer that will call `content` if it is a function.
  */
-export class ContentFunctionRenderer implements Processor {
+export class ContentFunctionTransformer implements Processor {
   async process(_site: Site, data: PageData) {
     if (typeof data.content !== "function") {
       return;
