@@ -37,7 +37,5 @@ export type Processor = {
    *
    * A processor that does not handle the given data can return `undefined`.
    */
-  process(data: PageData): Promise<MaybeArray<PageData> | undefined>;
+  process(site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined>;
 };
-
-export type ProcessorConstructor = new (site: Site) => Processor;

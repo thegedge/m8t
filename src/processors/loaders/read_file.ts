@@ -9,9 +9,7 @@ const processedFor = Symbol.for("processedFor");
  * A loader that reads a UTF8 file.
  */
 export class ReadFileLoader implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if (data[processedFor] === data.filename) {
       return;
     }

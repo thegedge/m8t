@@ -6,9 +6,7 @@ import type { Processor } from "../index.ts";
  * A renderer that stringifies the content.
  */
 export class StringRenderer implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if ("mimeType" in data) {
       return;
     }

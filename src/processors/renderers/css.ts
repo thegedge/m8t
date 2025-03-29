@@ -2,19 +2,17 @@ import tailwindcssNesting from "@tailwindcss/nesting";
 import tailwindcssPlugin from "@tailwindcss/postcss";
 import postcss from "postcss";
 import postcssDiscardComments from "postcss-discard-comments";
+import type { Processor } from "../../index.ts";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { Processor } from "../../index.ts";
 
 /**
  * A renderer that stringifies its content and processes it with PostCSS.
  */
 export class CssRenderer implements Processor {
-  private processor!: postcss.Processor;
+  #processor!: postcss.Processor;
 
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if (!data.filename.endsWith(".css")) {
       return;
     }
@@ -26,8 +24,6 @@ export class CssRenderer implements Processor {
     if (!data.content) {
       return;
     }
-
-    await this.init();
 
     const result = await this.processor.process(String(data.content), {
       from: data.filename,
@@ -45,11 +41,8 @@ export class CssRenderer implements Processor {
     };
   }
 
-  private async init() {
-    this.processor ??= postcss(
-      tailwindcssPlugin({ base: this.site.root.path }),
-      tailwindcssNesting(),
-      postcssDiscardComments,
-    );
+  private get processor() {
+    this.#processor ??= postcss([tailwindcssNesting, tailwindcssPlugin, postcssDiscardComments]);
+    return this.#processor;
   }
 }

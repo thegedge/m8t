@@ -1,5 +1,5 @@
 import type { PageData } from "./PageData.ts";
-import type { Site } from "./Site.ts";
+import type { Pages } from "./Pages.ts";
 import type { Search as SearchInterface } from "./types.ts";
 
 export type Query = {
@@ -14,20 +14,16 @@ type ActiveQuery = {
 };
 
 export class Search implements SearchInterface {
-  /** The pages that have been processed enough to the point that they have a url, but may still be incomplete */
-  #pages: Map<string, PageData>;
+  readonly #pages: Pages;
 
-  constructor(
-    readonly site: Site,
-    pages: Map<string, PageData>,
-  ) {
+  constructor(pages: Pages) {
     this.#pages = pages;
   }
 
   async pages(query: Query): Promise<PageData[]> {
-    await this.site.pages.idle;
+    await this.#pages.idle;
 
-    const filtered = Array.from(this.#pages.values()).filter((page) => {
+    const filtered = Array.from(this.#pages.pages.values()).filter((page) => {
       for (const [key, value] of Object.entries(query.where)) {
         if (page[key] != value) {
           return false;

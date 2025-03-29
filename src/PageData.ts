@@ -1,8 +1,8 @@
-import type { ProcessorConstructor } from "./index.ts";
+import type { Processor } from "./processors/index.ts";
 
 export type PageData = {
   filename: string;
-  processors?: ProcessorConstructor[];
+  processors?: Processor[];
   [key: string | symbol]: unknown;
 };
 

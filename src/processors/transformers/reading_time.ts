@@ -7,9 +7,7 @@ import type { Processor } from "../index.ts";
  * A processor that computes the reading time of the content.
  */
 export class ReadingTimeTransformer implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if ("readingTimeMins" in data) {
       return;
     }

@@ -6,7 +6,6 @@ import type { Processor } from "./index.ts";
 import { StringRenderer } from "./renderers/string.ts";
 
 const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
-const needsRender = Symbol("needsRender");
 
 /**
  * A processor that collects many entrypoints and runs them through esbuild.
@@ -18,9 +17,7 @@ export class StaticJavascriptProcessor implements Processor {
   private entrypoints: string[] = [];
   private buildResult_: Promise<Map<string, esbuild.OutputFile> | null> | null = null;
 
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(site: Site, data: PageData) {
     if (!JAVASCRIPT_FILE_REGEX.test(data.filename)) {
       return;
     }
@@ -37,19 +34,19 @@ export class StaticJavascriptProcessor implements Processor {
     this.entrypoints.push(filename);
 
     const self = this;
-    const url = toJSFile("/" + path.relative(this.site.pagesRoot.path, filename));
+    const url = toJSFile("/" + path.relative(site.pages.root.path, filename));
 
     return {
       ...data,
       url,
       mimeType: "text/javascript",
       content: async function* staticJavascriptContent() {
-        await self.site.pages.idle;
+        await site.pages.idle;
 
         const first = !self.buildResult_;
 
-        const relativePath = toJSFile(path.relative(self.site.root.path, filename));
-        const buildResult = await self.buildResult;
+        const relativePath = toJSFile(path.relative(site.root.path, filename));
+        const buildResult = await self.buildResult(site);
         if (!buildResult) {
           throw new Error(`could not build static JS bundle for ${filename}`);
         }
@@ -66,7 +63,7 @@ export class StaticJavascriptProcessor implements Processor {
         };
 
         if (first) {
-          const chunks = await self.chunks();
+          const chunks = await self.chunks(site);
           for (const chunk of chunks) {
             const chunkName = path.basename(chunk.path);
             const url = path.join(self.publicPath, chunkName);
@@ -91,13 +88,13 @@ export class StaticJavascriptProcessor implements Processor {
     return "/js";
   }
 
-  private get buildResult() {
-    this.buildResult_ ??= this.build();
+  private buildResult(site: Site) {
+    this.buildResult_ ??= this.build(site);
     return this.buildResult_;
   }
 
-  private async chunks(): Promise<esbuild.OutputFile[]> {
-    const buildResult = await this.buildResult;
+  private async chunks(site: Site): Promise<esbuild.OutputFile[]> {
+    const buildResult = await this.buildResult(site);
     if (!buildResult) {
       return [];
     }
@@ -107,12 +104,12 @@ export class StaticJavascriptProcessor implements Processor {
     });
   }
 
-  private async build() {
+  private async build(site: Site) {
     const result = await esbuild.build({
       entryPoints: this.entrypoints,
-      absWorkingDir: this.site.root.path,
-      outbase: this.site.root.path,
-      outdir: this.site.out.path,
+      absWorkingDir: site.root.path,
+      outbase: site.root.path,
+      outdir: site.out.path,
       publicPath: this.publicPath,
       target: "esnext",
       format: "esm",
@@ -130,7 +127,7 @@ export class StaticJavascriptProcessor implements Processor {
 
     const mapping = new Map<string, esbuild.OutputFile>();
     for (const output of result.outputFiles) {
-      mapping.set(path.relative(this.site.out.path, output.path), output);
+      mapping.set(path.relative(site.out.path, output.path), output);
     }
     return mapping;
   }

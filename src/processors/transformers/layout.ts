@@ -11,20 +11,19 @@ import type { Processor } from "../index.ts";
  * try to load and process that layout.
  */
 export class LayoutTransformer implements Processor {
-  private layoutsFs: Filesystem;
-
-  constructor(readonly site: Site) {
+  private getLayoutsFs(site: Site): Filesystem {
     // TODO make this configurable
-    this.layoutsFs = site.pagesRoot.cd("../layouts");
+    return site.pages.root.cd("../layouts");
   }
 
-  async process(originalData: PageData) {
+  async process(site: Site, originalData: PageData) {
     if (!originalData.layout || typeof originalData.layout !== "string") {
       return;
     }
 
-    const layoutFile = this.layoutsFs.absolute(originalData.layout);
-    const layoutData = await this.site.pages.processOnce({ filename: layoutFile });
+    const layoutsFs = this.getLayoutsFs(site);
+    const layoutFile = layoutsFs.absolute(originalData.layout);
+    const layoutData = await site.pages.processOnce({ filename: layoutFile });
     if (!layoutData || Array.isArray(layoutData)) {
       return originalData;
     }

@@ -1,6 +1,6 @@
 import path from "path";
 import { stringOrThrow } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
+import { Site } from "../../Site.ts";
 
 export const run = async (site: Site, _args: { _: [string] }): Promise<void> => {
   await site.out.clear();
@@ -20,14 +20,10 @@ export const run = async (site: Site, _args: { _: [string] }): Promise<void> => 
     process.stdout.write(`Done!\n\tStored in ${outputPath}\n`);
   }
 
-  const staticFilesFs = site.root.cd(site.config.staticDir);
-  const staticFiles = await staticFilesFs.ls(true);
+  const staticFiles = await site.static.ls(true);
   for (const file of staticFiles) {
     if (file.isFile()) {
-      await site.out.copyFileFrom(
-        staticFilesFs,
-        path.join(path.relative(staticFilesFs.path, file.parentPath), file.name),
-      );
+      await site.out.copyFileFrom(site.static, path.join(path.relative(site.static.path, file.parentPath), file.name));
     }
   }
 };

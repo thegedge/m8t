@@ -6,14 +6,12 @@ import type { Processor } from "../index.ts";
  * A processor that computes the reading time of the content.
  */
 export class SearchTransformer implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(site: Site, data: PageData) {
     if (typeof data.search != "function") {
       return;
     }
 
-    const searchData = await data.search(this.site.pages.search, data);
+    const searchData = await data.search(site.search, data);
     return {
       ...data,
       ...searchData,

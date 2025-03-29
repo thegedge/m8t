@@ -2,32 +2,33 @@ import { merge } from "lodash-es";
 import path from "path";
 import { Filesystem } from "./Filesystem.ts";
 import type { PageData } from "./PageData.ts";
-import { Search } from "./Search.ts";
 import type { Site } from "./Site.ts";
 import type { MaybeArray } from "./types.ts";
 import { counterPromise } from "./utils/counterPromise.ts";
 import { restartableTimeout } from "./utils/restartableTimeout.ts";
-
 export class Pages {
   /** The filesystem of the pages directory */
-  #pagesFs: Filesystem;
+  root: Filesystem;
 
   /** Any pages that have been processed enough to the point that they have a url, but may still be incomplete */
   #pages = new Map<string, PageData>();
-
-  /** The search index */
-  #search: Search;
 
   /** Whether the processing pipeline is idle */
   #idle: Promise<void>;
   #idleResolve!: () => void;
 
-  constructor(readonly site: Site) {
-    this.#pagesFs = site.pagesRoot;
-    this.#search = new Search(this.site, this.#pages);
+  constructor(
+    readonly site: Site,
+    root: Filesystem,
+  ) {
+    this.root = root;
     this.#idle = new Promise((resolve) => {
       this.#idleResolve = resolve;
     });
+  }
+
+  get pages() {
+    return this.#pages;
   }
 
   async page(url: string): Promise<PageData | undefined> {
@@ -36,10 +37,6 @@ export class Pages {
 
   urls(): string[] {
     return Array.from(this.#pages.keys());
-  }
-
-  get search() {
-    return this.#search;
   }
 
   get idle() {
@@ -111,7 +108,7 @@ export class Pages {
     };
 
     try {
-      for await (const result of this.initData(this.#pagesFs)) {
+      for await (const result of this.initData(this.root)) {
         if (Array.isArray(result)) {
           for (const pageData of result) {
             processWork(pageData);
@@ -140,7 +137,6 @@ export class Pages {
         const data: PageData = { ...parentData, filename: dataFilePath };
         const sharedData = (await this.processDataFile(data)) ?? data;
         if (Array.isArray(sharedData)) {
-          // TODO know which processor used so we can have it as part of the error message
           console.warn(`Processing of data file ${dataFilePath} unexpectedly returned an array. Ignoring...`);
         } else {
           parentData = merge({}, parentData, sharedData);
@@ -162,8 +158,7 @@ export class Pages {
       } else {
         try {
           const filePath = path.join(fileSystem.path, entry.name);
-          const pageData: PageData = { ...parentData, filename: filePath };
-          yield (await this.processDataFile(pageData)) ?? pageData;
+          yield { ...parentData, filename: filePath };
         } catch (error) {
           console.error(`Error loading ${entry.name} from ${fileSystem.path}`);
           console.error(error);
@@ -173,9 +168,9 @@ export class Pages {
   }
 
   async processOnce(data: PageData) {
-    const processors = this.site.processorsFor(data);
+    const processors = data.processors ?? this.site.processors;
     for (const processor of processors) {
-      const result = await processor.process(data);
+      const result = await processor.process(this.site, data);
       if (result) {
         return result;
       }
@@ -184,16 +179,14 @@ export class Pages {
   }
 
   private async processDataFile(data: PageData) {
-    const processors = this.site.processorsFor(data);
-
     let result = data;
     for (let i = 0; i < 100; i++) {
-      for (const processor of processors) {
-        const newResult = await processor.process(result);
+      for (const processor of this.site.processors) {
+        const newResult = await processor.process(this.site, result);
         if (newResult) {
           if (Array.isArray(newResult)) {
             throw new Error(
-              `processor ${processor.constructor.name} unexpected returned an array when processing ${data.filename}`,
+              `processor ${processor.constructor.name} unexpectedly returned an array when processing ${data.filename}`,
             );
           }
           result = newResult;

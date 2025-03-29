@@ -22,9 +22,7 @@ const processedFor = Symbol.for("processedFor");
 export class MdxLoader implements Processor {
   providerImportSource = import.meta.resolve("../jsx.js");
 
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if (data[processedFor] === data.filename) {
       return;
     }
@@ -36,7 +34,7 @@ export class MdxLoader implements Processor {
 
     const fileContents = await readFile(filename);
     const { data: frontmatterData, content: mdxSource } = parseFrontmatter(fileContents);
-    const baseUrl = new URL(`file://` + filename);
+    const baseUrl = new URL("file://" + filename);
 
     const compiled = await compile(mdxSource, {
       format: "mdx",

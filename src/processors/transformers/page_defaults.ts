@@ -10,9 +10,7 @@ const DATE_REGEX = /^(\d{4}).(\d{2}).(\d{2}).(.+)$/;
  * A transformer that sets the `url` property on a data blob to the relative path of the file.
  */
 export class PageDefaultsTransformer implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(site: Site, data: PageData) {
     if (
       typeof data.url == "string" &&
       !data.url.startsWith(".") &&
@@ -25,7 +23,7 @@ export class PageDefaultsTransformer implements Processor {
       return;
     }
 
-    const relativePath = path.relative(this.site.pagesRoot.path, data.filename);
+    const relativePath = path.relative(site.pages.root.path, data.filename);
     const parsed = path.parse(relativePath);
 
     let name: string;

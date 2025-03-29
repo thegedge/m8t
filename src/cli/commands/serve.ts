@@ -30,7 +30,7 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
 
     currentServer.on("message", (message) => {
       if (message === "ready") {
-        const url = `http://localhost:${site.config.devServer.port}`;
+        const url = `http://localhost:${site.builder.devServerConfig.port}`;
         printLogoAndTitleWithLines(process.stdout, ["", `Server listening on ${chalk.bold(link(url, url))}`]);
       }
     });

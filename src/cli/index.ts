@@ -3,7 +3,7 @@ import { register } from "module";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseArgs } from "util";
-import { Site } from "../Site.ts";
+import { SiteBuilder } from "../SiteBuilder.ts";
 
 register("@nodejs-loaders/tsx", import.meta.url);
 
@@ -33,7 +33,7 @@ const main = async (command: string | undefined, args: Args) => {
   }
 
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
-  const site = await Site.forRoot(root);
+  const site = await SiteBuilder.siteForRoot(root);
 
   const commandModule = await COMMANDS[actualCommand]();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

@@ -10,9 +10,7 @@ const processedFor = Symbol.for("processedFor");
  * The default export is the content, and all other exports form the metadata.
  */
 export class TypescriptLoader implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if (data[processedFor] === data.filename) {
       return;
     }

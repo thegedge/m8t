@@ -7,9 +7,7 @@ import type { Processor } from "../index.ts";
  * A renderer that takes a React element and renders it to HTML
  */
 export class ReactRenderer implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if ("mimeType" in data) {
       return;
     }

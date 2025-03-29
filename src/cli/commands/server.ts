@@ -9,7 +9,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stringOrThrow, type PageData } from "../../PageData.ts";
 import { Redirects } from "../../Redirects.ts";
-import { Site } from "../../Site.ts";
+import type { Site } from "../../Site.ts";
+import { SiteBuilder } from "../../SiteBuilder.ts";
 
 register("@nodejs-loaders/tsx", import.meta.url);
 
@@ -23,7 +24,7 @@ export const run = async (): Promise<void> => {
     throw new Error("Cannot run server because SITE_ROOT is not a directory");
   }
 
-  const site = await Site.forRoot(root);
+  const site = await SiteBuilder.siteForRoot(root);
   const exiting = new AbortController();
   const shutdown = () => {
     exiting.abort();
@@ -36,8 +37,8 @@ export const run = async (): Promise<void> => {
 
 export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
   await site.pages.init();
-  const redirects = site.config.devServer.redirectsPath
-    ? await Redirects.fromFilesystem(site.root, site.config.devServer.redirectsPath)
+  const redirects = site.builder.devServerConfig.redirectsPath
+    ? await Redirects.fromFilesystem(site.root, site.builder.devServerConfig.redirectsPath)
     : null;
 
   const server = createServer({}, async (request, response) => {
@@ -63,7 +64,7 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
         }
       }
 
-      const staticFile = path.join(site.root.path, site.config.staticDir, url.pathname);
+      const staticFile = path.join(site.static.path, url.pathname);
       try {
         if ((await stat(staticFile)).isFile()) {
           response.writeHead(200, { "content-encoding": "text/plain" });
@@ -100,7 +101,7 @@ Possible paths:
 
   server.listen({
     host: "0.0.0.0",
-    port: site.config.devServer.port,
+    port: site.builder.devServerConfig.port,
     signal: exiting,
   });
 

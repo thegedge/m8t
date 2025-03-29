@@ -7,9 +7,7 @@ import type { Processor } from "../index.ts";
  * A renderer that will call `content` if it is a function.
  */
 export class ContentFunctionRenderer implements Processor {
-  constructor(readonly site: Site) {}
-
-  async process(data: PageData) {
+  async process(_site: Site, data: PageData) {
     if (typeof data.content !== "function") {
       return;
     }
