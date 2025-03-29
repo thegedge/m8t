@@ -1,5 +1,4 @@
 import type { PropsWithChildren } from "react";
-import type { Filesystem } from "../../Filesystem.ts";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { Processor } from "../index.ts";
@@ -11,17 +10,17 @@ import type { Processor } from "../index.ts";
  * try to load and process that layout.
  */
 export class LayoutTransformer implements Processor {
-  private getLayoutsFs(site: Site): Filesystem {
-    // TODO make this configurable
-    return site.pages.root.cd("../layouts");
-  }
+  /**
+   * @param layoutDir - The directory containing the layouts, relative to the site root.
+   */
+  constructor(readonly layoutDir: string) {}
 
   async process(site: Site, originalData: PageData) {
     if (!originalData.layout || typeof originalData.layout !== "string") {
       return;
     }
 
-    const layoutsFs = this.getLayoutsFs(site);
+    const layoutsFs = site.root.cd(this.layoutDir);
     const layoutFile = layoutsFs.absolute(originalData.layout);
     const layoutData = await site.pages.processOnce({ filename: layoutFile });
     if (!layoutData || Array.isArray(layoutData)) {
