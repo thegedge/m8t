@@ -17,6 +17,11 @@ export class StaticJavascriptProcessor implements Processor {
   private entrypoints: string[] = [];
   private buildResult_: Promise<Map<string, esbuild.OutputFile> | null> | null = null;
 
+  /**
+   * @param publicPath - The path to where the JavaScript files will be served.
+   */
+  constructor(readonly publicPath: string) {}
+
   async process(site: Site, data: PageData) {
     if (!JAVASCRIPT_FILE_REGEX.test(data.filename)) {
       return;
@@ -25,9 +30,6 @@ export class StaticJavascriptProcessor implements Processor {
     if (data.content) {
       return;
     }
-
-    // TODO this processor needs to take a dual-pass approach, with the first pass collecting all
-    //   of the entrypoints, and the second pass spitting out javascript (which includes the chunks)
 
     // TODO make it easier to not make every JS file an entrypoint
     const filename = data.filename;
@@ -81,11 +83,6 @@ export class StaticJavascriptProcessor implements Processor {
         }
       },
     };
-  }
-
-  private get publicPath() {
-    // TODO pull this from the config
-    return "/js";
   }
 
   private buildResult(site: Site) {
