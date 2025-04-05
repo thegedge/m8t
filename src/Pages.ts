@@ -1,11 +1,26 @@
-import { merge } from "lodash-es";
+import { writeFile } from "fs/promises";
+import { merge, omit } from "lodash-es";
 import path from "path";
 import { Filesystem } from "./Filesystem.ts";
 import type { PageData } from "./PageData.ts";
 import type { Site } from "./Site.ts";
 import type { MaybeArray } from "./types.ts";
 import { counterPromise } from "./utils/counterPromise.ts";
+import { javascriptValueToTypescriptType } from "./utils/jsObjectToTypescriptType.ts";
 import { restartableTimeout } from "./utils/restartableTimeout.ts";
+
+const OMITTED_KEYS_FOR_TYPES = [
+  "components",
+  "content",
+  "filename",
+  "htmlValidateRules",
+  "ICONS",
+  "layout",
+  "mimeType",
+  "processors",
+  "search",
+];
+
 export class Pages {
   /** The filesystem of the pages directory */
   root: Filesystem;
@@ -64,6 +79,8 @@ export class Pages {
       }
     }, 200);
 
+    const types = new Map<string, string>();
+
     const processWork = (pageData: PageData) => {
       workStarted();
 
@@ -90,6 +107,17 @@ export class Pages {
             }
           } else if (typeof pageData.url === "string") {
             this.#pages.set(pageData.url, pageData);
+
+            // Page finalized, add type information
+            const typesPath = path.join(this.site.root.path, this.site.builder.typesPath);
+            types.set(
+              path.relative(typesPath, pageData.filename),
+              `
+declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
+  export type DataProps = ${javascriptValueToTypescriptType(omit(pageData, OMITTED_KEYS_FOR_TYPES), "  ").trim()};
+}
+`,
+            );
           } else {
             // TODO warn during development, throw on build
             console.warn(`Skipping page ${pageData.filename} has no URL`);
@@ -119,6 +147,9 @@ export class Pages {
       }
 
       await Promise.race([allWorkDone, workTimedOut]);
+
+      const typesPath = path.join(this.site.root.path, this.site.builder.typesPath);
+      await writeFile(typesPath, `import "path";\n\n${Array.from(types.values()).join("")}`);
     } finally {
       clearInterval(interval);
     }

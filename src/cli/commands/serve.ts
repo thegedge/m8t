@@ -39,8 +39,13 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
       // suppress errors
     });
 
-    for await (const _changeInfo of watch(site.root.path, { recursive: true, signal: exiting })) {
+    for await (const changeInfo of watch(site.root.path, { recursive: true, signal: exiting })) {
       if (exiting.aborted) {
+        return;
+      }
+
+      if (changeInfo.filename?.endsWith(".d.ts")) {
+        // TODO better means of ignoring files that aren't part of the build process
         return;
       }
 

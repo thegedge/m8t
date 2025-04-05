@@ -28,6 +28,7 @@ export class SiteBuilder {
   #staticDir: string;
   #pagesDir: string;
   #processors: Processor[] = [];
+  #typesPath: string = "";
   #devServer: ResolvedDevServerConfig;
 
   constructor(root: string) {
@@ -51,6 +52,10 @@ export class SiteBuilder {
 
   get static(): Filesystem {
     return new Filesystem(this.#staticDir);
+  }
+
+  get typesPath(): string {
+    return this.#typesPath;
   }
 
   get processorsList(): Processor[] {
@@ -78,6 +83,11 @@ export class SiteBuilder {
 
   processors(...processors: Processor[]): this {
     this.#processors.push(...processors);
+    return this;
+  }
+
+  withTypes(path: string): this {
+    this.#typesPath = path;
     return this;
   }
 
