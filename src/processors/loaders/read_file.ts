@@ -15,8 +15,8 @@ export class ReadFileLoader implements Processor {
     }
 
     return {
-      [processedFor]: data.filename,
       ...data,
+      [processedFor]: data.filename,
       content: async () => await readFile(data.filename, "utf8"),
     };
   }

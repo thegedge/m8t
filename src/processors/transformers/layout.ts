@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from "react";
-import type { PageData } from "../../PageData.ts";
+import { type PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { Processor } from "../index.ts";
 

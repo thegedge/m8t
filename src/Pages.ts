@@ -1,12 +1,15 @@
 import { writeFile } from "fs/promises";
-import { merge, omit } from "lodash-es";
-import path from "path";
+import { omit } from "lodash-es";
+import path from "node:path";
 import { Filesystem } from "./Filesystem.ts";
-import type { PageData } from "./PageData.ts";
+import { symLineage, symProcessingTime, symProcessor, type PageData } from "./PageData.ts";
+import type { Processor } from "./processors/index.ts";
 import type { Site } from "./Site.ts";
 import type { MaybeArray } from "./types.ts";
 import { counterPromise } from "./utils/counterPromise.ts";
 import { javascriptValueToTypescriptType } from "./utils/jsObjectToTypescriptType.ts";
+import { merge } from "./utils/merge.ts";
+import { NonAsyncTimeMeasurement } from "./utils/NonAsyncTimeMeasurement.ts";
 import { restartableTimeout } from "./utils/restartableTimeout.ts";
 
 const OMITTED_KEYS_FOR_TYPES = [
@@ -31,6 +34,8 @@ export class Pages {
   /** Whether the processing pipeline is idle */
   #idle: Promise<void>;
   #idleResolve!: () => void;
+
+  #performanceTracker = new NonAsyncTimeMeasurement();
 
   constructor(
     readonly site: Site,
@@ -136,14 +141,19 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
     };
 
     try {
-      for await (const result of this.initData(this.root)) {
-        if (Array.isArray(result)) {
-          for (const pageData of result) {
-            processWork(pageData);
+      this.#performanceTracker.start();
+      try {
+        for await (const result of this.initData(this.root)) {
+          if (Array.isArray(result)) {
+            for (const pageData of result) {
+              processWork(pageData);
+            }
+          } else if (result) {
+            processWork(result);
           }
-        } else if (result) {
-          processWork(result);
         }
+      } finally {
+        this.#performanceTracker.end();
       }
 
       await Promise.race([allWorkDone, workTimedOut]);
@@ -160,17 +170,24 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
     parentData: PageData = { filename: fileSystem.path },
   ): AsyncGenerator<MaybeArray<PageData> | undefined> {
     const listing = await fileSystem.ls();
-
     const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
     if (dataFile) {
       try {
         const dataFilePath = path.join(fileSystem.path, dataFile.name);
-        const data: PageData = { ...parentData, filename: dataFilePath };
-        const sharedData = (await this.processDataFile(data)) ?? data;
-        if (Array.isArray(sharedData)) {
-          console.warn(`Processing of data file ${dataFilePath} unexpectedly returned an array. Ignoring...`);
+        const data: PageData = {
+          ...parentData,
+          filename: dataFilePath,
+        };
+
+        const sharedData = await this.processOnce(data);
+        if (sharedData) {
+          if (Array.isArray(sharedData)) {
+            console.warn(`Processing of data file ${dataFilePath} unexpectedly returned an array. Ignoring...`);
+          } else {
+            parentData = merge(parentData, sharedData);
+          }
         } else {
-          parentData = merge({}, parentData, sharedData);
+          console.warn(`Could not load data file ${dataFilePath}. Ignoring...`);
         }
       } catch (error) {
         console.warn(`Error loading _data from ${fileSystem.path}. Ignoring...`);
@@ -189,7 +206,11 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
       } else {
         try {
           const filePath = path.join(fileSystem.path, entry.name);
-          yield { ...parentData, filename: filePath };
+          yield {
+            ...omit(parentData, [symProcessor, symProcessingTime, symLineage]),
+            filename: filePath,
+            [symLineage]: parentData,
+          };
         } catch (error) {
           console.error(`Error loading ${entry.name} from ${fileSystem.path}`);
           console.error(error);
@@ -198,35 +219,34 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
     }
   }
 
-  async processOnce(data: PageData) {
-    const processors = data.processors ?? this.site.processors;
+  async processOnce(
+    data: PageData,
+    processors: ReadonlyArray<Processor> = (data.processors as Processor[] | undefined) ?? this.site.processors,
+  ): Promise<MaybeArray<PageData> | null> {
+    const tracker = this.#performanceTracker.track();
+
     for (const processor of processors) {
       const result = await processor.process(this.site, data);
-      if (result) {
-        return result;
+      const processingTime = tracker.cumulativeTime;
+      if (Array.isArray(result)) {
+        return result.map(
+          (result) =>
+            ({
+              ...result,
+              [symLineage]: data,
+              [symProcessor]: processor,
+              [symProcessingTime]: processingTime,
+            }) as PageData,
+        );
+      } else if (result) {
+        return {
+          ...result,
+          [symLineage]: data,
+          [symProcessor]: processor,
+          [symProcessingTime]: processingTime,
+        } as PageData;
       }
     }
     return null;
-  }
-
-  private async processDataFile(data: PageData) {
-    let result = data;
-    for (let i = 0; i < 100; i++) {
-      for (const processor of this.site.processors) {
-        const newResult = await processor.process(this.site, result);
-        if (newResult) {
-          if (Array.isArray(newResult)) {
-            throw new Error(
-              `processor ${processor.constructor.name} unexpectedly returned an array when processing ${data.filename}`,
-            );
-          }
-          result = newResult;
-        } else {
-          return result;
-        }
-      }
-    }
-
-    throw new Error(`could not process data fully: ${data.filename}`);
   }
 }

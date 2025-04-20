@@ -92,10 +92,10 @@ export class MdxLoader implements Processor {
     }
 
     return {
-      [processedFor]: data.filename,
       ...data,
       ...frontmatterData,
       ...mdxData,
+      [processedFor]: data.filename,
       content: (props: any) => {
         return mdxContent({
           ...props,

@@ -7,10 +7,12 @@ import { createServer } from "node:http";
 import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stringOrThrow, type PageData } from "../../PageData.ts";
-import { Redirects } from "../../Redirects.ts";
-import type { Site } from "../../Site.ts";
-import { SiteBuilder } from "../../SiteBuilder.ts";
+import { stringOrThrow, type PageData } from "../../../PageData.ts";
+import { Redirects } from "../../../Redirects.ts";
+import type { Site } from "../../../Site.ts";
+import { SiteBuilder } from "../../../SiteBuilder.ts";
+import { debugPageGet } from "./routes/__debug/GET-:url.ts";
+import { debugGet } from "./routes/__debug/GET.ts";
 
 register("@nodejs-loaders/tsx", import.meta.url);
 
@@ -37,6 +39,7 @@ export const run = async (): Promise<void> => {
 
 export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
   await site.pages.init();
+
   const redirects = site.builder.devServerConfig.redirectsPath
     ? await Redirects.fromFilesystem(site.root, site.builder.devServerConfig.redirectsPath)
     : null;
@@ -46,6 +49,16 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
       const host = request.headers.host ?? "localhost";
       const url = new URL(request.url ?? "", `https://${host}`);
       const pagePath = decodeURIComponent(url.pathname);
+
+      if (pagePath == "/__debug__") {
+        await debugGet(site, request, response);
+        return;
+      }
+
+      if (pagePath.startsWith("/__debug__/")) {
+        await debugPageGet(site, request, response);
+        return;
+      }
 
       let page: PageData | undefined;
       const urlsToTry = compact([

@@ -10,6 +10,7 @@ export class Site {
   readonly pages: Pages;
   readonly static: Filesystem;
   readonly processors: ReadonlyArray<Processor>;
+  readonly watchDirs: ReadonlyArray<Filesystem>;
 
   constructor(readonly builder: SiteBuilder) {
     this.root = builder.root;
@@ -17,6 +18,7 @@ export class Site {
     this.pages = new Pages(this, builder.pages);
     this.static = builder.static;
     this.processors = builder.processorsList;
+    this.watchDirs = [this.root, ...builder.additionalWatchDirs];
   }
 
   get search() {

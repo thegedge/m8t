@@ -21,10 +21,10 @@ export class TypescriptLoader implements Processor {
 
     const { default: content, ...otherData } = await import(data.filename);
     return {
-      [processedFor]: data.filename,
       ...data,
       ...otherData,
       content,
+      [processedFor]: data.filename,
     };
   }
 }

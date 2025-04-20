@@ -1,7 +1,9 @@
 import { link } from "ansi-escapes";
 import chalk from "chalk";
-import { watch } from "fs/promises";
+import { watch } from "fs";
 import { fork, type ChildProcess } from "node:child_process";
+import type { WatchListener } from "node:fs";
+import path from "node:path";
 import type { Site } from "../../Site.ts";
 import { printLogoAndTitleWithLines } from "../logo.ts";
 
@@ -19,19 +21,32 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
 
 export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
   (async () => {
-    let currentServer = fork(`${import.meta.dirname}/server.ts`, {
-      env: {
-        ...process.env,
-        SITE_ROOT: site.root.path,
-      },
-      signal: exiting,
-    });
+    const startTime = performance.now();
+
+    const startServer = () => {
+      return fork(path.join(import.meta.dirname, "serve/server.ts"), {
+        env: {
+          ...process.env,
+          SITE_ROOT: site.root.path,
+        },
+        cwd: path.join(import.meta.dirname, "../../../"),
+        execArgv: [...process.execArgv, "--import", "@nodejs-loaders/tsx"],
+        signal: exiting,
+      });
+    };
+
+    let currentServer = startServer();
     let nextServer: ChildProcess | null = null;
 
     currentServer.on("message", (message) => {
       if (message === "ready") {
         const url = `http://localhost:${site.builder.devServerConfig.port}`;
-        printLogoAndTitleWithLines(process.stdout, ["", `Server listening on ${chalk.bold(link(url, url))}`]);
+        printLogoAndTitleWithLines(process.stdout, [
+          "",
+          `Server init time: ${chalk.bold(`${Math.round(performance.now() - startTime)}ms`)}`,
+          "",
+          `Server listening on ${chalk.bold(link(url, url))}`,
+        ]);
       }
     });
 
@@ -39,23 +54,17 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
       // suppress errors
     });
 
-    for await (const changeInfo of watch(site.root.path, { recursive: true, signal: exiting })) {
+    const reload: WatchListener<string> = (_event, filename) => {
       if (exiting.aborted) {
         return;
       }
 
-      if (changeInfo.filename?.endsWith(".d.ts")) {
+      if (filename?.endsWith(".d.ts")) {
         // TODO better means of ignoring files that aren't part of the build process
         return;
       }
 
-      const newServer = fork(`${import.meta.dirname}/server.ts`, {
-        env: {
-          ...process.env,
-          SITE_ROOT: site.root.path,
-        },
-        signal: exiting,
-      });
+      const newServer = startServer();
       nextServer?.kill("SIGTERM");
       nextServer = newServer;
 
@@ -72,6 +81,12 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
           }
         }
       });
+    };
+
+    // Normally you should close watchers once you're done with them, but since we're going to reload the process
+    // we instead just unref them, to allow everything to terminate nicely.
+    for (const watchDir of site.watchDirs) {
+      watch(watchDir.path, { recursive: true, signal: exiting }, reload).unref();
     }
   })().catch(() => {
     // We don't want to log the error thrown from the abort

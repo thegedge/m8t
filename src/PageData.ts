@@ -1,8 +1,15 @@
-import type { Processor } from "./processors/index.ts";
+import type { Processor } from "./index.ts";
+
+export const symLineage = Symbol("lineage");
+export const symProcessor = Symbol("processor");
+export const symProcessingTime = Symbol("processingTime");
 
 export type PageData = {
   filename: string;
-  processors?: Processor[];
+  url?: string;
+  [symLineage]?: PageData;
+  [symProcessor]?: Processor;
+  [symProcessingTime]?: number;
   [key: string | symbol]: unknown;
 };
 

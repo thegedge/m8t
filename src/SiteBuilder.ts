@@ -30,7 +30,7 @@ export class SiteBuilder {
   #processors: Processor[] = [];
   #typesPath: string = "";
   #devServer: ResolvedDevServerConfig;
-
+  #additionalWatchDirs: Filesystem[] = [];
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
     this.root = new Filesystem(resolvedRoot);
@@ -64,6 +64,15 @@ export class SiteBuilder {
 
   get devServerConfig(): ResolvedDevServerConfig {
     return this.#devServer;
+  }
+
+  get additionalWatchDirs(): Filesystem[] {
+    return this.#additionalWatchDirs;
+  }
+
+  watch(root: string): this {
+    this.#additionalWatchDirs.push(new Filesystem(root));
+    return this;
   }
 
   outputRoot(dir: string): this {

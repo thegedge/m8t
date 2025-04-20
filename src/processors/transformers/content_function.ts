@@ -21,15 +21,28 @@ export class ContentFunctionTransformer implements Processor {
               throw new Error(`unexpected nil result from content function in ${data.filename}`);
             }
 
-            if (!("content" in result) || !("url" in result)) {
+            if (!("content" in result)) {
               throw new Error(
-                `expected content and url in result, but found object with keys ${Object.keys(result).join(", ")}`,
+                `expected content in result, but found object with keys ${Object.keys(result).join(", ")}`,
+              );
+            }
+
+            if (!("url" in result)) {
+              throw new Error(`expected url in result, but found object with keys ${Object.keys(result).join(", ")}`);
+            }
+
+            // TODO once TS knows how to narrow `result.url`, remove this and just check typeof above
+            const url = result.url;
+            if (!("url" in result) || typeof url != "string") {
+              throw new Error(
+                `expected string url in result, but found object with keys ${Object.keys(result).join(", ")}`,
               );
             }
 
             pages.push({
               ...data,
               ...result,
+              url,
             });
             break;
           default:
