@@ -5,6 +5,7 @@ import { Search } from "./Search.ts";
 import type { SiteBuilder } from "./SiteBuilder.ts";
 
 export class Site {
+  readonly builder: SiteBuilder;
   readonly root: Filesystem;
   readonly out: Filesystem;
   readonly pages: Pages;
@@ -12,7 +13,8 @@ export class Site {
   readonly processors: ReadonlyArray<Processor>;
   readonly watchDirs: ReadonlyArray<Filesystem>;
 
-  constructor(readonly builder: SiteBuilder) {
+  constructor(builder: SiteBuilder) {
+    this.builder = builder;
     this.root = builder.root;
     this.out = builder.out;
     this.pages = new Pages(this, builder.pages);

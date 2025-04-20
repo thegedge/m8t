@@ -10,10 +10,14 @@ import type { Processor } from "../index.ts";
  * try to load and process that layout.
  */
 export class LayoutTransformer implements Processor {
+  private readonly layoutDir: string;
+
   /**
    * @param layoutDir - The directory containing the layouts, relative to the site root.
    */
-  constructor(readonly layoutDir: string) {}
+  constructor(layoutDir: string) {
+    this.layoutDir = layoutDir;
+  }
 
   async process(site: Site, originalData: PageData) {
     if (!originalData.layout || typeof originalData.layout !== "string") {

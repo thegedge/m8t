@@ -19,6 +19,8 @@
     "allowSyntheticDefaultImports": true,
 
     "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "forceConsistentCasingInFileNames": true,
     "rewriteRelativeImportExtensions": true,
     "verbatimModuleSyntax": true,
 

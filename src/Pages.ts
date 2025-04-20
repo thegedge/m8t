@@ -25,6 +25,9 @@ const OMITTED_KEYS_FOR_TYPES = [
 ];
 
 export class Pages {
+  /** The site that this pages object belongs to */
+  readonly site: Site;
+
   /** The filesystem of the pages directory */
   root: Filesystem;
 
@@ -37,10 +40,8 @@ export class Pages {
 
   #performanceTracker = new NonAsyncTimeMeasurement();
 
-  constructor(
-    readonly site: Site,
-    root: Filesystem,
-  ) {
+  constructor(site: Site, root: Filesystem) {
+    this.site = site;
     this.root = root;
     this.#idle = new Promise((resolve) => {
       this.#idleResolve = resolve;

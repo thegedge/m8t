@@ -7,10 +7,14 @@ import type { Processor } from "../index.ts";
  * A processor that computes the reading time of the content.
  */
 export class ReadingTimeTransformer implements Processor {
+  private readonly wordsPerMinute: number;
+
   /**
    * @param wordsPerMinute - an estimate of the number of words per minute to use for the reading time.
    */
-  constructor(readonly wordsPerMinute = 150) {}
+  constructor(wordsPerMinute = 150) {
+    this.wordsPerMinute = wordsPerMinute;
+  }
 
   async process(_site: Site, data: PageData) {
     if ("readingTimeMins" in data) {

@@ -4,7 +4,6 @@ import mime from "mime-types";
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import { createServer } from "node:http";
-import { register } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stringOrThrow, type PageData } from "../../../PageData.ts";
@@ -13,8 +12,6 @@ import type { Site } from "../../../Site.ts";
 import { SiteBuilder } from "../../../SiteBuilder.ts";
 import { debugPageGet } from "./routes/__debug/GET-:url.ts";
 import { debugGet } from "./routes/__debug/GET.ts";
-
-register("@nodejs-loaders/tsx", import.meta.url);
 
 export const run = async (): Promise<void> => {
   const root = process.env.SITE_ROOT;

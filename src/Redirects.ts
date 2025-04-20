@@ -37,7 +37,11 @@ export class Redirects {
     return new Redirects(redirects);
   }
 
-  constructor(private redirects: readonly Redirect[]) {}
+  readonly redirects: readonly Redirect[];
+
+  constructor(redirects: readonly Redirect[]) {
+    this.redirects = redirects;
+  }
 
   public match(pathname: string): [to: string, status: number] | undefined {
     for (const redirect of this.redirects) {

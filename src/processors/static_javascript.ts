@@ -16,11 +16,14 @@ const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
 export class StaticJavascriptProcessor implements Processor {
   private entrypoints: string[] = [];
   private buildResult_: Promise<Map<string, esbuild.OutputFile> | null> | null = null;
+  private readonly publicPath: string;
 
   /**
    * @param publicPath - The path to where the JavaScript files will be served.
    */
-  constructor(readonly publicPath: string) {}
+  constructor(publicPath: string) {
+    this.publicPath = publicPath;
+  }
 
   async process(site: Site, data: PageData) {
     if (!JAVASCRIPT_FILE_REGEX.test(data.filename)) {

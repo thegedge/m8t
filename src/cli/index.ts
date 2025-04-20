@@ -1,11 +1,8 @@
 #!/usr/bin/env NODE_NO_WARNINGS=1 node  --experimental-import-meta-resolve --experimental-vm-modules --experimental-transform-types
-import { register } from "module";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parseArgs } from "util";
 import { SiteBuilder } from "../SiteBuilder.ts";
-
-register("@nodejs-loaders/tsx", import.meta.url);
 
 const COMMANDS = {
   build: async () => await import("./commands/build.ts"),
