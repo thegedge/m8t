@@ -120,9 +120,30 @@ const htmlForData = (data: PageData, first = false): string => {
       <script>
       document.addEventListener("DOMContentLoaded", () => {
         const wrapper = document.getElementById("data-${id}");
-        wrapper.data = ${JSON.stringify(data, (key, value) => {
+        wrapper.data = ${JSON.stringify(data, (key, value: unknown) => {
           if (key === "content") {
-            return "<omitted>";
+            switch (typeof value) {
+              case "string":
+                return value.length > 100 ? value.slice(0, 100) + "..." : value;
+              case "object":
+                if (value == null) {
+                  return value;
+                }
+
+                if ("$$typeof" in value && "type" in value) {
+                  const type = value.type;
+                  if (typeof type !== "object" || (type && type.constructor !== Object.prototype.constructor)) {
+                    return `<React (${String(type)})>`;
+                  }
+                }
+
+                const name = value.constructor?.name;
+                return name && name !== "Object" ? `<object (${name})>` : "<object>";
+              case "function":
+                return value.name ? `<function (${value.name})>` : "<function>";
+              default:
+                return value;
+            }
           }
           return value;
         })};
