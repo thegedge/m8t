@@ -1,3 +1,4 @@
+import { isEqual } from "lodash-es";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { symLineage, symProcessingTime, symProcessor, type PageData } from "../../../../../PageData.ts";
 import type { Site } from "../../../../../Site.ts";
@@ -101,57 +102,98 @@ export const debugPageGet = async (site: Site, request: IncomingMessage, respons
   <body>
     <h1>Debug -- ${url}</h1>
     <div class="column">
-      ${htmlForData(page, true)}
+      ${htmlForData(page, "final", true)}
+      <h3>Lineage</h3>
+      ${htmlForDataAndLineage(page)}
     </div>
   </body>
 </html>`.trimStart(),
   );
 };
 
-let idCounter = 1;
+const htmlForDataAndLineage = (data: PageData): string => {
+  const lineage = lineageArrayForData(data);
+  return lineage
+    .map((data, index) => {
+      const changedData =
+        index < lineage.length - 1
+          ? (Object.fromEntries(
+              Reflect.ownKeys(data)
+                .map((key) => {
+                  const value = data[key];
+                  if (!(key in lineage[index + 1])) {
+                    return [key, value] as const;
+                  }
 
-const htmlForData = (data: PageData, first = false): string => {
-  const id = idCounter++;
+                  const previousValue = lineage[index + 1]?.[key];
+                  if (value === previousValue || isEqual(value, previousValue)) {
+                    return;
+                  }
+
+                  return [key, value] as const;
+                })
+                .filter((entry) => entry !== undefined)
+                .sort(([keyA], [keyB]) => String(keyA).localeCompare(String(keyB))),
+            ) as PageData)
+          : data;
+
+      return htmlForData(changedData, index);
+    })
+    .join("\n");
+};
+
+const htmlForData = (data: PageData, id: string | number, open = false): string => {
   const { processor, processingTimeMs } = summaryForData(data);
   return `
-    <details ${first ? "open" : ""}>
+    <details${open ? " open" : ""}>
       <summary>${processor} in ${processingTimeMs}</summary>
       <json-viewer id="data-${id}"></json-viewer>
       <script>
       document.addEventListener("DOMContentLoaded", () => {
         const wrapper = document.getElementById("data-${id}");
-        wrapper.data = ${JSON.stringify(data, (key, value: unknown) => {
-          if (key === "content") {
-            switch (typeof value) {
-              case "string":
-                return value.length > 100 ? value.slice(0, 100) + "..." : value;
-              case "object":
-                if (value == null) {
-                  return value;
-                }
-
-                if ("$$typeof" in value && "type" in value) {
-                  const type = value.type;
-                  if (typeof type !== "object" || (type && type.constructor !== Object.prototype.constructor)) {
-                    return `<React (${String(type)})>`;
-                  }
-                }
-
-                const name = value.constructor?.name;
-                return name && name !== "Object" ? `<object (${name})>` : "<object>";
-              case "function":
-                return value.name ? `<function (${value.name})>` : "<function>";
-              default:
-                return value;
-            }
-          }
-          return value;
-        })};
+        wrapper.data = ${JSON.stringify(data, pageDataJsonReplacer)};
       });
       </script>
     </details>
-    ${data[symLineage] ? htmlForData(data[symLineage]) : ""}
   `;
+};
+
+const lineageArrayForData = (data: PageData): PageData[] => {
+  const lineage = [];
+  while (data) {
+    lineage.push(data);
+    data = data[symLineage]!;
+  }
+  return lineage;
+};
+
+const pageDataJsonReplacer = (key: string, value: unknown): unknown => {
+  if (key === "content") {
+    switch (typeof value) {
+      case "string":
+        return value.length > 100 ? value.slice(0, 100) + "..." : value;
+      case "object":
+        if (value == null) {
+          return value;
+        }
+
+        if ("$$typeof" in value && "type" in value) {
+          const type = value.type;
+          if (typeof type !== "object" || (type && type.constructor !== Object.prototype.constructor)) {
+            return `<React (${String(type)})>`;
+          }
+        }
+
+        const name = value.constructor?.name;
+        return name && name !== "Object" ? `<object (${name})>` : "<object>";
+      case "function":
+        return value.name ? `<function (${value.name})>` : "<function>";
+      default:
+        return value;
+    }
+  }
+
+  return value;
 };
 
 const summaryForData = (data: PageData) => {
