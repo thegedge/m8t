@@ -77,6 +77,26 @@ export const debugPageGet = async (site: Site, request: IncomingMessage, respons
       }
     </style>
     <script src="https://unpkg.com/@alenaksu/json-viewer@2.1.2/dist/json-viewer.bundle.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // When a <details> is clicked with the alt key pressed, toggle the open state of all <details>
+        document.querySelectorAll("details").forEach((detail) => {
+          detail.addEventListener("click", (event) => {
+            if (event.altKey) {
+              event.stopPropagation();
+              event.preventDefault();
+
+              let open = !detail.open;
+              requestIdleCallback(() => {
+                document.querySelectorAll("details").forEach((detail) => {
+                  detail.open = open;
+                });
+              });
+             }
+          });
+        });
+      });
+    </script>
   </head>
   <body>
     <h1>Debug -- ${url}</h1>
