@@ -27,22 +27,14 @@ export class ContentFunctionTransformer implements Processor {
               );
             }
 
-            if (!("url" in result)) {
+            if (!("url" in result) || typeof result.url != "string") {
               throw new Error(`expected url in result, but found object with keys ${Object.keys(result).join(", ")}`);
-            }
-
-            // TODO once TS knows how to narrow `result.url`, remove this and just check typeof above
-            const url = result.url;
-            if (!("url" in result) || typeof url != "string") {
-              throw new Error(
-                `expected string url in result, but found object with keys ${Object.keys(result).join(", ")}`,
-              );
             }
 
             pages.push({
               ...data,
               ...result,
-              url,
+              url: result.url,
             });
             break;
           default:
