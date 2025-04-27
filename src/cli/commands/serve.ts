@@ -60,7 +60,7 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
         return;
       }
 
-      if (filename?.endsWith(".d.ts")) {
+      if (filename?.endsWith(".d.ts") || filename?.endsWith("profile.cpuprofile")) {
         // TODO better means of ignoring files that aren't part of the build process
         return;
       }
