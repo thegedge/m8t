@@ -1,5 +1,6 @@
 import { writeFile } from "fs/promises";
 import { omit } from "lodash-es";
+import { Session } from "node:inspector/promises";
 import path from "node:path";
 import { Filesystem } from "./Filesystem.ts";
 import { symLineage, symProcessingTime, symProcessor, type PageData } from "./PageData.ts";
@@ -83,7 +84,7 @@ export class Pages {
           this.#idleResolve = resolve;
         });
       }
-    }, 200);
+    }, 50);
 
     const types = new Map<string, string>();
 
@@ -141,7 +142,12 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
         });
     };
 
+    const session = new Session();
     try {
+      session.connect();
+      await session.post("Profiler.enable");
+      await session.post("Profiler.start");
+
       this.#performanceTracker.start();
       try {
         for await (const result of this.initData(this.root)) {
@@ -162,6 +168,9 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
       const typesPath = path.join(this.site.root.path, this.site.builder.typesPath);
       await writeFile(typesPath, `import "path";\n\n${Array.from(types.values()).join("")}`);
     } finally {
+      const { profile } = await session.post("Profiler.stop");
+      await writeFile(path.join(this.site.root.path, "profile.cpuprofile"), JSON.stringify(profile));
+      session.disconnect();
       clearInterval(interval);
     }
   }

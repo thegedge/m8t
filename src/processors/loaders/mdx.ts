@@ -20,8 +20,6 @@ const processedFor = Symbol.for("processedFor");
  * The resulting content will be a React element.
  */
 export class MdxLoader implements Processor {
-  providerImportSource = import.meta.resolve("../jsx.js");
-
   async process(_site: Site, data: PageData) {
     if (data[processedFor] === data.filename) {
       return;

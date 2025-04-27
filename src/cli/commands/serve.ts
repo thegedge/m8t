@@ -30,6 +30,7 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
           SITE_ROOT: site.root.path,
         },
         cwd: path.join(import.meta.dirname, "../../../"),
+        // Until node can load jsx/tsx files, we need to use a special loader
         execArgv: [...process.execArgv, "--import", "@nodejs-loaders/tsx"],
         signal: exiting,
       });

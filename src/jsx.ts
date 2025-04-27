@@ -40,8 +40,7 @@ export const renderElementToHTML = async (element: Node): Promise<string> => {
   if (process.env.NODE_ENV !== "production") {
     result = await format(result, {
       parser: "html",
-      // tabWidth: 2,
-      // printWidth: 140,
+      tabWidth: 2,
     });
   }
 

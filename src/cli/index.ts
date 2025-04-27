@@ -1,7 +1,7 @@
 #!/usr/bin/env NODE_NO_WARNINGS=1 node  --experimental-import-meta-resolve --experimental-vm-modules --experimental-transform-types
-import path from "path";
-import { fileURLToPath } from "url";
-import { parseArgs } from "util";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
 import { SiteBuilder } from "../SiteBuilder.ts";
 
 const COMMANDS = {
