@@ -1,7 +1,6 @@
 import { format } from "prettier";
 import {
   Children as Children_,
-  type FunctionComponent,
   type PropsWithChildren as PropsWithChildren_,
   type ReactElement,
   type ReactNode,
@@ -10,8 +9,13 @@ import { renderToReadableStream } from "react-dom/server.browser";
 
 export type Element<P = Record<string, unknown>> = ReactElement<P>;
 export type Node = ReactNode;
-export type ComponentFunction<P = Record<string, unknown>> = FunctionComponent<P>;
 export type PropsWithChildren<P = Record<string, unknown>> = PropsWithChildren_<P>;
+
+// Copied from @types/react, but removing the Promise<ReactNode> part of the return type (for now)
+export interface ComponentFunction<P = {}> {
+  (props: P): ReactNode;
+  displayName?: string | undefined;
+}
 
 export {
   cloneElement,
