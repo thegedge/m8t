@@ -12,6 +12,9 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
 
   const shutdown = () => {
     exiting.abort();
+    setTimeout(() => {
+      process.exit(0);
+    }, 1500);
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
@@ -19,7 +22,7 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
   await watchFiles(site, exiting.signal);
 };
 
-export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
+const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
   (async () => {
     const startTime = performance.now();
 
@@ -92,13 +95,5 @@ export const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void
   })().catch(() => {
     // We don't want to log the error thrown from the abort
     void 0;
-  });
-
-  const interval = setInterval(() => {
-    // Do nothing, but this will keep the node process open
-  }, 60_000);
-
-  exiting.addEventListener("abort", () => {
-    clearInterval(interval);
   });
 };

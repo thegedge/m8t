@@ -27,6 +27,9 @@ export const run = async (): Promise<void> => {
   const exiting = new AbortController();
   const shutdown = () => {
     exiting.abort();
+    setTimeout(() => {
+      process.exit(0);
+    }, 1000);
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
