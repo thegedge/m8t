@@ -7,7 +7,8 @@
 "m8t", pronounced "mate", is yet another static site generator, built to power the original author's
 [website](https://gedge.ca).
 
-> [!NOTE] This project is currently being developed and will hopefully be available by Summer 2025
+> [!NOTE]
+> This project is currently being developed and will hopefully be generally available by late Summer 2025
 
 ## Core values
 
