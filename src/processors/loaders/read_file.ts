@@ -1,6 +1,7 @@
 import { readFile } from "fs/promises";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
+import type { MaybeArray } from "../../types.ts";
 import type { Processor } from "../index.ts";
 
 const processedFor = Symbol.for("processedFor");
@@ -9,7 +10,7 @@ const processedFor = Symbol.for("processedFor");
  * A loader that reads a UTF8 file.
  */
 export class ReadFileLoader implements Processor {
-  async process(_site: Site, data: PageData) {
+  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (data[processedFor] === data.filename) {
       return;
     }

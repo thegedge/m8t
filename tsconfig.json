@@ -13,7 +13,7 @@
     "moduleResolution": "nodenext",
     "target": "ESNext",
 
-    "declaration": false,
+    "declaration": true,
     "isolatedDeclarations": false,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,

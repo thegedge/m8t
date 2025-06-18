@@ -1,13 +1,13 @@
 import { isGeneratorFunction } from "node:util/types";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { Processor } from "../index.ts";
+import type { MaybeArray, Processor } from "../../index.ts";
 
 /**
  * A transformer that will call `content` if it is a function.
  */
 export class ContentFunctionTransformer implements Processor {
-  async process(_site: Site, data: PageData) {
+  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (typeof data.content !== "function") {
       return;
     }

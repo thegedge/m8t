@@ -2,7 +2,7 @@ import tailwindcssNesting from "@tailwindcss/nesting";
 import tailwindcssPlugin from "@tailwindcss/postcss";
 import postcss from "postcss";
 import postcssDiscardComments from "postcss-discard-comments";
-import type { Processor } from "../../index.ts";
+import type { MaybeArray, Processor } from "../../index.ts";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 
@@ -12,7 +12,7 @@ import type { Site } from "../../Site.ts";
 export class CssRenderer implements Processor {
   #processor!: postcss.Processor;
 
-  async process(_site: Site, data: PageData) {
+  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (!data.filename.endsWith(".css")) {
       return;
     }

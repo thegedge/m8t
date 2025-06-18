@@ -2,7 +2,7 @@ import { parameterize as slugify, titleize, underscore } from "inflected";
 import path from "path";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { Processor } from "../index.ts";
+import type { MaybeArray, Processor } from "../../index.ts";
 
 const DATE_REGEX = /^(\d{4}).(\d{2}).(\d{2}).(.+)$/;
 
@@ -10,7 +10,7 @@ const DATE_REGEX = /^(\d{4}).(\d{2}).(\d{2}).(.+)$/;
  * A transformer that sets the `url` property on a data blob to the relative path of the file.
  */
 export class PageDefaultsTransformer implements Processor {
-  async process(site: Site, data: PageData) {
+  async process(site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (
       typeof data.url == "string" &&
       !data.url.startsWith(".") &&

@@ -23,6 +23,12 @@
   "bin": {
     "mate": "src/cli/index.ts"
   },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "assets/**/*",
+    "dist/**/*.js"
+  ],
   "scripts": {
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",

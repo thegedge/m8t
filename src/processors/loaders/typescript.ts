@@ -1,6 +1,6 @@
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { Processor } from "../index.ts";
+import type { MaybeArray, Processor } from "../../index.ts";
 
 const processedFor = Symbol.for("processedFor");
 
@@ -10,7 +10,7 @@ const processedFor = Symbol.for("processedFor");
  * The default export is the content, and all other exports form the metadata.
  */
 export class TypescriptLoader implements Processor {
-  async process(_site: Site, data: PageData) {
+  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (data[processedFor] === data.filename) {
       return;
     }

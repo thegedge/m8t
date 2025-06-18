@@ -10,7 +10,7 @@ import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { Processor } from "../index.ts";
+import type { MaybeArray, Processor } from "../../index.ts";
 
 const processedFor = Symbol.for("processedFor");
 
@@ -20,7 +20,7 @@ const processedFor = Symbol.for("processedFor");
  * The resulting content will be a React element.
  */
 export class MdxLoader implements Processor {
-  async process(_site: Site, data: PageData) {
+  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (data[processedFor] === data.filename) {
       return;
     }

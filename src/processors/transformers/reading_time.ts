@@ -1,7 +1,6 @@
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { MaybeArray } from "../../types.ts";
-import type { Processor } from "../index.ts";
+import type { MaybeArray, Processor } from "../../index.ts";
 
 /**
  * A processor that computes the reading time of the content.
@@ -16,7 +15,7 @@ export class ReadingTimeTransformer implements Processor {
     this.wordsPerMinute = wordsPerMinute;
   }
 
-  async process(_site: Site, data: PageData) {
+  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if ("readingTimeMins" in data) {
       return;
     }

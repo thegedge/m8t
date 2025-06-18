@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { type PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
-import type { Processor } from "../index.ts";
+import type { MaybeArray, Processor } from "../../index.ts";
 
 /**
  * A transformer that can render a data's content into another.
@@ -19,7 +19,7 @@ export class LayoutTransformer implements Processor {
     this.layoutDir = layoutDir;
   }
 
-  async process(site: Site, originalData: PageData) {
+  async process(site: Site, originalData: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (!originalData.layout || typeof originalData.layout !== "string") {
       return;
     }

@@ -2,7 +2,7 @@ import * as esbuild from "esbuild";
 import path from "node:path";
 import type { PageData } from "../PageData.ts";
 import type { Site } from "../Site.ts";
-import type { Processor } from "./index.ts";
+import type { MaybeArray, Processor } from "../index.ts";
 import { StringRenderer } from "./renderers/string.ts";
 
 const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
@@ -25,7 +25,7 @@ export class StaticJavascriptProcessor implements Processor {
     this.publicPath = publicPath;
   }
 
-  async process(site: Site, data: PageData) {
+  async process(site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (!JAVASCRIPT_FILE_REGEX.test(data.filename)) {
       return;
     }
