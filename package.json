@@ -17,24 +17,27 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/index.js"
   },
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
   "bin": {
-    "mate": "src/cli/index.ts"
+    "mate": "./dist/cli/index.js"
   },
   "files": [
-    "LICENSE",
-    "README.md",
     "assets/**/*",
-    "dist/**/*.js"
+    "dist/**/*.{d.ts,js}",
+    "LICENSE",
+    "package.json",
+    "README.md",
+    "types/**/*.d.ts"
   ],
   "scripts": {
     "lint": "prettier --check .",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
     "test": "echo 'No tests yet'",
-    "update": "ncu --interactive"
+    "update": "ncu --interactive",
+    "watch": "tsc --watch"
   },
   "dependencies": {
     "@mdx-js/mdx": "^3.1.0",
