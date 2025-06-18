@@ -1,0 +1,52 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Type check
+        run: nix develop --command npm run tc
+
+      - name: Lint
+        run: nix develop --command npm run lint
+
+      - name: Test
+        run: nix develop --command npm run test
+  publish:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      - name: Build
+        run: nix develop --command npm run prepublishOnly
+
+      - name: List npm config
+        run: nix develop --command npm config list
+
+      - name: Publish
+        run: |
+          nix develop --command npm config set registry https://registry.npmjs.org/
+          nix develop --command npm config set //registry.npmjs.org/:_authToken "${NODE_AUTH_TOKEN}"
+          nix develop --command npm publish --registry https://registry.npmjs.org/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Tag release
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          git tag -a $VERSION -m "Release $VERSION"
+          git push origin $VERSION

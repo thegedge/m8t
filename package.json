@@ -12,7 +12,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/thegedge/m8t.git"
+    "url": "git+https://github.com/thegedge/m8t.git"
   },
   "license": "MIT",
   "type": "module",
@@ -30,8 +30,10 @@
     "dist/**/*.js"
   ],
   "scripts": {
+    "lint": "prettier --check .",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
+    "test": "echo 'No tests yet'",
     "update": "ncu --interactive"
   },
   "dependencies": {

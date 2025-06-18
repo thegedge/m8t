@@ -1,0 +1,26 @@
+name: "Setup"
+description: "Setup Nix and install node modules"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install and set up Nix
+      uses: nixbuild/nix-quick-install-action@v30
+      with:
+        nix_conf: |
+          keep-env-derivations = true
+          keep-outputs = true
+
+    - name: Cache nix
+      uses: DeterminateSystems/magic-nix-cache-action@v2
+
+    - name: Install node modules
+      shell: bash
+      run: nix develop --command npm install
+
+    - uses: actions/cache@v3
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
