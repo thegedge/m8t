@@ -38,15 +38,44 @@ jobs:
         run: nix develop --command npm config list
 
       - name: Publish
-        run: |
-          nix develop --command npm config set registry https://registry.npmjs.org/
-          nix develop --command npm config set //registry.npmjs.org/:_authToken "${NODE_AUTH_TOKEN}"
-          nix develop --command npm publish --registry https://registry.npmjs.org/
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: ./package.json
+          access: public
 
       - name: Tag release
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          git tag -a $VERSION -m "Release $VERSION"
-          git push origin $VERSION
+          #!/bin/bash
+          set -eux
+
+          NAME="$(node -p "require('./package.json').author.name")"
+          if [[ -z "${NAME}" ]]; then
+            echo "author.name is not set in package.json"
+            exit 1
+          fi
+
+          EMAIL="$(node -p "require('./package.json').author.email")"
+          if [[ -z "${EMAIL}" ]]; then
+            echo "author.email is not set in package.json"
+            exit 1
+          fi
+
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ -z "${VERSION}" ]]; then
+            echo "version is not set in package.json"
+            exit 1
+          fi
+
+          git fetch --tags
+          if ! git tag | grep "${VERSION}"; then
+            git config --global user.email "${EMAIL}"
+            git config --global user.name "${NAME}"
+            git tag -a "${VERSION}" -m "Release ${VERSION}"
+            git push origin "${VERSION}"
+
+            git tag -a "${VERSION}" -m "Release ${VERSION}"
+            git push --follow-tags
+          else
+            echo "'${VERSION}' already exists. No action taken."
+          fi
