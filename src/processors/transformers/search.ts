@@ -1,6 +1,7 @@
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { MaybeArray, Processor } from "../../index.ts";
+import { merge } from "../../utils/merge.ts";
 
 /**
  * A processor that computes the reading time of the content.
@@ -12,10 +13,6 @@ export class SearchTransformer implements Processor {
     }
 
     const searchData = await data.search(site.search, data);
-    return {
-      ...data,
-      ...searchData,
-      search: null,
-    };
+    return merge(data, searchData, { search: null });
   }
 }

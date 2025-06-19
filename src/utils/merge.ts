@@ -4,10 +4,20 @@ import { isPlainObject } from "lodash-es";
  * Deep merge two objects.
  *
  * Does not mutate the `target` or `source` object.
+ *
+ * TODO maybe type this better
  */
-export const merge = <T extends Record<string, unknown>, U extends Record<string, unknown>>(a: T, b: U): T & U => {
+export function merge<T extends Record<string, unknown>>(base: T, ...objects: T[]): T {
+  if (objects.length > 1) {
+    const [a, ...rest] = objects;
+    return merge(merge(base, a), ...rest);
+  }
+
+  const a = base;
+  const b = objects[0];
+
   if (a === (b as any)) {
-    return a as T & U;
+    return a;
   }
 
   const merged = { ...a, ...b };
@@ -27,10 +37,12 @@ export const merge = <T extends Record<string, unknown>, U extends Record<string
       ) as (typeof merged)[typeof mergedKey];
     } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
       merged[mergedKey] = (aValue === bValue ? aValue : [...aValue, ...bValue]) as (typeof merged)[typeof mergedKey];
-    } else {
+    } else if (mergedKey in b) {
       merged[mergedKey] = bValue as (typeof merged)[typeof mergedKey];
+    } else {
+      merged[mergedKey] = aValue as (typeof merged)[typeof mergedKey];
     }
   }
 
   return merged;
-};
+}

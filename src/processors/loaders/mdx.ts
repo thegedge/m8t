@@ -11,6 +11,7 @@ import remarkRehype from "remark-rehype";
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { MaybeArray, Processor } from "../../index.ts";
+import { merge } from "../../utils/merge.ts";
 
 const processedFor = Symbol.for("processedFor");
 
@@ -89,10 +90,7 @@ export class MdxLoader implements Processor {
       throw e;
     }
 
-    return {
-      ...data,
-      ...frontmatterData,
-      ...mdxData,
+    return merge(data, frontmatterData, mdxData, {
       [processedFor]: data.filename,
       content: (props: any) => {
         return mdxContent({
@@ -100,6 +98,6 @@ export class MdxLoader implements Processor {
           components: props.components,
         });
       },
-    };
+    });
   }
 }

@@ -4,18 +4,14 @@ import { stringOrThrow } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 
 export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean }): Promise<void> => {
+  await import("@nodejs-loaders/tsx");
+
+  await site.pages.init();
+
   const validator = new HtmlValidate({
     root: true,
     extends: ["html-validate:recommended", "html-validate:a11y"],
-
-    // TODO allow this to be configurable
-    rules: {
-      // REMOVEME once React renders these as proper boolean attributes
-      "attribute-boolean-style": "off",
-    },
   });
-
-  await site.pages.init();
 
   for (const url of site.pages.urls()) {
     const page = await site.pages.page(url);
@@ -31,13 +27,16 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
     const filename = stringOrThrow(page.filename);
     const content = stringOrThrow(page.content);
 
-    const { valid, results } = await validator.validateString(content, filename, {
-      rules: page.htmlValidateRules as RuleConfig,
-    });
+    let rules: RuleConfig | undefined = undefined;
+    if (page.htmlValidateRules && typeof page.htmlValidateRules === "object") {
+      rules = page.htmlValidateRules as RuleConfig;
+    }
+
+    const { valid, results } = await validator.validateString(content, filename, { rules });
     if (!valid) {
       process.exitCode = 1;
 
-      console.log(filename);
+      console.log(`--> ${filename}:`);
       dumpMessages(results);
 
       if (args["fail-fast"]) {

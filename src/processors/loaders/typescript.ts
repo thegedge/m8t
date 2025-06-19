@@ -1,6 +1,7 @@
 import type { PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { MaybeArray, Processor } from "../../index.ts";
+import { merge } from "../../utils/merge.ts";
 
 const processedFor = Symbol.for("processedFor");
 
@@ -20,11 +21,9 @@ export class TypescriptLoader implements Processor {
     }
 
     const { default: content, ...otherData } = await import(data.filename);
-    return {
-      ...data,
-      ...otherData,
+    return merge(data, otherData, {
       content,
       [processedFor]: data.filename,
-    };
+    });
   }
 }

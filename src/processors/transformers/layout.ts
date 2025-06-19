@@ -2,6 +2,7 @@ import type { PropsWithChildren } from "react";
 import { type PageData } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 import type { MaybeArray, Processor } from "../../index.ts";
+import { merge } from "../../utils/merge.ts";
 
 /**
  * A transformer that can render a data's content into another.
@@ -39,11 +40,10 @@ export class LayoutTransformer implements Processor {
       }
     };
 
-    return {
-      ...layoutData,
-      ...originalData,
+    return merge(layoutData, originalData, {
       layout: layoutData.layout,
       content,
-    };
+      // REMOVE once merge is typed better
+    } as unknown as PageData);
   }
 }
