@@ -56,8 +56,12 @@ const { positionals, values } = parseArgs({
     },
   },
 });
+
 const subcommand = positionals.shift();
 process.exitCode = await main(subcommand, {
   ...values,
   _: positionals,
 });
+
+// Ideally this wouldn't be necessary, but esbuild — used by the tsx loader — lingers.
+process.exit();

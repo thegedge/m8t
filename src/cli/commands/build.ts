@@ -3,6 +3,8 @@ import { stringOrThrow } from "../../PageData.ts";
 import { Site } from "../../Site.ts";
 
 export const run = async (site: Site, _args: { _: [string] }): Promise<void> => {
+  await import("@nodejs-loaders/tsx");
+
   await site.out.clear();
   await site.pages.init();
 
