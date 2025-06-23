@@ -1,8 +1,8 @@
-import type { Filesystem } from "./Filesystem.ts";
-import { Pages } from "./Pages.ts";
-import type { Processor } from "./processors/index.ts";
-import { Search } from "./Search.ts";
-import type { SiteBuilder } from "./SiteBuilder.ts";
+import type { Filesystem } from "./Filesystem.js";
+import { Pages } from "./Pages.js";
+import type { Processor } from "./processors/index.js";
+import { Search } from "./Search.js";
+import type { SiteBuilder } from "./SiteBuilder.js";
 
 export class Site {
   readonly builder: SiteBuilder;

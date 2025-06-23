@@ -1,9 +1,9 @@
 import * as esbuild from "esbuild";
 import path from "node:path";
-import type { PageData } from "../PageData.ts";
-import type { Site } from "../Site.ts";
-import type { MaybeArray, Processor } from "../index.ts";
-import { StringRenderer } from "./renderers/string.ts";
+import type { PageData } from "../PageData.js";
+import type { Site } from "../Site.js";
+import type { MaybeArray, Processor } from "../index.js";
+import { StringRenderer } from "./renderers/string.js";
 
 const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
 

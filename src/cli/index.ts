@@ -2,13 +2,13 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { SiteBuilder } from "../SiteBuilder.ts";
+import { SiteBuilder } from "../SiteBuilder.js";
 
 const COMMANDS = {
-  build: async () => await import("./commands/build.ts"),
-  help: async () => await import("./commands/help.ts"),
-  serve: async () => await import("./commands/serve.ts"),
-  validate: async () => await import("./commands/validate.ts"),
+  build: async () => await import("./commands/build.js"),
+  help: async () => await import("./commands/help.js"),
+  serve: async () => await import("./commands/serve.js"),
+  validate: async () => await import("./commands/validate.js"),
 };
 
 const isCommand = (command: string | undefined): command is keyof typeof COMMANDS => {

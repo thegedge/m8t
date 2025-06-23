@@ -1,6 +1,6 @@
 import path from "path";
-import { stringOrThrow } from "../../PageData.ts";
-import { Site } from "../../Site.ts";
+import { stringOrThrow } from "../../PageData.js";
+import { Site } from "../../Site.js";
 
 export const run = async (site: Site, _args: { _: [string] }): Promise<void> => {
   await import("@nodejs-loaders/tsx");

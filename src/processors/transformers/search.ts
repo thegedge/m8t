@@ -1,7 +1,7 @@
-import type { PageData } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
-import type { MaybeArray, Processor } from "../../index.ts";
-import { merge } from "../../utils/merge.ts";
+import type { PageData } from "../../PageData.js";
+import type { Site } from "../../Site.js";
+import type { MaybeArray, Processor } from "../../index.js";
+import { merge } from "../../utils/merge.js";
 
 /**
  * A processor that computes the reading time of the content.

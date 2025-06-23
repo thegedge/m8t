@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import type { Site } from "../../../../../Site.ts";
+import type { Site } from "../../../../../Site.js";
 
 export const debugGet = async (site: Site, _request: IncomingMessage, response: ServerResponse): Promise<void> => {
   response.writeHead(200, { "content-type": "text/html" });

@@ -1,8 +1,8 @@
 import { parameterize as slugify, titleize, underscore } from "inflected";
 import path from "path";
-import type { PageData } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
-import type { MaybeArray, Processor } from "../../index.ts";
+import type { PageData } from "../../PageData.js";
+import type { Site } from "../../Site.js";
+import type { MaybeArray, Processor } from "../../index.js";
 
 const DATE_REGEX = /^(\d{4}).(\d{2}).(\d{2}).(.+)$/;
 

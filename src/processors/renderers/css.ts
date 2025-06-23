@@ -2,9 +2,9 @@ import tailwindcssNesting from "@tailwindcss/nesting";
 import tailwindcssPlugin from "@tailwindcss/postcss";
 import postcss from "postcss";
 import postcssDiscardComments from "postcss-discard-comments";
-import type { MaybeArray, Processor } from "../../index.ts";
-import type { PageData } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
+import type { MaybeArray, Processor } from "../../index.js";
+import type { PageData } from "../../PageData.js";
+import type { Site } from "../../Site.js";
 
 /**
  * A renderer that stringifies its content and processes it with PostCSS.

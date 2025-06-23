@@ -1,8 +1,8 @@
 import debug from "debug";
 import path from "node:path";
-import { Filesystem } from "./Filesystem.ts";
-import type { Processor } from "./processors/index.ts";
-import { Site } from "./Site.ts";
+import { Filesystem } from "./Filesystem.js";
+import type { Processor } from "./processors/index.js";
+import { Site } from "./Site.js";
 
 type DevServerConfig = {
   port?: number;

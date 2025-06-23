@@ -1,6 +1,6 @@
-import type { PageData } from "./PageData.ts";
-import type { Pages } from "./Pages.ts";
-import type { Search as SearchInterface } from "./types.ts";
+import type { PageData } from "./PageData.js";
+import type { Pages } from "./Pages.js";
+import type { Search as SearchInterface } from "./types.js";
 
 export type Query = {
   where: Record<string, unknown>;

@@ -18,10 +18,10 @@
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
 
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "erasableSyntaxOnly": true,
     "forceConsistentCasingInFileNames": true,
-    "rewriteRelativeImportExtensions": true,
+    "rewriteRelativeImportExtensions": false,
     "verbatimModuleSyntax": true,
 
     "strict": true,

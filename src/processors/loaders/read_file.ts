@@ -1,8 +1,8 @@
 import { readFile } from "fs/promises";
-import type { PageData } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
-import type { MaybeArray } from "../../types.ts";
-import type { Processor } from "../index.ts";
+import type { PageData } from "../../PageData.js";
+import type { Site } from "../../Site.js";
+import type { MaybeArray } from "../../types.js";
+import type { Processor } from "../index.js";
 
 const processedFor = Symbol.for("processedFor");
 

@@ -1,6 +1,6 @@
-import type { PageData } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
-import type { MaybeArray, Processor } from "../../index.ts";
+import type { PageData } from "../../PageData.js";
+import type { Site } from "../../Site.js";
+import type { MaybeArray, Processor } from "../../index.js";
 
 /**
  * A renderer that stringifies the content.

@@ -1,8 +1,8 @@
 import { link } from "ansi-escapes";
 import debug from "debug";
 import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
-import { stringOrThrow } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
+import { stringOrThrow } from "../../PageData.js";
+import type { Site } from "../../Site.js";
 
 const log = debug("m8t:validate");
 

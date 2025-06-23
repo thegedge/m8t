@@ -1,4 +1,4 @@
-import type { Processor } from "./index.ts";
+import type { Processor } from "./index.js";
 
 export const symLineage = Symbol("lineage");
 export const symProcessor = Symbol("processor");

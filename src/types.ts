@@ -1,5 +1,5 @@
-import type { PageData } from "./PageData.ts";
-import type { Query } from "./Search.ts";
+import type { PageData } from "./PageData.js";
+import type { Query } from "./Search.js";
 
 export interface Search {
   pages(query: Query): Promise<PageData[]>;

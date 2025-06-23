@@ -4,8 +4,8 @@ import { watch } from "fs";
 import { fork, type ChildProcess } from "node:child_process";
 import type { WatchListener } from "node:fs";
 import path from "node:path";
-import type { Site } from "../../Site.ts";
-import { printLogoAndTitleWithLines } from "../logo.ts";
+import type { Site } from "../../Site.js";
+import { printLogoAndTitleWithLines } from "../logo.js";
 
 export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
   const exiting = new AbortController();

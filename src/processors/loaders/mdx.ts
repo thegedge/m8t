@@ -8,10 +8,10 @@ import remarkDefinitionList, { defListHastHandlers } from "remark-definition-lis
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import remarkRehype from "remark-rehype";
-import type { PageData } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
-import type { MaybeArray, Processor } from "../../index.ts";
-import { merge } from "../../utils/merge.ts";
+import type { PageData } from "../../PageData.js";
+import type { Site } from "../../Site.js";
+import type { MaybeArray, Processor } from "../../index.js";
+import { merge } from "../../utils/merge.js";
 
 const processedFor = Symbol.for("processedFor");
 

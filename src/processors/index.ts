@@ -1,19 +1,19 @@
-import type { PageData } from "../PageData.ts";
-import type { Site } from "../Site.ts";
-import type { MaybeArray } from "../types.ts";
+import type { PageData } from "../PageData.js";
+import type { Site } from "../Site.js";
+import type { MaybeArray } from "../types.js";
 
-export { MdxLoader } from "./loaders/mdx.ts";
-export { ReadFileLoader } from "./loaders/read_file.ts";
-export { TypescriptLoader } from "./loaders/typescript.ts";
-export { CssRenderer } from "./renderers/css.ts";
-export { StringRenderer } from "./renderers/string.ts";
-export { StaticJavascriptProcessor } from "./static_javascript.ts";
-export { ContentFunctionTransformer } from "./transformers/content_function.ts";
-export { LayoutTransformer } from "./transformers/layout.ts";
-export { PageDefaultsTransformer } from "./transformers/page_defaults.ts";
-export { ReactRenderer } from "./transformers/react.ts";
-export { ReadingTimeTransformer } from "./transformers/reading_time.ts";
-export { SearchTransformer } from "./transformers/search.ts";
+export { MdxLoader } from "./loaders/mdx.js";
+export { ReadFileLoader } from "./loaders/read_file.js";
+export { TypescriptLoader } from "./loaders/typescript.js";
+export { CssRenderer } from "./renderers/css.js";
+export { StringRenderer } from "./renderers/string.js";
+export { StaticJavascriptProcessor } from "./static_javascript.js";
+export { ContentFunctionTransformer } from "./transformers/content_function.js";
+export { LayoutTransformer } from "./transformers/layout.js";
+export { PageDefaultsTransformer } from "./transformers/page_defaults.js";
+export { ReactRenderer } from "./transformers/react.js";
+export { ReadingTimeTransformer } from "./transformers/reading_time.js";
+export { SearchTransformer } from "./transformers/search.js";
 
 /**
  * A processor that takes data, transforms it in some way, and then produces new data.

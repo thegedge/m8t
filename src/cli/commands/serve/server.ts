@@ -6,12 +6,12 @@ import fs from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stringOrThrow, type PageData } from "../../../PageData.ts";
-import { Redirects } from "../../../Redirects.ts";
-import type { Site } from "../../../Site.ts";
-import { SiteBuilder } from "../../../SiteBuilder.ts";
-import { debugPageGet } from "./routes/__debug/GET-:url.ts";
-import { debugGet } from "./routes/__debug/GET.ts";
+import { stringOrThrow, type PageData } from "../../../PageData.js";
+import { Redirects } from "../../../Redirects.js";
+import type { Site } from "../../../Site.js";
+import { SiteBuilder } from "../../../SiteBuilder.js";
+import { debugPageGet } from "./routes/__debug/GET-:url.js";
+import { debugGet } from "./routes/__debug/GET.js";
 
 export const run = async (): Promise<void> => {
   const root = process.env.SITE_ROOT;

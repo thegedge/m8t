@@ -3,16 +3,16 @@ import { writeFile } from "fs/promises";
 import { omit } from "lodash-es";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
-import { Filesystem } from "./Filesystem.ts";
-import { symLineage, symProcessingTime, symProcessor, type PageData } from "./PageData.ts";
-import type { Processor } from "./processors/index.ts";
-import type { Site } from "./Site.ts";
-import type { MaybeArray } from "./types.ts";
-import { counterPromise } from "./utils/counterPromise.ts";
-import { javascriptValueToTypescriptType } from "./utils/jsObjectToTypescriptType.ts";
-import { merge } from "./utils/merge.ts";
-import { NonAsyncTimeMeasurement } from "./utils/NonAsyncTimeMeasurement.ts";
-import { restartableTimeout } from "./utils/restartableTimeout.ts";
+import { Filesystem } from "./Filesystem.js";
+import { symLineage, symProcessingTime, symProcessor, type PageData } from "./PageData.js";
+import type { Processor } from "./processors/index.js";
+import type { Site } from "./Site.js";
+import type { MaybeArray } from "./types.js";
+import { counterPromise } from "./utils/counterPromise.js";
+import { javascriptValueToTypescriptType } from "./utils/jsObjectToTypescriptType.js";
+import { merge } from "./utils/merge.js";
+import { NonAsyncTimeMeasurement } from "./utils/NonAsyncTimeMeasurement.js";
+import { restartableTimeout } from "./utils/restartableTimeout.js";
 
 const log = debug("m8t:pages");
 

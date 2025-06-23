@@ -1,6 +1,6 @@
 import chalk from "chalk";
-import type { Site } from "../../Site.ts";
-import { printLogoAndTitleWithLines } from "../logo.ts";
+import type { Site } from "../../Site.js";
+import { printLogoAndTitleWithLines } from "../logo.js";
 
 export const run = async (_site: Site, _args: Record<string, unknown>): Promise<void> => {
   console.log();

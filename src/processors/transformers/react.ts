@@ -1,7 +1,7 @@
-import type { MaybeArray, Processor } from "../../index.ts";
-import { isValidElement, renderElementToHTML } from "../../jsx.ts";
-import type { PageData } from "../../PageData.ts";
-import type { Site } from "../../Site.ts";
+import type { MaybeArray, Processor } from "../../index.js";
+import { isValidElement, renderElementToHTML } from "../../jsx.js";
+import type { PageData } from "../../PageData.js";
+import type { Site } from "../../Site.js";
 
 /**
  * A renderer that takes a React element and renders it to HTML
