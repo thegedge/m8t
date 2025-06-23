@@ -1,4 +1,4 @@
-#!/usr/bin/env NODE_NO_WARNINGS=1 node  --experimental-import-meta-resolve --experimental-vm-modules --experimental-transform-types
+#!/usr/bin/env node --experimental-vm-modules
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
