@@ -1,11 +1,15 @@
 import { link } from "ansi-escapes";
+import debug from "debug";
 import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
 import { stringOrThrow } from "../../PageData.ts";
 import type { Site } from "../../Site.ts";
 
+const log = debug("m8t:validate");
+
 export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean }): Promise<void> => {
   await import("@nodejs-loaders/tsx");
 
+  log("initializing pages from %s", site.pages.root.path);
   await site.pages.init();
 
   const validator = new HtmlValidate({
@@ -14,6 +18,8 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
   });
 
   for (const url of site.pages.urls()) {
+    log("validating %s", url);
+
     const page = await site.pages.page(url);
     if (!page) {
       throw new Error(`Could not build page for URL ${url}`);
