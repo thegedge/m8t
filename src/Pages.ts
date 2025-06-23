@@ -148,11 +148,17 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
         });
     };
 
-    const session = new Session();
+    let session: Session | undefined = undefined;
+    if (process.env.PROFILE) {
+      session = new Session();
+    }
+
     try {
-      session.connect();
-      await session.post("Profiler.enable");
-      await session.post("Profiler.start");
+      if (session) {
+        session.connect();
+        await session.post("Profiler.enable");
+        await session.post("Profiler.start");
+      }
 
       this.#performanceTracker.start();
       try {
@@ -174,9 +180,11 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
       const typesPath = path.join(this.site.root.path, this.site.builder.typesPath);
       await writeFile(typesPath, `import "path";\n\n${Array.from(types.values()).join("")}`);
     } finally {
-      const { profile } = await session.post("Profiler.stop");
-      await writeFile(path.join(this.site.root.path, "profile.cpuprofile"), JSON.stringify(profile));
-      session.disconnect();
+      if (session) {
+        const { profile } = await session.post("Profiler.stop");
+        await writeFile(path.join(this.site.root.path, "profile.cpuprofile"), JSON.stringify(profile));
+        session.disconnect();
+      }
       clearInterval(interval);
     }
   }
