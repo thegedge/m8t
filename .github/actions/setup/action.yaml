@@ -12,7 +12,7 @@ runs:
           keep-outputs = true
 
     - name: Cache nix
-      uses: DeterminateSystems/magic-nix-cache-action@v2
+      uses: DeterminateSystems/magic-nix-cache-action@main
 
     - name: Install node modules
       shell: bash
