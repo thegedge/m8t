@@ -1,4 +1,5 @@
 #!/usr/bin/env node --experimental-vm-modules
+import debug from "debug";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -21,6 +22,8 @@ type Args = {
   [key: string]: unknown;
 };
 
+const log = debug("m8t:cli");
+
 const main = async (command: string | undefined, args: Args) => {
   let actualCommand: keyof typeof COMMANDS;
   if (isCommand(command)) {
@@ -34,8 +37,7 @@ const main = async (command: string | undefined, args: Args) => {
 
   const commandModule = await COMMANDS[actualCommand]();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  await commandModule.run(site, args as any);
-  return 0;
+  return (await commandModule.run(site, args as any)) ?? 0;
 };
 
 const entryFile = process.argv?.[1];
@@ -58,6 +60,8 @@ const { positionals, values } = parseArgs({
 });
 
 const subcommand = positionals.shift();
+log("running command %s", subcommand);
+
 process.exitCode = await main(subcommand, {
   ...values,
   _: positionals,
