@@ -68,14 +68,12 @@ jobs:
           fi
 
           git fetch --tags
-          if ! git tag | grep "${VERSION}"; then
-            git config --global user.email "${EMAIL}"
-            git config --global user.name "${NAME}"
-            git tag -a "${VERSION}" -m "Release ${VERSION}"
-            git push origin "${VERSION}"
-
-            git tag -a "${VERSION}" -m "Release ${VERSION}"
-            git push --follow-tags
-          else
+          if git tag | grep "${VERSION}"; then
             echo "'${VERSION}' already exists. No action taken."
+            exit 0
           fi
+
+          git config --global user.email "${EMAIL}"
+          git config --global user.name "${NAME}"
+          git tag -a "${VERSION}" -m "Release ${VERSION}"
+          git push --follow-tags
