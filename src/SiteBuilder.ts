@@ -1,3 +1,4 @@
+import debug from "debug";
 import path from "node:path";
 import { Filesystem } from "./Filesystem.ts";
 import type { Processor } from "./processors/index.ts";
@@ -13,8 +14,12 @@ type ResolvedDevServerConfig = {
   redirectsPath?: string;
 };
 
+const log = debug("m8t:site");
+
 export class SiteBuilder {
   static async siteForRoot(root: string): Promise<Site> {
+    log("importing site.ts from %s", root);
+
     const { default: builder } = await import(path.join(root, "site.ts"));
     if (!(builder instanceof SiteBuilder)) {
       throw new Error("site.ts must export a SiteBuilder as the default export");

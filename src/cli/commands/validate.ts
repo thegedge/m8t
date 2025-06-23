@@ -7,6 +7,7 @@ import type { Site } from "../../Site.ts";
 const log = debug("m8t:validate");
 
 export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean }): Promise<void> => {
+  log("initializing tsx loader");
   await import("@nodejs-loaders/tsx");
 
   log("initializing pages from %s", site.pages.root.path);
