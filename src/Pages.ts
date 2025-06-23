@@ -188,6 +188,7 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
     const listing = await fileSystem.ls();
     const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
     if (dataFile) {
+      log("found data file: %s", dataFile.name);
       try {
         const dataFilePath = path.join(fileSystem.path, dataFile.name);
         const data: PageData = {
@@ -222,6 +223,7 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
       } else {
         try {
           const filePath = path.join(fileSystem.path, entry.name);
+          log("found page to process: %s", filePath);
           yield {
             ...omit(parentData, [symProcessor, symProcessingTime, symLineage]),
             filename: filePath,
