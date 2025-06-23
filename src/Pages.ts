@@ -1,3 +1,4 @@
+import debug from "debug";
 import { writeFile } from "fs/promises";
 import { omit } from "lodash-es";
 import { Session } from "node:inspector/promises";
@@ -12,6 +13,8 @@ import { javascriptValueToTypescriptType } from "./utils/jsObjectToTypescriptTyp
 import { merge } from "./utils/merge.ts";
 import { NonAsyncTimeMeasurement } from "./utils/NonAsyncTimeMeasurement.ts";
 import { restartableTimeout } from "./utils/restartableTimeout.ts";
+
+const log = debug("m8t:pages");
 
 const OMITTED_KEYS_FOR_TYPES = [
   "components",
@@ -92,7 +95,10 @@ export class Pages {
       workStarted();
 
       Promise.resolve(pageData)
-        .then((result) => this.processOnce(result))
+        .then((result) => {
+          log("processing page %s", result.filename);
+          return this.processOnce(result);
+        })
         .then((result) => {
           if (result) {
             const newPageData = Array.isArray(result) ? result : [result];
