@@ -1,4 +1,4 @@
-#!/usr/bin/env -vS NODE_NO_WARNINGS=1 node --experimental-vm-modules
+#!/usr/bin/env -S NODE_NO_WARNINGS=1 node --experimental-vm-modules
 import debug from "debug";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
