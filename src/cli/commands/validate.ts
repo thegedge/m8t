@@ -18,6 +18,8 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
     extends: ["html-validate:recommended", "html-validate:a11y"],
   });
 
+  // TODO verify that all pages have distinct urls and output paths
+
   for (const url of site.pages.urls()) {
     log("validating %s", url);
 

@@ -2,6 +2,7 @@ import { isGeneratorFunction } from "node:util/types";
 import type { PageData } from "../../PageData.js";
 import type { Site } from "../../Site.js";
 import type { MaybeArray, Processor } from "../../index.js";
+import { merge } from "../../utils/merge.js";
 
 /**
  * A transformer that will call `content` if it is a function.
@@ -31,11 +32,7 @@ export class ContentFunctionTransformer implements Processor {
               throw new Error(`expected url in result, but found object with keys ${Object.keys(result).join(", ")}`);
             }
 
-            pages.push({
-              ...data,
-              ...result,
-              url: result.url,
-            });
+            pages.push(merge(data, result as unknown as PageData));
             break;
           default:
             throw new Error(
