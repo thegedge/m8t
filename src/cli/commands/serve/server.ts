@@ -70,7 +70,7 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
       for (const url of urlsToTry) {
         page = await site.pages.page(url);
         if (page) {
-          const content = stringOrThrow(page.content);
+          const content = stringOrThrow(page.content, "content");
           response.writeHead(200, { "content-type": mime.lookup(url) || "text/html" });
           response.end(content);
           return;

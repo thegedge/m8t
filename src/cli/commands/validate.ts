@@ -26,13 +26,13 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
       throw new Error(`Could not build page for URL ${url}`);
     }
 
-    const outputPath = stringOrThrow(page.outputPath);
+    const outputPath = stringOrThrow(page.outputPath, "output path");
     if (!outputPath.endsWith(".html")) {
       continue;
     }
 
-    const filename = stringOrThrow(page.filename);
-    const content = stringOrThrow(page.content);
+    const filename = stringOrThrow(page.filename, "filename");
+    const content = stringOrThrow(page.content, "content");
 
     let rules: RuleConfig | undefined = undefined;
     if (page.htmlValidateRules && typeof page.htmlValidateRules === "object") {

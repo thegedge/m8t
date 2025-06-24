@@ -13,9 +13,9 @@ export type PageData = {
   [key: string | symbol]: unknown;
 };
 
-export const stringOrThrow = (value: unknown): string => {
+export const stringOrThrow = (value: unknown, label = "value"): string => {
   if (typeof value === "string") {
     return value;
   }
-  throw new Error("expected string");
+  throw new Error(`expected string, got ${typeof value} for ${label}`);
 };

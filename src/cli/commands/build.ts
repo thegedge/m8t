@@ -15,8 +15,8 @@ export const run = async (site: Site, _args: { _: [string] }): Promise<void> => 
       throw new Error(`Could not build page for URL ${url}`);
     }
 
-    const outputPath = stringOrThrow(page.outputPath);
-    const content = stringOrThrow(page.content);
+    const outputPath = stringOrThrow(page.outputPath, "output path");
+    const content = stringOrThrow(page.content, "content");
 
     await site.out.writeFile(outputPath, content);
     process.stdout.write(`Done!\n\tStored in ${outputPath}\n`);
