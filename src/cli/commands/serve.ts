@@ -1,11 +1,14 @@
 import { link } from "ansi-escapes";
 import chalk from "chalk";
+import debug from "debug";
 import { watch } from "fs";
 import { fork, type ChildProcess } from "node:child_process";
 import type { WatchListener } from "node:fs";
 import path from "node:path";
 import type { Site } from "../../Site.js";
 import { printLogoAndTitleWithLines } from "../logo.js";
+
+const log = debug("m8t:serve");
 
 export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
   const exiting = new AbortController();
@@ -69,6 +72,8 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
       // TODO better means of ignoring files that aren't part of the build process
       return;
     }
+
+    log("reloading due to changes in %s", filename);
 
     const newServer = startServer();
     nextServer?.kill("SIGTERM");
