@@ -1,4 +1,3 @@
-import { format } from "prettier";
 import {
   Children as Children_,
   type PropsWithChildren as PropsWithChildren_,
@@ -39,14 +38,5 @@ export const toChildArray = (children: ReactNode | ReactNode[]) => {
 export const renderElementToHTML = async (element: Node): Promise<string> => {
   const stream = await renderToReadableStream(element);
   await stream.allReady;
-
-  let result = await new Response(stream).text();
-  if (process.env.NODE_ENV !== "production") {
-    result = await format(result, {
-      parser: "html",
-      tabWidth: 2,
-    });
-  }
-
-  return result;
+  return await new Response(stream).text();
 };

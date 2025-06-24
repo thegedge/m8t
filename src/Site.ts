@@ -12,6 +12,7 @@ export class Site {
   readonly static: Filesystem;
   readonly processors: ReadonlyArray<Processor>;
   readonly watchDirs: ReadonlyArray<Filesystem>;
+  readonly mode: "development" | "production";
 
   constructor(builder: SiteBuilder) {
     this.builder = builder;
@@ -21,6 +22,11 @@ export class Site {
     this.static = builder.static;
     this.processors = builder.processorsList;
     this.watchDirs = [this.root, ...builder.additionalWatchDirs];
+    this.mode = builder.modeValue;
+  }
+
+  get isDevelopment(): boolean {
+    return this.mode === "development";
   }
 
   get search() {

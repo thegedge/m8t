@@ -29,6 +29,7 @@ export class SiteBuilder {
 
   readonly root: Filesystem;
 
+  #mode: "development" | "production";
   #outDir: string;
   #staticDir: string;
   #pagesDir: string;
@@ -40,6 +41,8 @@ export class SiteBuilder {
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
     this.root = new Filesystem(resolvedRoot);
+
+    this.#mode = process.env.PUBLISH ? "production" : "development";
     this.#pagesDir = path.resolve(this.root.path, "pages");
     this.#staticDir = path.resolve(this.root.path, "static");
     this.#outDir = path.resolve(this.root.path, "out");
@@ -48,32 +51,9 @@ export class SiteBuilder {
     };
   }
 
-  get out(): Filesystem {
-    return new Filesystem(this.#outDir);
-  }
-
-  get pages(): Filesystem {
-    return new Filesystem(this.#pagesDir);
-  }
-
-  get static(): Filesystem {
-    return new Filesystem(this.#staticDir);
-  }
-
-  get typesPath(): string {
-    return this.#typesPath;
-  }
-
-  get processorsList(): Processor[] {
-    return this.#processors;
-  }
-
-  get devServerConfig(): ResolvedDevServerConfig {
-    return this.#devServer;
-  }
-
-  get additionalWatchDirs(): Filesystem[] {
-    return this.#additionalWatchDirs;
+  mode(value: "development" | "production"): this {
+    this.#mode = value;
+    return this;
   }
 
   watch(root: string): this {
@@ -112,5 +92,45 @@ export class SiteBuilder {
       ...config,
     };
     return this;
+  }
+
+  /** @private */
+  get out(): Filesystem {
+    return new Filesystem(this.#outDir);
+  }
+
+  /** @private */
+  get pages(): Filesystem {
+    return new Filesystem(this.#pagesDir);
+  }
+
+  /** @private */
+  get static(): Filesystem {
+    return new Filesystem(this.#staticDir);
+  }
+
+  /** @private */
+  get typesPath(): string {
+    return this.#typesPath;
+  }
+
+  /** @private */
+  get processorsList(): Processor[] {
+    return this.#processors;
+  }
+
+  /** @private */
+  get devServerConfig(): ResolvedDevServerConfig {
+    return this.#devServer;
+  }
+
+  /** @private */
+  get additionalWatchDirs(): Filesystem[] {
+    return this.#additionalWatchDirs;
+  }
+
+  /** @private */
+  get modeValue(): "development" | "production" {
+    return this.#mode;
   }
 }

@@ -21,7 +21,7 @@ const processedFor = Symbol.for("processedFor");
  * The resulting content will be a React element.
  */
 export class MdxLoader implements Processor {
-  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
+  async process(site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     if (data[processedFor] === data.filename) {
       return;
     }
@@ -38,7 +38,7 @@ export class MdxLoader implements Processor {
     const compiled = await compile(mdxSource, {
       format: "mdx",
       outputFormat: "program",
-      development: process.env.NODE_ENV !== "production",
+      development: site.isDevelopment,
       baseUrl,
 
       // TODO make these configurable

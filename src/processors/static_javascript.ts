@@ -115,8 +115,8 @@ export class StaticJavascriptProcessor implements Processor {
       format: "esm",
       bundle: true,
       splitting: true,
-      minify: !!process.env.PUBLISH,
-      sourcemap: process.env.PUBLISH ? undefined : "inline",
+      minify: site.isDevelopment,
+      sourcemap: site.isDevelopment ? "inline" : undefined,
       logLevel: "silent",
       write: false,
     });
