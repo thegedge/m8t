@@ -8,19 +8,43 @@ runs:
       uses: nixbuild/nix-quick-install-action@v30
       with:
         nix_conf: |
+          substituters = https://cache.nixos.org/ https://nix-community.cachix.org
+          trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
           keep-env-derivations = true
           keep-outputs = true
 
-    - name: Cache nix
-      uses: DeterminateSystems/magic-nix-cache-action@main
+    - name: Configure git
+      shell: bash
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
     - name: Install node modules
       shell: bash
       run: nix develop --command npm install
 
-    - uses: actions/cache@v3
+    - name: Restore and save Nix store and npm cache
+      uses: nix-community/cache-nix-action@v6
       with:
-        path: node_modules
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('.github/workflows/setup.yaml', '**/*.nix', '**/flake.lock') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-
+        gc-max-store-size: 0
+        purge: true
+        purge-prefixes: nix-${{ runner.os }}-
+        purge-created: 0
+        purge-primary-key: never
+
+    - name: Get npm cache directory
+      id: npm-cache-dir
+      shell: bash
+      run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
+        path: |
+          ${{ steps.npm-cache-dir.outputs.dir }}
+          ./node_modules

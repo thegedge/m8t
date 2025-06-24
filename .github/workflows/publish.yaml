@@ -73,7 +73,5 @@ jobs:
             exit 0
           fi
 
-          git config --global user.email "${EMAIL}"
-          git config --global user.name "${NAME}"
           git tag -a "${VERSION}" -m "Release ${VERSION}"
           git push --follow-tags
