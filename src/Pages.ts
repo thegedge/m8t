@@ -95,10 +95,7 @@ export class Pages {
       workStarted();
 
       Promise.resolve(pageData)
-        .then((result) => {
-          log("processing page %s", result.filename);
-          return this.processOnce(result);
-        })
+        .then((result) => this.processOnce(result))
         .then((result) => {
           if (result) {
             const newPageData = Array.isArray(result) ? result : [result];
@@ -251,9 +248,15 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
   ): Promise<MaybeArray<PageData> | null> {
     const tracker = this.#performanceTracker.track();
 
+    log("processing page %s", data.filename);
     for (const processor of processors) {
       const result = await processor.process(this.site, data);
       const processingTime = tracker.cumulativeTime;
+
+      if (result) {
+        log("processed page %s with %s", data.filename, processor.constructor.name);
+      }
+
       if (Array.isArray(result)) {
         return result.map(
           (result) =>
@@ -273,6 +276,9 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
         } as PageData;
       }
     }
+
+    log("no processor for page %s", data.filename);
+
     return null;
   }
 }
