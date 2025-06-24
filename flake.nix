@@ -24,7 +24,7 @@
           packages = {
             direnv = pkgs.direnv;
             nix-direnv = pkgs.nix-direnv;
-            node = pkgs.nodejs_23;
+            node = pkgs.nodejs_24;
           };
 
           devShell = callPackage ./devShell.nix {
