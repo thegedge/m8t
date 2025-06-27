@@ -80,7 +80,8 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
       const staticFile = path.join(site.static.path, url.pathname);
       try {
         if ((await stat(staticFile)).isFile()) {
-          response.writeHead(200, { "content-encoding": "text/plain" });
+          const mimeType = mime.lookup(staticFile) || "text/plain";
+          response.writeHead(200, { "content-type": mimeType });
           createReadStream(staticFile).pipe(response);
           return;
         }
