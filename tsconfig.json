@@ -30,6 +30,6 @@
     "noImplicitOverride": true
   },
 
-  "include": ["./src", "./types"],
+  "include": ["./src", "./types", "./prettier.config.mjs"],
   "exclude": ["node_modules", "dist"]
 }
