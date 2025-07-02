@@ -6,12 +6,12 @@ export { MdxLoader } from "./loaders/mdx.js";
 export { ReadFileLoader } from "./loaders/read_file.js";
 export { TypescriptLoader } from "./loaders/typescript.js";
 export { CssRenderer } from "./renderers/css.js";
+export { ReactRenderer } from "./renderers/react.js";
 export { StringRenderer } from "./renderers/string.js";
 export { StaticJavascriptProcessor } from "./static_javascript.js";
 export { ContentFunctionTransformer } from "./transformers/content_function.js";
 export { LayoutTransformer } from "./transformers/layout.js";
 export { PageDefaultsTransformer } from "./transformers/page_defaults.js";
-export { ReactRenderer } from "./transformers/react.js";
 export { ReadingTimeTransformer } from "./transformers/reading_time.js";
 export { SearchTransformer } from "./transformers/search.js";
 
