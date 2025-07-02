@@ -42,7 +42,7 @@ const main = async (command: string | undefined, args: Args) => {
 
 const entryFile = process.argv?.[1];
 const __filename = fileURLToPath(import.meta.url);
-if (entryFile !== __filename && !entryFile.endsWith("node_modules/.bin/mate")) {
+if (entryFile !== __filename && !entryFile.endsWith("node_modules/.bin/m8t")) {
   console.log("Can only run this file as a main script");
   process.exit(1);
 }
