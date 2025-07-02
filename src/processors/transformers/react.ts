@@ -1,4 +1,3 @@
-import { format } from "prettier";
 import type { MaybeArray, Processor } from "../../index.js";
 import { isValidElement, renderElementToHTML } from "../../jsx.js";
 import type { PageData } from "../../PageData.js";
@@ -17,18 +16,10 @@ export class ReactRenderer implements Processor {
       return;
     }
 
-    let content = await renderElementToHTML(data.content);
-    if (site.isDevelopment) {
-      content = await format(content, {
-        parser: "html",
-        tabWidth: 2,
-      });
-    }
-
     return {
       ...data,
       mimeType: "text/html",
-      content,
+      content: await renderElementToHTML(data.content),
     };
   }
 }
