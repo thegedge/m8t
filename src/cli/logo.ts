@@ -66,10 +66,10 @@ const S = " ";
 
 const M8T_TITLE_LINES = [
   [S, S, S, S, S, S, S, S, S, C, C, S, S, S, S, S].join(""),
-  [C, S, S, S, S, S, S, S, C, S, S, C, S, S, C, S].join(""),
+  [S, S, S, S, S, S, S, S, C, S, S, C, S, S, C, S].join(""),
   [C, C, C, S, C, C, S, S, S, C, C, S, S, C, C, C].join(""),
   [C, S, S, C, S, S, C, S, C, S, S, C, S, S, C, S].join(""),
-  [C, S, S, C, S, S, C, S, S, C, C, S, S, S, C, S].join(""),
+  [C, S, S, C, S, S, C, S, S, C, C, S, S, S, C, C].join(""),
 ];
 
 const HI_BOX_CHAR = "\u2580";
