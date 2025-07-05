@@ -2,6 +2,12 @@
 	<img width="320" src="assets/logo.svg" alt="m8t">
 </h1>
 
+# m8t
+
+[![Publish](https://github.com/thegedge/m8t/actions/workflows/publish.yaml/badge.svg)](https://github.com/thegedge/m8t/actions/workflows/publish.yaml)
+[![NPM Downloads](https://img.shields.io/npm/dm/m8t)](https://www.npmjs.com/package/m8t)
+[![NPM Unpacked Size](https://img.shields.io/npm/unpacked-size/m8t)](https://www.npmjs.com/package/m8t)
+
 > A minimal static site generator. Your best friend.
 
 "m8t", pronounced "mate", is yet another static site generator, built to power the original author's
