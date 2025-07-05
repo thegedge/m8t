@@ -36,7 +36,8 @@
     "types/**/*.d.ts"
   ],
   "scripts": {
-    "lint": "prettier --check .",
+    "lint": "npm run lint:prettier",
+    "lint:prettier": "./scripts/prettier-with-diff",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
     "test": "echo 'No tests yet'",

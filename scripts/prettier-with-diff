@@ -1,0 +1,28 @@
+#!/bin/bash
+
+main() {
+  # Always run from the project root
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+  cd "$PROJECT_ROOT"
+
+  UNFORMATTED_FILES=$(npm exec prettier -- --list-different .)
+  if [[ -z "${UNFORMATTED_FILES}" ]]; then
+    echo "✅ All files are properly formatted"
+    exit 0
+  fi
+
+  echo "⚠️ Found files that need formatting"
+  echo
+
+  for file in ${UNFORMATTED_FILES}; do
+    if [[ -f "${file}" ]]; then
+      npm exec prettier -- "${file}" | diff --unified=2 --color=auto "${file}" -
+      echo
+    fi
+  done
+
+  exit 1
+}
+
+main "$@"
