@@ -28,7 +28,6 @@
     "m8t": "./dist/cli/index.js"
   },
   "files": [
-    "assets/**/*",
     "dist/**/*.{d.ts,js}",
     "LICENSE",
     "package.json",
