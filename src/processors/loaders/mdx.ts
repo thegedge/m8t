@@ -93,10 +93,7 @@ export class MdxLoader implements Processor {
     return merge(data, frontmatterData, mdxData, {
       [processedFor]: data.filename,
       content: (props: any) => {
-        return mdxContent({
-          ...props,
-          components: props.components,
-        });
+        return mdxContent(props);
       },
     });
   }
