@@ -193,6 +193,11 @@ const pageDataJsonReplacer = (key: string, value: unknown): unknown => {
     }
   }
 
+  if (typeof value === "function") {
+    // TODO maybe see if there's a nicer way to format this
+    return value.name ?? `<function name="${value.toString().slice(0, 100)}">`;
+  }
+
   return value;
 };
 
