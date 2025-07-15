@@ -6,10 +6,10 @@ import fs from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stringOrThrow, type PageData } from "../../../PageData.js";
-import { Redirects } from "../../../Redirects.js";
-import type { Site } from "../../../Site.js";
-import { SiteBuilder } from "../../../SiteBuilder.js";
+import { stringOrThrow, type PageData } from "../PageData.js";
+import type { Site } from "../Site.js";
+import { SiteBuilder } from "../SiteBuilder.js";
+import { Redirects } from "./Redirects.js";
 import { debugPageGet } from "./routes/__debug/GET-:url.js";
 import { debugGet } from "./routes/__debug/GET.js";
 

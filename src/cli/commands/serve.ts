@@ -32,7 +32,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
   const startTime = performance.now();
 
   const startServer = () => {
-    return fork(path.join(import.meta.dirname, "serve/server.js"), {
+    return fork(path.join(import.meta.dirname, "../../server/entry.js"), {
       env: {
         ...process.env,
         SITE_ROOT: site.root.path,

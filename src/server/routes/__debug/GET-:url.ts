@@ -1,7 +1,7 @@
 import { isEqual } from "lodash-es";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { symLineage, symProcessingTime, symProcessor, type PageData } from "../../../../../PageData.js";
-import type { Site } from "../../../../../Site.js";
+import { symLineage, symProcessingTime, symProcessor, type PageData } from "../../../PageData.js";
+import type { Site } from "../../../Site.js";
 
 export const debugPageGet = async (site: Site, request: IncomingMessage, response: ServerResponse): Promise<void> => {
   const url = decodeURIComponent(request.url?.replace("/__debug__/", "") ?? "");
