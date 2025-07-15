@@ -3,7 +3,8 @@ declare module "process" {
     namespace NodeJS {
       interface ProcessEnv {
         PUBLISH?: string;
-        NETLIFY?: string;
+        SITE_ROOT?: string;
+        PROFILE?: string;
       }
     }
   }
