@@ -10,12 +10,51 @@ import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 const log = debug("m8t:serve");
 
+// Animation characters for reloading indicator
+const ANIMATION_CHARS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+let animationIndex = 0;
+let globalAnimationInterval: NodeJS.Timeout | null = null;
+
+const clearLine = () => {
+  process.stdout.write("\r" + " ".repeat(80) + "\r");
+};
+
+const showReloadingMessage = (isInitialLoad = false) => {
+  const animationChar = ANIMATION_CHARS[animationIndex];
+  animationIndex = (animationIndex + 1) % ANIMATION_CHARS.length;
+
+  const message = isInitialLoad ? "Server starting up" : "Reloading";
+  process.stdout.write(chalk.blue(`\r${animationChar} ${message}...`));
+};
+
+const showReadyMessage = (startTime: number, url: string, isInitialLoad = false) => {
+  const elapsed = Math.round(performance.now() - startTime);
+
+  clearLine();
+
+  if (isInitialLoad) {
+    printLogoAndTitleWithLines(process.stdout, [
+      "",
+      `Server listening on ${chalk.bold(link(url, url))}`,
+      "",
+      chalk.green(`✓ Server loaded in: ${chalk.bold(`${elapsed}ms`)}`),
+    ]);
+  } else {
+    process.stdout.write(chalk.green(`\r✓ Reloaded in ${chalk.bold(`${elapsed}ms`)}`));
+  }
+};
+
 export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
   const exiting = new AbortController();
   const { resolve: finished, promise: exitingPromise } = Promise.withResolvers<void>();
 
   const shutdown = () => {
     exiting.abort();
+
+    if (globalAnimationInterval) {
+      clearInterval(globalAnimationInterval);
+      globalAnimationInterval = null;
+    }
 
     setTimeout(() => {
       finished();
@@ -30,6 +69,7 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
 
 const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
   const startTime = performance.now();
+  let reloadStartTime = startTime;
 
   const startServer = () => {
     return fork(path.join(import.meta.dirname, "../../server/entry.js"), {
@@ -46,21 +86,21 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
   let currentServer = startServer();
   let nextServer: ChildProcess | null = null;
+  const url = `http://localhost:${site.builder.devServerConfig.port}`;
 
   currentServer.on("message", (message) => {
     if (message === "ready") {
-      const url = `http://localhost:${site.builder.devServerConfig.port}`;
-      printLogoAndTitleWithLines(process.stdout, [
-        "",
-        `Server init time: ${chalk.bold(`${Math.round(performance.now() - startTime)}ms`)}`,
-        "",
-        `Server listening on ${chalk.bold(link(url, url))}`,
-      ]);
+      if (globalAnimationInterval) {
+        clearInterval(globalAnimationInterval);
+        globalAnimationInterval = null;
+      }
+
+      showReadyMessage(reloadStartTime, url, true);
     }
   });
 
-  currentServer.on("error", (message) => {
-    // suppress errors
+  currentServer.on("error", (_message) => {
+    // TODO stop suppressing errors and show them
   });
 
   const reload: WatchListener<string> = (_event, filename) => {
@@ -75,6 +115,19 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
     log("reloading due to changes in %s", filename);
 
+    // Start reload timing and animation
+    reloadStartTime = performance.now();
+    clearLine();
+    showReloadingMessage(false);
+
+    // Start animation interval
+    if (globalAnimationInterval) {
+      clearInterval(globalAnimationInterval);
+    }
+    globalAnimationInterval = setInterval(() => {
+      showReloadingMessage(false);
+    }, 100);
+
     const newServer = startServer();
     nextServer?.kill("SIGTERM");
     nextServer = newServer;
@@ -85,6 +138,13 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
     nextServer.on("message", (message) => {
       if (message === "ready") {
+        if (globalAnimationInterval) {
+          clearInterval(globalAnimationInterval);
+          globalAnimationInterval = null;
+        }
+
+        showReadyMessage(reloadStartTime, url, false);
+
         currentServer?.kill("SIGTERM");
         currentServer = newServer;
         if (nextServer == newServer) {
@@ -93,6 +153,13 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
       }
     });
   };
+
+  // Start initial loading animation
+  showReloadingMessage(true);
+  globalAnimationInterval = setInterval(() => {
+    clearLine();
+    showReloadingMessage(true);
+  }, 100);
 
   // Normally you should close watchers once you're done with them, but since we're going to reload the process
   // we instead just unref them, to allow everything to terminate nicely.
