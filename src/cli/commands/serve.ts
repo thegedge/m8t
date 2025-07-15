@@ -6,7 +6,7 @@ import { fork, type ChildProcess } from "node:child_process";
 import type { WatchListener } from "node:fs";
 import path from "node:path";
 import type { Site } from "../../Site.js";
-import { printLogoAndTitleWithLines } from "../logo.js";
+import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 const log = debug("m8t:serve");
 
