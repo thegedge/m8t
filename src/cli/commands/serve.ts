@@ -103,7 +103,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     // TODO stop suppressing errors and show them
   });
 
-  const reload: WatchListener<string> = (_event, filename) => {
+  const reload: WatchListener<string> = async (_event, filename) => {
     if (exiting.aborted) {
       return;
     }
@@ -117,35 +117,27 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
     // Start reload timing and animation
     reloadStartTime = performance.now();
-    clearLine();
-    showReloadingMessage(false);
 
-    // Start animation interval
-    if (globalAnimationInterval) {
-      clearInterval(globalAnimationInterval);
+    if (currentServer) {
+      await new Promise<void>((resolve) => {
+        currentServer!.on("exit", () => resolve());
+        currentServer.kill("SIGTERM"); // kill after setting up the listener to ensure it fires
+      });
     }
-    globalAnimationInterval = setInterval(() => {
-      showReloadingMessage(false);
-    }, 100);
 
     const newServer = startServer();
     nextServer?.kill("SIGTERM");
     nextServer = newServer;
 
-    nextServer.on("error", (message) => {
+    newServer.on("error", (message: unknown) => {
       // suppress errors
+      // TODO is there something we can do here? show error? try again?
     });
 
-    nextServer.on("message", (message) => {
+    newServer.on("message", (message: unknown) => {
       if (message === "ready") {
-        if (globalAnimationInterval) {
-          clearInterval(globalAnimationInterval);
-          globalAnimationInterval = null;
-        }
+        draw(reloadStartTime, url, false).render(buffer);
 
-        showReadyMessage(reloadStartTime, url, false);
-
-        currentServer?.kill("SIGTERM");
         currentServer = newServer;
         if (nextServer == newServer) {
           nextServer = null;
