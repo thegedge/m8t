@@ -62,6 +62,7 @@
     "inflected": "^2.1.0",
     "lodash-es": "^4.17.21",
     "mime-types": "^3.0.1",
+    "p-debounce": "^4.0.0",
     "postcss": "^8.5.6",
     "postcss-discard-comments": "^7.0.4",
     "postcss-nested": "^7.0.2",

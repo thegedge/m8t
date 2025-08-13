@@ -5,6 +5,7 @@ import { watch } from "fs";
 import { fork, type ChildProcess } from "node:child_process";
 import type { WatchListener } from "node:fs";
 import path from "node:path";
+import pDebounce from "p-debounce";
 import type { Site } from "../../Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
@@ -103,13 +104,13 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     // TODO stop suppressing errors and show them
   });
 
-  const reload: WatchListener<string> = async (_event, filename) => {
+  const reload: WatchListener<string> = pDebounce(async (_event, filename) => {
     if (exiting.aborted) {
       return;
     }
 
-    if (filename?.endsWith(".d.ts") || filename?.endsWith("profile.cpuprofile")) {
-      // TODO better means of ignoring files that aren't part of the build process
+    if (filename?.endsWith(".d.ts") || filename?.endsWith("profile.cpuprofile") || filename?.endsWith(".rb")) {
+      // TODO expose a way for the user to ignore files that aren't part of the build process
       return;
     }
 
@@ -118,10 +119,11 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     // Start reload timing and animation
     reloadStartTime = performance.now();
 
-    if (currentServer) {
+    const server = currentServer;
+    if (server) {
       await new Promise<void>((resolve) => {
-        currentServer!.on("exit", () => resolve());
-        currentServer.kill("SIGTERM"); // kill after setting up the listener to ensure it fires
+        server.on("exit", () => resolve());
+        server.kill("SIGTERM"); // kill after setting up the listener to ensure it fires
       });
     }
 
@@ -144,14 +146,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
         }
       }
     });
-  };
-
-  // Start initial loading animation
-  showReloadingMessage(true);
-  globalAnimationInterval = setInterval(() => {
-    clearLine();
-    showReloadingMessage(true);
-  }, 100);
+  }, 500);
 
   // Normally you should close watchers once you're done with them, but since we're going to reload the process
   // we instead just unref them, to allow everything to terminate nicely.
