@@ -138,7 +138,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
     newServer.on("message", (message: unknown) => {
       if (message === "ready") {
-        draw(reloadStartTime, url, false).render(buffer);
+        // draw(reloadStartTime, url, false).render(buffer);
 
         currentServer = newServer;
         if (nextServer == newServer) {

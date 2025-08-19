@@ -1,5 +1,4 @@
 import debug from "debug";
-import { writeFile } from "fs/promises";
 import { omit } from "lodash-es";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
@@ -174,12 +173,14 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
 
       await Promise.race([allWorkDone, workTimedOut]);
 
-      const typesPath = path.join(this.site.root.path, this.site.builder.typesPath);
-      await writeFile(typesPath, `import "path";\n\n${Array.from(types.values()).join("")}`);
+      await this.site.root.writeFile(
+        this.site.builder.typesPath,
+        `import "path";\n\n${Array.from(types.values()).join("")}`,
+      );
     } finally {
       if (session) {
         const { profile } = await session.post("Profiler.stop");
-        await writeFile(path.join(this.site.root.path, "profile.cpuprofile"), JSON.stringify(profile));
+        await this.site.root.writeFile("profile.cpuprofile", JSON.stringify(profile));
         session.disconnect();
       }
       clearInterval(interval);
