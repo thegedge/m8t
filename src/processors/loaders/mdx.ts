@@ -42,6 +42,8 @@ export class MdxLoader implements Processor {
       baseUrl,
 
       // TODO make these configurable
+      // TODO add a plugin to remove a single <p> element nested in another element, due to how interleaving works in MDX v2
+      //      See https://github.com/rehypejs/rehype-unwrap-images/blob/main/lib/index.js for an example of how to write such a plugin
       remarkPlugins: [
         remarkDefinitionList,
         remarkGfm,
