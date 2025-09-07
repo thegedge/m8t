@@ -6,7 +6,6 @@
     "static site generator",
     "markdown",
     "react",
-    "tailwindcss",
     "mdx",
     "html"
   ],
@@ -89,7 +88,11 @@
   },
   "peerDependencies": {
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwindcss": "^4.1.5"
+    "react-dom": "^19.1.0"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/nesting": "*",
+    "@tailwindcss/postcss": "*",
+    "postcss-discard-comments": "*"
   }
 }

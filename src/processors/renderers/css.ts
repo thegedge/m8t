@@ -1,7 +1,4 @@
-import tailwindcssNesting from "@tailwindcss/nesting";
-import tailwindcssPlugin from "@tailwindcss/postcss";
 import postcss from "postcss";
-import postcssDiscardComments from "postcss-discard-comments";
 import type { MaybeArray, Processor } from "../../index.js";
 import type { PageData } from "../../PageData.js";
 import type { Site } from "../../Site.js";
@@ -25,7 +22,8 @@ export class CssRenderer implements Processor {
       return;
     }
 
-    const result = await this.processor.process(String(data.content), {
+    const processor = await this.processor(data.postcssPlugins as postcss.Plugin[]);
+    const result = await processor.process(String(data.content), {
       from: data.filename,
     });
 
@@ -41,8 +39,26 @@ export class CssRenderer implements Processor {
     };
   }
 
-  private get processor() {
-    this.#processor ??= postcss([tailwindcssNesting, tailwindcssPlugin, postcssDiscardComments]);
+  private async processor(postcssPlugins?: postcss.Plugin[]) {
+    if (!this.#processor) {
+      if (postcssPlugins) {
+        this.#processor = postcss(postcssPlugins);
+      } else {
+        const tailwindcssNesting = await maybeImportDefault(import("@tailwindcss/nesting"));
+        const tailwindcssPlugin = await maybeImportDefault(import("@tailwindcss/postcss"));
+        const postcssDiscardComments = await maybeImportDefault(import("postcss-discard-comments"));
+        this.#processor = postcss([tailwindcssNesting, tailwindcssPlugin, postcssDiscardComments].filter((v) => !!v));
+      }
+    }
     return this.#processor;
   }
 }
+
+const maybeImportDefault = async <T>(module: Promise<{ default: T }>): Promise<T | null> => {
+  try {
+    const { default: value } = await module;
+    return value;
+  } catch (e) {
+    return null;
+  }
+};
