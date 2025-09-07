@@ -6,7 +6,6 @@
     "static site generator",
     "markdown",
     "react",
-    "tailwindcss",
     "mdx",
     "html"
   ],
@@ -51,8 +50,6 @@
   "dependencies": {
     "@mdx-js/mdx": "^3.1.0",
     "@nodejs-loaders/tsx": "^1.1.2",
-    "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
-    "@tailwindcss/postcss": "^4.1.11",
     "ansi-escapes": "^7.0.0",
     "chalk": "^5.4.1",
     "debug": "^4.4.1",
@@ -64,8 +61,6 @@
     "mime-types": "^3.0.1",
     "p-debounce": "^4.0.0",
     "postcss": "^8.5.6",
-    "postcss-discard-comments": "^7.0.4",
-    "postcss-nested": "^7.0.2",
     "prettier": "^3.6.2",
     "rehype-katex": "^7.0.1",
     "remark-definition-list": "^2.0.0",
@@ -89,7 +84,11 @@
   },
   "peerDependencies": {
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "tailwindcss": "^4.1.5"
+    "react-dom": "^19.1.0"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/nesting": "*",
+    "@tailwindcss/postcss": "*",
+    "postcss-discard-comments": "*"
   }
 }
