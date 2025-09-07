@@ -74,7 +74,7 @@ export class Pages {
     // I will handle this, but not until you've gone as far as you can with everything else".
 
     const { increment: workStarted, decrement: workCompleted, promise: allWorkDone } = counterPromise();
-    const { restart, promise: workTimedOut } = restartableTimeout(5000);
+    const { restart, promise: workTimedOut } = restartableTimeout(10_000);
 
     let processedDataSinceLastCheck = false;
     const interval = setInterval(() => {
