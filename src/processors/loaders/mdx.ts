@@ -1,5 +1,4 @@
 import { compile } from "@mdx-js/mdx";
-import parseFrontmatter from "gray-matter";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import vm, { createContext, SyntheticModule } from "node:vm";
@@ -32,10 +31,9 @@ export class MdxLoader implements Processor {
     }
 
     const fileContents = await readFile(filename);
-    const { data: frontmatterData, content: mdxSource } = parseFrontmatter(fileContents);
     const baseUrl = new URL("file://" + filename);
 
-    const compiled = await compile(mdxSource, {
+    const compiled = await compile(fileContents, {
       format: "mdx",
       outputFormat: "program",
       development: site.isDevelopment,
@@ -92,7 +90,7 @@ export class MdxLoader implements Processor {
       throw e;
     }
 
-    return merge(data, frontmatterData, mdxData, {
+    return merge(data, mdxData, {
       [processedFor]: data.filename,
       content: (props: any) => {
         return mdxContent(props);

@@ -54,7 +54,6 @@
     "chalk": "^5.4.1",
     "debug": "^4.4.1",
     "esbuild": "^0.25.5",
-    "gray-matter": "^4.0.3",
     "html-validate": "^9.7.1",
     "inflected": "^2.1.0",
     "lodash-es": "^4.17.21",
