@@ -20,9 +20,9 @@ export class TypescriptLoader implements Processor {
       return;
     }
 
-    const { default: content, ...otherData } = await import(data.filename);
+    const { default: defaultExport, ...otherData } = await import(data.filename);
     return merge(data, otherData, {
-      content,
+      content: otherData.content ?? defaultExport,
       [processedFor]: data.filename,
     });
   }
