@@ -3,7 +3,6 @@ import chalk from "chalk";
 import debug from "debug";
 import { watch } from "fs";
 import { fork, type ChildProcess } from "node:child_process";
-import type { WatchListener } from "node:fs";
 import path from "node:path";
 import pDebounce from "p-debounce";
 import type { Site } from "../../Site.js";
@@ -104,15 +103,23 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     // TODO stop suppressing errors and show them
   });
 
-  const reload: WatchListener<string> = pDebounce(async (_event, filename) => {
+  const reload = pDebounce(async (filename: string) => {
     if (exiting.aborted) {
       return;
     }
 
-    if (filename?.endsWith(".d.ts") || filename?.endsWith("profile.cpuprofile") || filename?.endsWith(".rb")) {
+    if (
+      filename.includes("/.git/") ||
+      filename.endsWith(".d.ts") ||
+      filename.endsWith("profile.cpuprofile") ||
+      filename.endsWith(".rb") ||
+      filename.startsWith(site.static.path) // static files shouldn't be cached, so ignore
+    ) {
       // TODO expose a way for the user to ignore files that aren't part of the build process
       return;
     }
+
+    console.log("reloading due to changes in %s", filename);
 
     log("reloading due to changes in %s", filename);
 
@@ -151,6 +158,13 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
   // Normally you should close watchers once you're done with them, but since we're going to reload the process
   // we instead just unref them, to allow everything to terminate nicely.
   for (const watchDir of site.watchDirs) {
-    watch(watchDir.path, { recursive: true, signal: exiting }, reload).unref();
+    watch(watchDir.path, { recursive: true, signal: exiting }, (_event, filePath) => {
+      if (!filePath) {
+        return;
+      }
+
+      const absolutePath = path.join(watchDir.path, filePath);
+      reload(absolutePath);
+    }).unref();
   }
 };
