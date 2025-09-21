@@ -1,10 +1,15 @@
+import EventEmitter from "node:events";
 import type { Filesystem } from "./Filesystem.js";
 import { Pages } from "./Pages.js";
 import type { Processor } from "./processors/index.js";
 import { Search } from "./Search.js";
 import type { SiteBuilder } from "./SiteBuilder.js";
 
-export class Site {
+export type SiteEventMap = {
+  afterBuild: [site: Site];
+};
+
+export class Site extends EventEmitter<SiteEventMap> {
   readonly builder: SiteBuilder;
   readonly root: Filesystem;
   readonly out: Filesystem;
@@ -15,6 +20,8 @@ export class Site {
   readonly mode: "development" | "production";
 
   constructor(builder: SiteBuilder) {
+    super({ captureRejections: true });
+
     this.builder = builder;
     this.root = builder.root;
     this.out = builder.out;
@@ -23,6 +30,12 @@ export class Site {
     this.processors = builder.processorsList;
     this.watchDirs = [this.root, ...builder.additionalWatchDirs];
     this.mode = builder.modeValue;
+
+    for (const [event, listeners] of Object.entries(builder.eventListeners)) {
+      for (const listener of listeners) {
+        this.on(event as keyof SiteEventMap, listener as any);
+      }
+    }
   }
 
   get isDevelopment(): boolean {

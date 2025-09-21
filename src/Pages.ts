@@ -183,6 +183,9 @@ declare module "${path.relative(path.dirname(typesPath), pageData.filename)}" {
         await this.site.root.writeFile("profile.cpuprofile", JSON.stringify(profile));
         session.disconnect();
       }
+
+      this.site.emit("afterBuild", this.site);
+
       clearInterval(interval);
     }
   }

@@ -1,6 +1,10 @@
 import type { PageData } from "./PageData.js";
 import type { Query } from "./Search.js";
 
+export type { PageData } from "./PageData.js";
+export type { Processor } from "./processors/index.js";
+export type { Site } from "./Site.js";
+
 export interface Search {
   pages(query: Query): Promise<PageData[]>;
   previousPage(url: string, query: Query): Promise<PageData | null>;

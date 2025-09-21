@@ -2,7 +2,7 @@ import debug from "debug";
 import path from "node:path";
 import { Filesystem } from "./Filesystem.js";
 import type { Processor } from "./processors/index.js";
-import { Site } from "./Site.js";
+import { Site, type SiteEventMap } from "./Site.js";
 
 type DevServerConfig = {
   port?: number;
@@ -12,6 +12,10 @@ type DevServerConfig = {
 type ResolvedDevServerConfig = {
   port: number;
   redirectsPath?: string;
+};
+
+type SiteEventListenersMap = {
+  [K in keyof SiteEventMap]?: ((...args: SiteEventMap[K]) => void | Promise<void>)[];
 };
 
 const log = debug("m8t:site");
@@ -37,6 +41,7 @@ export class SiteBuilder {
   #typesPath: string = "";
   #devServer: ResolvedDevServerConfig;
   #additionalWatchDirs: Filesystem[] = [];
+  #events: SiteEventListenersMap = {};
 
   constructor(root: string) {
     const resolvedRoot = path.isAbsolute(root) ? root : path.resolve(process.cwd(), root);
@@ -92,6 +97,20 @@ export class SiteBuilder {
       ...config,
     };
     return this;
+  }
+
+  on<T extends keyof SiteEventMap, F extends (...args: SiteEventMap[T]) => void | Promise<void>>(
+    event: T,
+    listener: F,
+  ): this {
+    this.#events[event] ??= [];
+    this.#events[event].push(listener);
+    return this;
+  }
+
+  /** @private */
+  get eventListeners(): SiteEventListenersMap {
+    return this.#events;
   }
 
   /** @private */
