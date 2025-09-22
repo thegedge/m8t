@@ -119,8 +119,6 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
       return;
     }
 
-    console.log("reloading due to changes in %s", filename);
-
     log("reloading due to changes in %s", filename);
 
     // Start reload timing and animation
