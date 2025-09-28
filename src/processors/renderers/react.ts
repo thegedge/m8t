@@ -16,9 +16,12 @@ export class ReactRenderer implements Processor {
       return;
     }
 
+    // TODO infer other kinds of mime types, not just SVG
+    const mimeType = data.url?.endsWith(".svg") ? "image/svg+xml" : "text/html";
+
     return {
       ...data,
-      mimeType: "text/html",
+      mimeType,
       content: await renderElementToHTML(data.content),
     };
   }
