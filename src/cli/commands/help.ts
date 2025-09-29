@@ -2,7 +2,7 @@ import chalk from "chalk";
 import type { Site } from "../../Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
-export const run = async (_site: Site, _args: Record<string, unknown>): Promise<void> => {
+export const run = async (_site: Site, _args: Record<string, unknown>, _signal: AbortSignal): Promise<number> => {
   console.log();
   printLogoAndTitleWithLines(process.stdout, [
     `${chalk.bold("Available commands")}:`,
@@ -17,4 +17,6 @@ export const run = async (_site: Site, _args: Record<string, unknown>): Promise<
     `      The directory to run the command in ${chalk.dim(`(default: ".")`)}`,
   ]);
   console.log();
+
+  return 0;
 };

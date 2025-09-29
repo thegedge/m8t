@@ -6,7 +6,11 @@ import type { Site } from "../../Site.js";
 
 const log = debug("m8t:validate");
 
-export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean }): Promise<void> => {
+export const run = async (
+  site: Site,
+  args: { _: string[]; "fail-fast": boolean },
+  signal: AbortSignal,
+): Promise<number> => {
   log("initializing tsx loader");
   await import("@nodejs-loaders/tsx");
 
@@ -21,6 +25,10 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
   // TODO verify that all pages have distinct urls and output paths
 
   for (const url of site.pages.urls()) {
+    if (signal.aborted) {
+      return 0;
+    }
+
     log("validating %s", url);
 
     const page = await site.pages.page(url);
@@ -43,16 +51,16 @@ export const run = async (site: Site, args: { _: string[]; "fail-fast": boolean 
 
     const { valid, results } = await validator.validateString(content, filename, { rules });
     if (!valid) {
-      process.exitCode = 1;
-
       console.log(`--> ${filename}:`);
       dumpMessages(results);
 
       if (args["fail-fast"]) {
-        return;
+        return 1;
       }
     }
   }
+
+  return 0;
 };
 
 const dumpMessages = (results: Result[]) => {

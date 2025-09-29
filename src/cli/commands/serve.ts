@@ -44,27 +44,22 @@ const showReadyMessage = (startTime: number, url: string, isInitialLoad = false)
   }
 };
 
-export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
-  const exiting = new AbortController();
-  const { resolve: finished, promise: exitingPromise } = Promise.withResolvers<void>();
+export const run = async (site: Site, _args: Record<string, unknown>, signal: AbortSignal): Promise<number> => {
+  const { resolve: finished, promise: finishedPromise } = Promise.withResolvers<number>();
 
-  const shutdown = () => {
-    exiting.abort();
-
+  signal.addEventListener("abort", () => {
     if (globalAnimationInterval) {
       clearInterval(globalAnimationInterval);
       globalAnimationInterval = null;
     }
 
     setTimeout(() => {
-      finished();
+      finished(0);
     }, 1500);
-  };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
+  });
 
-  await watchFiles(site, exiting.signal);
-  await exitingPromise;
+  await watchFiles(site, signal);
+  return await finishedPromise;
 };
 
 const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {

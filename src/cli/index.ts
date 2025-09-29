@@ -5,6 +5,12 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { SiteBuilder } from "../SiteBuilder.js";
 
+type Args = {
+  _: string[];
+  directory?: string;
+  [key: string]: unknown;
+};
+
 const COMMANDS = {
   build: async () => await import("./commands/build.js"),
   diff: async () => await import("./commands/diff.js"),
@@ -17,15 +23,9 @@ const isCommand = (command: string | undefined): command is keyof typeof COMMAND
   return !!command && command in COMMANDS;
 };
 
-type Args = {
-  _: string[];
-  directory?: string;
-  [key: string]: unknown;
-};
-
 const log = debug("m8t:cli");
 
-const main = async (command: string | undefined, args: Args) => {
+const main = async (command: string | undefined, args: Args): Promise<number> => {
   let actualCommand: keyof typeof COMMANDS;
   if (isCommand(command)) {
     actualCommand = command;
@@ -36,9 +36,19 @@ const main = async (command: string | undefined, args: Args) => {
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
   const site = await SiteBuilder.siteForRoot(root);
 
+  const exiting = new AbortController();
+  let { resolve: resolveTimedOut, promise: timedOut } = Promise.withResolvers<number>();
+  const shutdown = () => {
+    exiting.abort();
+    setTimeout(() => {
+      resolveTimedOut(100);
+    }, 1500);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
   const commandModule = await COMMANDS[actualCommand]();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  return (await commandModule.run(site, args as any)) ?? 0;
+  return await Promise.race([await commandModule.run(site, args as any, exiting.signal), timedOut]);
 };
 
 const entryFile = process.argv?.[1];

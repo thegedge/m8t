@@ -14,7 +14,7 @@ import type { PageData } from "../../types.js";
 
 const log = debug("m8t:diff");
 
-export const run = async (site: Site, _args: Record<string, unknown>): Promise<void> => {
+export const run = async (site: Site, _args: Record<string, unknown>, signal: AbortSignal): Promise<number> => {
   const [chromeBrowser, firefoxBrowser, webkitBrowser] = await Promise.all([
     chromium.launch(),
     firefox.launch(),
@@ -105,6 +105,10 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
     await pMap(
       tasks,
       async ({ name, browser, options, sitePage }) => {
+        if (signal.aborted) {
+          return;
+        }
+
         const context = await browser.newContext({
           ...options,
           baseURL: "http://localhost:3000",
@@ -125,6 +129,10 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
         const MAX_PAGE_HEIGHT = 30000;
 
         for (let y = 0, index = 1; y < pageHeight; y += MAX_PAGE_HEIGHT, ++index) {
+          if (signal.aborted) {
+            return;
+          }
+
           await page.setViewportSize({
             width: pageWidth,
             height: Math.min(MAX_PAGE_HEIGHT, pageHeight - y),
@@ -160,11 +168,17 @@ export const run = async (site: Site, _args: Record<string, unknown>): Promise<v
       {
         concurrency: Math.max(1, Math.floor(os.cpus().length / 3)),
         stopOnError: false,
+        signal,
       },
     );
+  } catch (error) {
+    console.error(error);
+    return 1;
   } finally {
     await Promise.all([chromeBrowser.close(), firefoxBrowser.close(), webkitBrowser.close()]);
   }
+
+  return 0;
 };
 
 const fileExists = async (path: string) => {
