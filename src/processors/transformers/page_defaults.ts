@@ -1,4 +1,5 @@
 import { parameterize as slugify, titleize, underscore } from "inflected";
+import mime from "mime-types";
 import path from "path";
 import type { PageData } from "../../PageData.js";
 import type { Site } from "../../Site.js";
@@ -90,6 +91,7 @@ export class PageDefaultsTransformer implements Processor {
       url,
       outputPath,
       title,
+      mimeType: (typeof data.mimeType === "string" ? data.mimeType : null) || mime.lookup(url) || null,
       slug: data.slug ?? slugify(typeof title == "string" ? title || parsed.name : parsed.name),
       date: data.date ?? date,
     };

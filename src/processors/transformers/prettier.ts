@@ -9,7 +9,7 @@ import type { Site } from "../../Site.js";
 export class PrettierTransformer implements Processor {
   async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
     // TODO support other mime types
-    if ("mimeType" in data && data.mimeType === "text/html") {
+    if (data.mimeType === "text/html") {
       return;
     }
 
@@ -19,7 +19,6 @@ export class PrettierTransformer implements Processor {
 
     return {
       ...data,
-      mimeType: "text/html",
       content: await format(data.content, {
         parser: "html",
         tabWidth: 2,

@@ -3,6 +3,8 @@ import type { MaybeArray, Processor } from "../../index.js";
 import type { PageData } from "../../PageData.js";
 import type { Site } from "../../Site.js";
 
+const renderedBy = Symbol.for("renderedBy");
+
 /**
  * A renderer that stringifies its content and processes it with PostCSS.
  */
@@ -10,11 +12,11 @@ export class CssRenderer implements Processor {
   #processor!: postcss.Processor;
 
   async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
-    if (!data.filename.endsWith(".css")) {
+    if (data[renderedBy]) {
       return;
     }
 
-    if ("mimeType" in data) {
+    if (!data.filename.endsWith(".css")) {
       return;
     }
 
@@ -36,6 +38,7 @@ export class CssRenderer implements Processor {
       ...data,
       mimeType: "text/css",
       content: result.toString(),
+      [renderedBy]: this.constructor,
     };
   }
 
