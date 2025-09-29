@@ -7,6 +7,7 @@ import { SiteBuilder } from "../SiteBuilder.js";
 
 const COMMANDS = {
   build: async () => await import("./commands/build.js"),
+  diff: async () => await import("./commands/diff.js"),
   help: async () => await import("./commands/help.js"),
   serve: async () => await import("./commands/serve.js"),
   validate: async () => await import("./commands/validate.js"),

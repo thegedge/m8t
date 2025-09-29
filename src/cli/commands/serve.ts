@@ -110,6 +110,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
     if (
       filename.includes("/.git/") ||
+      filename.includes(site.out.absolute("/diff/")) || // TODO specify elsewhere
       filename.endsWith(".d.ts") ||
       filename.endsWith("profile.cpuprofile") ||
       filename.endsWith(".rb") ||
