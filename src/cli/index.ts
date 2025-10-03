@@ -3,7 +3,7 @@ import debug from "debug";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { SiteBuilder } from "../SiteBuilder.js";
+import { Site } from "../Site.js";
 
 type Args = {
   _: string[];
@@ -34,7 +34,7 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
   }
 
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
-  const site = await SiteBuilder.siteForRoot(root);
+  const site = await Site.forRoot(root);
 
   const exiting = new AbortController();
   let { resolve: resolveTimedOut, promise: timedOut } = Promise.withResolvers<number>();

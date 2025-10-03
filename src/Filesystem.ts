@@ -16,11 +16,17 @@ export class Filesystem {
    */
   cd(root: string) {
     const dir = pathModule.isAbsolute(root) ? root : pathModule.join(this.path, root);
-    const stat = fs.statSync(dir);
-    if (!stat.isDirectory()) {
+    if (!this.isDirectory(dir)) {
       throw new Error(`can't descend into a non-directory ${dir}`);
     }
     return new Filesystem(dir);
+  }
+
+  /**
+   * Check whether or not the given path is a directory.
+   */
+  isDirectory(dir: string) {
+    return fs.statSync(dir).isDirectory();
   }
 
   /**
@@ -83,8 +89,8 @@ export class Filesystem {
   /**
    * Join a given relative path with the root of this filesystem.
    */
-  absolute(relativePath: string) {
-    return pathModule.join(this.path, relativePath);
+  absolute(...paths: string[]) {
+    return pathModule.resolve(this.path, ...paths);
   }
 }
 

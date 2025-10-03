@@ -6,9 +6,7 @@ import fs from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stringOrThrow, type PageData } from "../PageData.js";
-import type { Site } from "../Site.js";
-import { SiteBuilder } from "../SiteBuilder.js";
+import { Site } from "../Site.js";
 import { Redirects } from "./Redirects.js";
 import { debugPageGet } from "./routes/__debug/GET-:url.js";
 import { debugGet } from "./routes/__debug/GET.js";
@@ -23,7 +21,11 @@ export const run = async (): Promise<void> => {
     throw new Error("Cannot run server because SITE_ROOT is not a directory");
   }
 
-  const site = await SiteBuilder.siteForRoot(root);
+  const site = await Site.forRoot(root);
+  if (!site.devServer) {
+    throw new Error("Cannot run server because site hasn't been configured with a dev server");
+  }
+
   const exiting = new AbortController();
   const shutdown = () => {
     exiting.abort();
@@ -38,10 +40,11 @@ export const run = async (): Promise<void> => {
 };
 
 export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
-  await site.pages.init();
+  // Eagerly load the data, instead of lazily on first request
+  await site.data;
 
-  const redirects = site.builder.devServerConfig.redirectsPath
-    ? await Redirects.fromFilesystem(site.root, site.builder.devServerConfig.redirectsPath)
+  const redirects = site.devServer!.redirectsPath
+    ? await Redirects.fromFilesystem(site.root, site.devServer!.redirectsPath)
     : null;
 
   const server = createServer({}, async (request, response) => {
@@ -60,7 +63,6 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
         return;
       }
 
-      let page: PageData | undefined;
       const urlsToTry = compact([
         pagePath,
         pagePath.replace(/\/$/, ""),
@@ -68,14 +70,17 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
         path.join(pagePath, "index.html"),
       ]);
       for (const url of urlsToTry) {
-        page = await site.pages.page(url);
-        if (page) {
-          const pageMimeType = typeof page.mimeType === "string" ? page.mimeType : null;
-          const content = stringOrThrow(page.content, "content");
-          response.writeHead(200, { "content-type": pageMimeType || mime.lookup(url) || "text/html" });
-          response.end(content);
-          return;
+        const data = await site.dataByUrl(url);
+        if (!data) {
+          continue;
         }
+
+        const content = data.stringOrThrow("content");
+        const mimeType = data.maybeGetString("mimeType") || mime.lookup(url) || "text/html";
+
+        response.writeHead(200, { "content-type": mimeType });
+        response.end(content);
+        return;
       }
 
       const staticFile = path.join(site.static.path, url.pathname);
@@ -99,24 +104,29 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
         }
       }
 
+      const urls = await site.urls;
+
       response.writeHead(404);
       response.end(`
 Not found
   path: ${url.pathname}
 
 Possible paths:
-  - ${site.pages.urls().sort().join("\n  - ")}
+  - ${urls.join("\n  - ")}
 `);
-      return;
     } catch (error) {
-      response.writeHead(500, { "content-type": "text/plain" });
-      response.end(`Internal Server Error\n\n${error.stack}`);
+      console.error(error);
+
+      if (!response.headersSent) {
+        response.writeHead(500, { "content-type": "text/plain" });
+        response.end(`Internal Server Error\n\n${error.stack}`);
+      }
     }
   });
 
   server.listen({
     host: "0.0.0.0",
-    port: site.builder.devServerConfig.port,
+    port: site.devServer!.port,
     signal: exiting,
   });
 

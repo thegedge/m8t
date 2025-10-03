@@ -2,6 +2,9 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Site } from "../../../Site.js";
 
 export const debugGet = async (site: Site, _request: IncomingMessage, response: ServerResponse): Promise<void> => {
+  // TODO if we guaranteed a unique identifier, we wouldn't need the concept of a URL
+  const urls = await site.urls;
+
   response.writeHead(200, { "content-type": "text/html" });
   response.end(
     `
@@ -29,10 +32,7 @@ export const debugGet = async (site: Site, _request: IncomingMessage, response: 
   <body>
     <h1>Debug</h1>
     <div class="column">
-      ${Array.from(site.pages.pages.keys())
-        .sort()
-        .map((url) => `<a href="/__debug__/${encodeURIComponent(url)}">${url}</a>`)
-        .join("")}
+      ${urls.map((url) => `<a href="/__debug__/${encodeURIComponent(url)}">${url}</a>`).join("")}
     </div>
   </body>
 </html>`.trimStart(),

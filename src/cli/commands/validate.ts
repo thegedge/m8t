@@ -1,7 +1,6 @@
 import { link } from "ansi-escapes";
 import debug from "debug";
 import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
-import { stringOrThrow } from "../../PageData.js";
 import type { Site } from "../../Site.js";
 
 const log = debug("m8t:validate");
@@ -14,9 +13,6 @@ export const run = async (
   log("initializing tsx loader");
   await import("@nodejs-loaders/tsx");
 
-  log("initializing pages from %s", site.pages.root.path);
-  await site.pages.init();
-
   const validator = new HtmlValidate({
     root: true,
     extends: ["html-validate:recommended", "html-validate:a11y"],
@@ -24,29 +20,29 @@ export const run = async (
 
   // TODO verify that all pages have distinct urls and output paths
 
-  for (const url of site.pages.urls()) {
+  for (const url of await site.urls) {
     if (signal.aborted) {
       return 0;
     }
 
     log("validating %s", url);
 
-    const page = await site.pages.page(url);
-    if (!page) {
+    const datum = await site.dataByUrl(url);
+    if (!datum) {
       throw new Error(`Could not build page for URL ${url}`);
     }
 
-    const outputPath = stringOrThrow(page.outputPath, "output path");
+    const outputPath = datum.stringOrThrow("outputPath");
     if (!outputPath.endsWith(".html")) {
       continue;
     }
 
-    const filename = stringOrThrow(page.filename, "filename");
-    const content = stringOrThrow(page.content, "content");
+    const filename = datum.stringOrThrow("filename");
+    const content = datum.stringOrThrow("content");
 
     let rules: RuleConfig | undefined = undefined;
-    if (page.htmlValidateRules && typeof page.htmlValidateRules === "object") {
-      rules = page.htmlValidateRules as RuleConfig;
+    if (datum.has("htmlValidateRules")) {
+      rules = datum.get("htmlValidateRules") as RuleConfig;
     }
 
     const { valid, results } = await validator.validateString(content, filename, { rules });

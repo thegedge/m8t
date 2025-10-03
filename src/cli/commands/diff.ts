@@ -10,7 +10,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import pMap from "p-map";
 import type { Site } from "../../Site.js";
-import type { PageData } from "../../types.js";
+import type { Datum, DefaultDatumShape } from "../../types.js";
 
 const log = debug("m8t:diff");
 
@@ -71,12 +71,9 @@ export const run = async (site: Site, _args: Record<string, unknown>, signal: Ab
     log("initializing tsx loader");
     await import("@nodejs-loaders/tsx");
 
-    log("initializing pages from %s", site.pages.root.path);
-    await site.pages.init();
-
-    const sitePages = Array.from(site.pages.pages.values())
-      .filter((page) => page.mimeType === "text/html")
-      .filter((page): page is PageData & { url: string } => !!page.url);
+    const sitePages = Object.values(await site.data)
+      .filter((datum) => datum.get("mimeType") === "text/html")
+      .filter((datum): datum is Datum<DefaultDatumShape & { url: string }> => !!datum.get("url"));
 
     // Sort such that we distribute concurrent tasks across browser instances
     const tasks = sortBy(
@@ -116,11 +113,12 @@ export const run = async (site: Site, _args: Record<string, unknown>, signal: Ab
         });
 
         const page = await context.newPage();
-        const sanitizedUrl = sanitizeForFilename(sitePage.url == "/" ? "__root__" : sitePage.url);
+        const url = sitePage.get("url");
+        const sanitizedUrl = sanitizeForFilename(url == "/" ? "__root__" : url);
         const sanitizedName = sanitizeForFilename(name);
 
-        console.log(`Processing ${sitePage.url} with context '${name}'`);
-        await page.goto(sitePage.url);
+        console.log(`Processing ${url} with context '${name}'`);
+        await page.goto(url);
 
         const [pageWidth, pageHeight] = await page.evaluate<[number, number]>(
           "[document.documentElement.scrollWidth, document.documentElement.scrollHeight]",

@@ -1,45 +1,36 @@
 import postcss from "postcss";
-import type { MaybeArray, Processor } from "../../index.js";
-import type { PageData } from "../../PageData.js";
-import type { Site } from "../../Site.js";
-
-const renderedBy = Symbol.for("renderedBy");
+import type { MaybeArray, SingleProcessor } from "../../../index.js";
+import type { Datum } from "../../Datum.js";
+import { type DefaultContext } from "../../utils.js";
 
 /**
  * A renderer that stringifies its content and processes it with PostCSS.
  */
-export class CssRenderer implements Processor {
+export class CssRenderer implements SingleProcessor {
   #processor!: postcss.Processor;
 
-  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
-    if (data[renderedBy]) {
-      return;
+  async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {
+    const filename = datum.get("filename");
+    if (!filename.endsWith(".css")) {
+      return datum;
     }
 
-    if (!data.filename.endsWith(".css")) {
-      return;
+    const content = datum.get("content");
+    if (typeof content !== "string") {
+      return datum;
     }
 
-    if (!data.content) {
-      return;
-    }
-
-    const processor = await this.processor(data.postcssPlugins as postcss.Plugin[]);
-    const result = await processor.process(String(data.content), {
-      from: data.filename,
-    });
-
+    const processor = await this.processor(datum.get("postcssPlugins") as postcss.Plugin[]);
+    const result = await processor.process(content, { from: filename });
     const warnings = result.warnings();
     if (warnings.length > 0) {
-      console.warn(`Warnings while processing ${data.filename}:`, warnings.join("\n\n"));
+      console.warn(`Warnings while processing ${filename}:`, warnings.join("\n\n"));
     }
 
-    return {
-      ...data,
+    return datum.with({
       mimeType: "text/css",
       content: result.toString(),
-      [renderedBy]: this.constructor,
-    };
+    });
   }
 
   private async processor(postcssPlugins?: postcss.Plugin[]) {

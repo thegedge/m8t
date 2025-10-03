@@ -63,6 +63,10 @@ export const run = async (site: Site, _args: Record<string, unknown>, signal: Ab
 };
 
 const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
+  if (!site.devServer) {
+    throw new Error("Dev server port not found");
+  }
+
   const startTime = performance.now();
   let reloadStartTime = startTime;
 
@@ -81,7 +85,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
   let currentServer = startServer();
   let nextServer: ChildProcess | null = null;
-  const url = `http://localhost:${site.builder.devServerConfig.port}`;
+  const url = `http://localhost:${site.devServer.port}`;
 
   currentServer.on("message", (message) => {
     if (message === "ready") {

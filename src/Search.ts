@@ -1,31 +1,22 @@
-import type { PageData } from "./PageData.js";
-import type { Pages } from "./Pages.js";
+import type { Datum, DatumShape } from "./pipeline/Datum.js";
 import type { Search as SearchInterface } from "./types.js";
 
 export type Query = {
   where: Record<string, unknown>;
   sort?: readonly [string, "asc" | "desc"];
-  priority?: number;
-};
-
-type ActiveQuery = {
-  query: Query;
-  resolve: (pages: PageData[]) => void;
 };
 
 export class Search implements SearchInterface {
-  readonly #pages: Pages;
+  readonly #data: readonly Datum[];
 
-  constructor(pages: Pages) {
-    this.#pages = pages;
+  constructor(data: readonly Datum[]) {
+    this.#data = data;
   }
 
-  async pages(query: Query): Promise<PageData[]> {
-    await this.#pages.idle;
-
-    const filtered = Array.from(this.#pages.pages.values()).filter((page) => {
+  async pages(query: Query): Promise<DatumShape[]> {
+    const filtered = this.#data.filter((page) => {
       for (const [key, value] of Object.entries(query.where)) {
-        if (page[key] != value) {
+        if (page.get(key) != value) {
           return false;
         }
       }
@@ -36,8 +27,8 @@ export class Search implements SearchInterface {
       // TODO support multiple sort keys
       const [key, direction] = query.sort;
       filtered.sort((a, b) => {
-        const aVal: any = a[key];
-        const bVal: any = b[key];
+        const aVal: any = a.get(key);
+        const bVal: any = b.get(key);
         if (aVal < bVal) {
           return direction == "asc" ? -1 : 1;
         } else if (aVal > bVal) {
@@ -48,25 +39,25 @@ export class Search implements SearchInterface {
       });
     }
 
-    return filtered;
+    return filtered.map((datum) => datum.toProxy());
   }
 
-  async previousPage(url: string, query: Query): Promise<PageData | null> {
+  async previousPage(url: string, query: Query): Promise<DatumShape | null> {
     const pages = await this.pages(query);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
       return null;
     }
-    return index > 0 ? (pages[index - 1] as PageData) : null;
+    return index > 0 ? (pages[index - 1] as DatumShape) : null;
   }
 
-  async nextPage(url: string, query: Query): Promise<PageData | null> {
+  async nextPage(url: string, query: Query): Promise<DatumShape | null> {
     const pages = await this.pages(query);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
       return null;
     }
 
-    return index < pages.length - 1 ? (pages[index + 1] as PageData) : null;
+    return index < pages.length - 1 ? (pages[index + 1] as DatumShape) : null;
   }
 }

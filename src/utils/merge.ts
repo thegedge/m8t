@@ -7,7 +7,7 @@ import { isPlainObject } from "lodash-es";
  *
  * TODO maybe type this better
  */
-export function merge<T extends Record<string, unknown>>(base: T, ...objects: T[]): T {
+export function merge<T extends Record<string, unknown> | null | undefined>(base: T, ...objects: T[]): T {
   if (objects.length > 1) {
     const [a, ...rest] = objects;
     return merge(merge(base, a), ...rest);
@@ -20,21 +20,26 @@ export function merge<T extends Record<string, unknown>>(base: T, ...objects: T[
     return a;
   }
 
-  const merged = { ...a, ...b };
+  if (!a || !b) {
+    return a ?? b;
+  }
+
+  // TODO this stuff is annoying to type, but give it a try someday
+  const merged: any = { ...a, ...b };
   const keys = [
     ...Object.getOwnPropertyNames(merged),
     ...Object.getOwnPropertySymbols(merged),
-  ] as unknown as (keyof typeof a & keyof typeof b)[];
+  ] as unknown as (keyof T)[];
 
   for (const key of keys) {
-    const aValue: unknown = a[key];
-    const bValue: unknown = b[key];
-    const mergedKey = key as keyof typeof merged;
+    const aValue: unknown = (a as NonNullable<T>)[key];
+    const bValue: unknown = (b as NonNullable<T>)[key];
+    const mergedKey = key as keyof NonNullable<T>;
     if (isPlainObject(aValue) && isPlainObject(bValue)) {
       merged[mergedKey] = merge(
         aValue as unknown as Record<string, unknown>,
         bValue as unknown as Record<string, unknown>,
-      ) as (typeof merged)[typeof mergedKey];
+      );
     } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
       merged[mergedKey] = (aValue === bValue ? aValue : [...aValue, ...bValue]) as (typeof merged)[typeof mergedKey];
     } else if (mergedKey in b) {

@@ -1,11 +1,11 @@
-import type { PageData } from "../../PageData.js";
-import type { Site } from "../../Site.js";
-import type { MaybeArray, Processor } from "../../index.js";
+import type { MaybeArray, SingleProcessor } from "../../../index.js";
+import type { Datum } from "../../Datum.js";
+import type { DefaultContext } from "../../utils.js";
 
 /**
  * A processor that computes the reading time of the content.
  */
-export class ReadingTimeTransformer implements Processor {
+export class ReadingTimeTransformer implements SingleProcessor {
   private readonly wordsPerMinute: number;
 
   /**
@@ -15,15 +15,10 @@ export class ReadingTimeTransformer implements Processor {
     this.wordsPerMinute = wordsPerMinute;
   }
 
-  async process(_site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
-    if ("readingTimeMins" in data) {
-      return;
-    }
-
-    return {
-      ...data,
-      readingTimeMins: readingTime(data, data.content, this.wordsPerMinute),
-    };
+  async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {
+    return datum.with({
+      readingTimeMins: readingTime(datum, datum.get("content"), this.wordsPerMinute),
+    });
   }
 }
 
@@ -37,12 +32,12 @@ type ReadingTimeObject =
       };
     };
 
-const readingTime = (data: PageData, content: unknown, wordsPerMinute: number): number | undefined => {
+const readingTime = (datum: Datum, content: unknown, wordsPerMinute: number): number | undefined => {
   if (typeof content != "string" && typeof content != "object") {
     return undefined;
   }
 
-  const lang = typeof data.lang == "string" ? data.lang : "en";
+  const lang = datum.maybeGetString("lang") || "en";
 
   const segmenter = new Intl.Segmenter(lang, { granularity: "word" });
   const wordCount = (obj: ReadingTimeObject): number => {

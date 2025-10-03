@@ -1,12 +1,12 @@
 import { isEqual } from "lodash-es";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { symLineage, symProcessingTime, symProcessor, type PageData } from "../../../PageData.js";
+import { symProcessedBy, symProcessingTimeMs, type Datum, type DatumShape } from "../../../pipeline/Datum.js";
 import type { Site } from "../../../Site.js";
 
 export const debugPageGet = async (site: Site, request: IncomingMessage, response: ServerResponse): Promise<void> => {
   const url = decodeURIComponent(request.url?.replace("/__debug__/", "") ?? "");
-  const page = site.pages.pages.get(url);
-  if (!page) {
+  const data = await site.dataByUrl(url);
+  if (!data) {
     response.writeHead(404, { "content-type": "text/html" });
     response.end("Not found");
     return;
@@ -80,6 +80,13 @@ export const debugPageGet = async (site: Site, request: IncomingMessage, respons
     <script src="https://unpkg.com/@alenaksu/json-viewer@2.1.2/dist/json-viewer.bundle.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        // Ugh, styling custom components can be a pain :cry:
+        const sheet = new CSSStyleSheet;
+        sheet.replaceSync(".preview { margin-left: 1ch }");
+        for (const host of document.querySelectorAll("json-viewer")) {
+          host.shadowRoot.adoptedStyleSheets.push(sheet);
+        }
+
         // When a <details> is clicked with the alt key pressed, toggle the open state of all <details>
         document.querySelectorAll("details").forEach((detail) => {
           detail.addEventListener("click", (event) => {
@@ -102,18 +109,19 @@ export const debugPageGet = async (site: Site, request: IncomingMessage, respons
   <body>
     <h1>Debug -- ${url}</h1>
     <div class="column">
-      ${htmlForData(page, "final", true)}
+      ${jsonViewerForData(data.toRecord(), "final")}
       <h3>Lineage</h3>
-      ${htmlForDataAndLineage(page)}
+      ${htmlForDataAndLineage(data)}
     </div>
   </body>
 </html>`.trimStart(),
   );
 };
 
-const htmlForDataAndLineage = (data: PageData): string => {
-  const lineage = lineageArrayForData(data);
+const htmlForDataAndLineage = (data: Datum): string => {
+  const lineage = [...data.lineage, data.toRecord()];
   return lineage
+    .reverse()
     .map((data, index) => {
       const changedData =
         index < lineage.length - 1
@@ -134,41 +142,51 @@ const htmlForDataAndLineage = (data: PageData): string => {
                 })
                 .filter((entry) => entry !== undefined)
                 .sort(([keyA], [keyB]) => String(keyA).localeCompare(String(keyB))),
-            ) as PageData)
+            ) as DatumShape)
           : data;
 
-      return htmlForData(changedData, index);
+      let processor: string;
+      if (symProcessedBy in changedData) {
+        processor = changedData[symProcessedBy]?.constructor?.name || "&lt;unknown&gt;";
+      } else {
+        processor = `&lt;unknown&gt;`;
+      }
+
+      const processingTimeMs = changedData[symProcessingTimeMs] ?? 0;
+
+      return `
+        <details>
+          <summary>${processor} in ${processingTimeMs.toFixed(2)}ms</summary>
+          ${jsonViewerForData(changedData, index)}
+        </details>
+      `;
     })
     .join("\n");
 };
 
-const htmlForData = (data: PageData, id: string | number, open = false): string => {
-  const { processor, processingTimeMs } = summaryForData(data);
+const jsonViewerForData = (data: DatumShape, id: string | number) => {
   return `
-    <details${open ? " open" : ""}>
-      <summary>${processor} in ${processingTimeMs}</summary>
-      <json-viewer id="data-${id}"></json-viewer>
-      <script>
+    <json-viewer id="data-${id}"></json-viewer>
+    <script>
       document.addEventListener("DOMContentLoaded", () => {
         const wrapper = document.getElementById("data-${id}");
-        wrapper.data = ${JSON.stringify(data, pageDataJsonReplacer)};
+        wrapper.data = ${JSON.stringify(data, DatumJsonReplacer())};
       });
-      </script>
-    </details>
+    </script>
   `;
 };
 
-const lineageArrayForData = (data: PageData): PageData[] => {
-  const lineage = [];
-  while (data) {
-    lineage.push(data);
-    data = data[symLineage]!;
-  }
-  return lineage;
-};
+const DatumJsonReplacer = () => {
+  const seen = new Set<unknown>();
+  return (key: string, value: unknown): unknown => {
+    if (typeof value === "object" && value !== null) {
+      if (seen.has(value)) {
+        return "<circular reference>";
+      }
 
-const pageDataJsonReplacer = (key: string, value: unknown): unknown => {
-  if (key === "content") {
+      seen.add(value);
+    }
+
     switch (typeof value) {
       case "string":
         return value.length > 100 ? value.slice(0, 100) + "..." : value;
@@ -184,33 +202,11 @@ const pageDataJsonReplacer = (key: string, value: unknown): unknown => {
           }
         }
 
-        const name = value.constructor?.name;
-        return name && name !== "Object" ? `<object (${name})>` : "<object>";
+        return value;
       case "function":
-        return value.name ? `<function (${value.name})>` : "<function>";
+        return value.name ? `<function ${value.name}>` : "<function>";
       default:
         return value;
     }
-  }
-
-  if (typeof value === "function") {
-    // TODO maybe see if there's a nicer way to format this
-    return value.name ?? `<function name="${value.toString().slice(0, 100)}">`;
-  }
-
-  return value;
-};
-
-const summaryForData = (data: PageData) => {
-  if (!(symProcessor in data)) {
-    return {
-      processor: `&lt;${symLineage in data ? "data" : "root"}&gt;`,
-      processingTimeMs: `${(data[symProcessingTime] ?? 0).toFixed(2)}ms`,
-    };
-  }
-
-  return {
-    processor: data[symProcessor]?.constructor?.name || "&lt;unknown processor&gt;",
-    processingTimeMs: `${(data[symProcessingTime] ?? 0).toFixed(2)}ms`,
   };
 };

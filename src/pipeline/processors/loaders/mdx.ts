@@ -6,27 +6,20 @@ import rehypeKatex from "rehype-katex";
 import remarkDefinitionList, { defListHastHandlers } from "remark-definition-list";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import type { PageData } from "../../PageData.js";
-import type { Site } from "../../Site.js";
-import type { MaybeArray, Processor } from "../../index.js";
-import { merge } from "../../utils/merge.js";
-
-const processedFor = Symbol.for("processedFor");
+import type { SingleProcessor } from "../../../index.js";
+import type { Datum } from "../../Datum.js";
+import type { DefaultContext } from "../../utils.js";
 
 /**
  * A loader that processes markdown and MDX files.
  *
  * The resulting content will be a React element.
  */
-export class MdxLoader implements Processor {
-  async process(site: Site, data: PageData): Promise<MaybeArray<PageData> | undefined> {
-    if (data[processedFor] === data.filename) {
-      return;
-    }
-
-    const filename = data.filename;
+export class MdxLoader implements SingleProcessor {
+  async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {
+    const filename = datum.get("filename");
     if (!filename.endsWith(".md") && !filename.endsWith(".mdx")) {
-      return;
+      return datum;
     }
 
     const fileContents = await readFile(filename);
@@ -35,7 +28,7 @@ export class MdxLoader implements Processor {
     const compiled = await compile(fileContents, {
       format: "mdx",
       outputFormat: "program",
-      development: site.isDevelopment,
+      development: context.site.isDevelopment,
       baseUrl,
 
       remarkRehypeOptions: {
@@ -49,14 +42,14 @@ export class MdxLoader implements Processor {
       rehypePlugins: [[rehypeKatex, { strict: true }]],
     });
 
-    const context = createContext({ parentURL: baseUrl });
+    const mdxContext = createContext({ parentURL: baseUrl });
 
     let mdxData: any;
     let mdxContent: any;
     try {
       const mdxModule = new vm.SourceTextModule(compiled.toString(), {
         identifier: filename,
-        context,
+        context: mdxContext,
         initializeImportMeta(meta) {
           meta.dirname = path.dirname(filename);
           meta.filename = filename;
@@ -74,7 +67,7 @@ export class MdxLoader implements Processor {
               this.setExport(exportName, mod[exportName]);
             }
           },
-          { context, identifier: specifier },
+          { context: mdxContext, identifier: specifier },
         );
       });
       await mdxModule.evaluate();
@@ -83,11 +76,9 @@ export class MdxLoader implements Processor {
       throw e;
     }
 
-    return merge(data, mdxData, {
-      [processedFor]: data.filename,
-      content: (props: any) => {
-        return mdxContent(props);
-      },
+    return datum.with({
+      ...mdxData,
+      content: (props: any) => mdxContent(props),
     });
   }
 }
