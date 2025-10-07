@@ -6,7 +6,6 @@ import rehypeKatex from "rehype-katex";
 import remarkDefinitionList, { defListHastHandlers } from "remark-definition-list";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import remarkRehype from "remark-rehype";
 import type { PageData } from "../../PageData.js";
 import type { Site } from "../../Site.js";
 import type { MaybeArray, Processor } from "../../index.js";
@@ -39,21 +38,15 @@ export class MdxLoader implements Processor {
       development: site.isDevelopment,
       baseUrl,
 
+      remarkRehypeOptions: {
+        handlers: defListHastHandlers,
+      },
+
       // TODO make these configurable
       // TODO add a plugin to remove a single <p> element nested in another element, due to how interleaving works in MDX v2
       //      See https://github.com/rehypejs/rehype-unwrap-images/blob/main/lib/index.js for an example of how to write such a plugin
-      remarkPlugins: [
-        remarkDefinitionList,
-        remarkGfm,
-        remarkMath,
-        [
-          remarkRehype,
-          {
-            handlers: defListHastHandlers,
-          },
-        ],
-      ],
-      rehypePlugins: [rehypeKatex],
+      remarkPlugins: [remarkDefinitionList, remarkGfm, remarkMath],
+      rehypePlugins: [[rehypeKatex, { strict: true }]],
     });
 
     const context = createContext({ parentURL: baseUrl });
