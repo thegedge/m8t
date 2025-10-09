@@ -1,12 +1,10 @@
 import { isEqual } from "lodash-es";
-import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import { symProcessedBy, symProcessingTimeMs, type Datum, type DatumShape } from "../../../pipeline/Datum.js";
-import type { Site } from "../../../Site.js";
 import { truncate } from "../../../utils/truncate.js";
+import type { MateRoute } from "../types.js";
 
-export const debugPageGet = async (site: Site, request: IncomingMessage, response: ServerResponse): Promise<void> => {
-  const url = decodeURIComponent(request.url?.replace("/__debug__/", "") ?? "");
+export const debugPageGet: MateRoute = async ({ data: { site }, params: { url }, response }): Promise<void> => {
   const data = await site.dataByUrl(url);
   if (!data) {
     response.writeHead(404, { "content-type": "text/html" });
