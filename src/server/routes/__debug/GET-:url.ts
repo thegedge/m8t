@@ -1,7 +1,9 @@
 import { isEqual } from "lodash-es";
 import type { IncomingMessage, ServerResponse } from "node:http";
+import path from "node:path";
 import { symProcessedBy, symProcessingTimeMs, type Datum, type DatumShape } from "../../../pipeline/Datum.js";
 import type { Site } from "../../../Site.js";
+import { truncate } from "../../../utils/truncate.js";
 
 export const debugPageGet = async (site: Site, request: IncomingMessage, response: ServerResponse): Promise<void> => {
   const url = decodeURIComponent(request.url?.replace("/__debug__/", "") ?? "");
@@ -118,17 +120,18 @@ export const debugPageGet = async (site: Site, request: IncomingMessage, respons
   );
 };
 
-const htmlForDataAndLineage = (data: Datum): string => {
-  const lineage = [...data.lineage, data.toRecord()];
+const htmlForDataAndLineage = (datum: Datum): string => {
+  const lineage = [...datum.lineage, datum.toRecord()];
   return lineage
     .reverse()
-    .map((data, index) => {
-      const changedData =
+    .map((lineageRecord, index) => {
+      const changedRecord =
         index < lineage.length - 1
           ? (Object.fromEntries(
-              Reflect.ownKeys(data)
+              Reflect.ownKeys(lineageRecord)
                 .map((key) => {
-                  const value = data[key];
+                  // TODO extract this to a util
+                  const value = lineageRecord[key];
                   if (!(key in lineage[index + 1])) {
                     return [key, value] as const;
                   }
@@ -143,21 +146,31 @@ const htmlForDataAndLineage = (data: Datum): string => {
                 .filter((entry) => entry !== undefined)
                 .sort(([keyA], [keyB]) => String(keyA).localeCompare(String(keyB))),
             ) as DatumShape)
-          : data;
+          : lineageRecord;
 
-      let processor: string;
-      if (symProcessedBy in changedData) {
-        processor = changedData[symProcessedBy]?.constructor?.name || "&lt;unknown&gt;";
+      let processorName: string;
+      if (symProcessedBy in changedRecord) {
+        const processor = changedRecord[symProcessedBy];
+        const processorConstructorName = processor?.constructor?.name;
+        if (processorConstructorName) {
+          processorName = processorConstructorName;
+        } else {
+          processorName = `&lt;${truncate(JSON.stringify(processor))}&gt;`;
+        }
+      } else if (/\/_data\..+$/.test(changedRecord.filename)) {
+        processorName = `&lt;data ${path.relative(datum.stringOrThrow("basePath"), changedRecord.filename)}&gt;`;
+      } else if (index < lineage.length - 1 && "layout" in lineage[index + 1]) {
+        processorName = `&lt;layout ${lineage[index + 1].layout}&gt;`;
       } else {
-        processor = `&lt;unknown&gt;`;
+        processorName = `&lt;unknown&gt;`;
       }
 
-      const processingTimeMs = changedData[symProcessingTimeMs] ?? 0;
+      const processingTimeMs = changedRecord[symProcessingTimeMs] ?? 0;
 
       return `
         <details>
-          <summary>${processor} in ${processingTimeMs.toFixed(2)}ms</summary>
-          ${jsonViewerForData(changedData, index)}
+          <summary>${processorName} in ${processingTimeMs.toFixed(2)}ms</summary>
+          ${jsonViewerForData(changedRecord, index)}
         </details>
       `;
     })
