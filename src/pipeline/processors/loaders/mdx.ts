@@ -1,14 +1,13 @@
-import { compile } from "@mdx-js/mdx";
+import { compile, type CompileOptions } from "@mdx-js/mdx";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import vm, { createContext, SyntheticModule } from "node:vm";
-import rehypeKatex from "rehype-katex";
-import remarkDefinitionList, { defListHastHandlers } from "remark-definition-list";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
+
 import type { SingleProcessor } from "../../../index.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
+
+type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development" | "baseUrl">;
 
 /**
  * A loader that processes markdown and MDX files.
@@ -16,6 +15,12 @@ import type { DefaultContext } from "../../utils.js";
  * The resulting content will be a React element.
  */
 export class MdxLoader implements SingleProcessor {
+  readonly #mdxOptions: MdxOptions;
+
+  constructor(options: MdxOptions) {
+    this.#mdxOptions = options;
+  }
+
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {
     const filename = datum.get("filename");
     if (!filename.endsWith(".md") && !filename.endsWith(".mdx")) {
@@ -26,20 +31,11 @@ export class MdxLoader implements SingleProcessor {
     const baseUrl = new URL("file://" + filename);
 
     const compiled = await compile(fileContents, {
+      ...this.#mdxOptions,
       format: "mdx",
       outputFormat: "program",
       development: context.site.isDevelopment,
       baseUrl,
-
-      remarkRehypeOptions: {
-        handlers: defListHastHandlers,
-      },
-
-      // TODO make these configurable
-      // TODO add a plugin to remove a single <p> element nested in another element, due to how interleaving works in MDX v2
-      //      See https://github.com/rehypejs/rehype-unwrap-images/blob/main/lib/index.js for an example of how to write such a plugin
-      remarkPlugins: [remarkDefinitionList, remarkGfm, remarkMath],
-      rehypePlugins: [[rehypeKatex, { strict: true }]],
     });
 
     const mdxContext = createContext({ parentURL: baseUrl });
