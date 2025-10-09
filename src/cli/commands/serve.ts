@@ -102,24 +102,31 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     // TODO stop suppressing errors and show them
   });
 
-  const reload = pDebounce(async (filename: string) => {
+  const changedPaths: string[] = [];
+  const reload = pDebounce(async () => {
     if (exiting.aborted) {
       return;
     }
 
-    if (
-      filename.includes("/.git/") ||
-      filename.includes(site.out.absolute("/diff/")) || // TODO specify elsewhere
-      filename.endsWith(".d.ts") ||
-      filename.endsWith("profile.cpuprofile") ||
-      filename.endsWith(".rb") ||
-      filename.startsWith(site.static.path) // static files shouldn't be cached, so ignore
-    ) {
-      // TODO expose a way for the user to ignore files that aren't part of the build process
+    const nonIgnoredChangedPaths = changedPaths.filter((filename) => {
+      return !(
+        filename.endsWith(".d.ts") ||
+        filename.endsWith("profile.cpuprofile") ||
+        filename.endsWith(".rb") ||
+        filename.startsWith(site.static.path) || // static files shouldn't be cached, so ignore
+        filename.includes("/dist/") ||
+        filename.includes("/.git/") ||
+        filename.includes(site.out.absolute("/diff/"))
+      );
+    });
+
+    changedPaths.length = 0;
+
+    if (nonIgnoredChangedPaths.length === 0) {
       return;
     }
 
-    log("reloading due to changes in %s", filename);
+    log("reloading due to changes in %s", nonIgnoredChangedPaths.join(", "));
 
     // Start reload timing and animation
     reloadStartTime = performance.now();
@@ -162,7 +169,8 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
       }
 
       const absolutePath = path.join(watchDir.path, filePath);
-      reload(absolutePath);
+      changedPaths.push(absolutePath);
+      reload();
     }).unref();
   }
 };
