@@ -1,6 +1,6 @@
 import { parameterize as slugify, titleize, underscore } from "inflected";
 import mime from "mime-types";
-import path from "path";
+import path from "node:path";
 import type { MaybeArray, SingleProcessor } from "../../../index.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";

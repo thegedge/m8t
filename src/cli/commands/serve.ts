@@ -1,9 +1,9 @@
 import { link } from "ansi-escapes";
-import chalk from "chalk";
 import debug from "debug";
 import { watch } from "fs";
 import { fork, type ChildProcess } from "node:child_process";
 import path from "node:path";
+import { styleText } from "node:util";
 import pDebounce from "p-debounce";
 import type { Site } from "../../Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
@@ -24,7 +24,7 @@ const showReloadingMessage = (isInitialLoad = false) => {
   animationIndex = (animationIndex + 1) % ANIMATION_CHARS.length;
 
   const message = isInitialLoad ? "Server starting up" : "Reloading";
-  process.stdout.write(chalk.blue(`\r${animationChar} ${message}...`));
+  process.stdout.write(styleText("blue", `\r${animationChar} ${message}...`));
 };
 
 const showReadyMessage = (startTime: number, url: string, isInitialLoad = false) => {
@@ -35,12 +35,12 @@ const showReadyMessage = (startTime: number, url: string, isInitialLoad = false)
   if (isInitialLoad) {
     printLogoAndTitleWithLines(process.stdout, [
       "",
-      `Server listening on ${chalk.bold(link(url, url))}`,
+      `Server listening on ${styleText("bold", link(url, url))}`,
       "",
-      chalk.green(`✓ Server loaded in: ${chalk.bold(`${elapsed}ms`)}`),
+      styleText("green", `✓ Server loaded in: ${styleText("bold", `${elapsed}ms`)}`),
     ]);
   } else {
-    process.stdout.write(chalk.green(`\r✓ Reloaded in ${chalk.bold(`${elapsed}ms`)}`));
+    process.stdout.write(styleText("green", `\r✓ Reloaded in ${styleText("bold", `${elapsed}ms`)}`));
   }
 };
 

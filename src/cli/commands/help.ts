@@ -1,20 +1,20 @@
-import chalk from "chalk";
+import { styleText } from "node:util";
 import type { Site } from "../../Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 export const run = async (_site: Site, _args: Record<string, unknown>, _signal: AbortSignal): Promise<number> => {
   console.log();
   printLogoAndTitleWithLines(process.stdout, [
-    `${chalk.bold("Available commands")}:`,
+    `${styleText("bold", "Available commands")}:`,
     "",
-    `  ${chalk.bold.blue("build")}          Build the website for production`,
-    `  ${chalk.bold.blue("serve")}          Run a local dev server with live reloading`,
-    `  ${chalk.bold.blue("validate")}       Validate the output of the site`,
+    `  ${styleText(["bold", "blue"], "build")}          Build the website for production`,
+    `  ${styleText(["bold", "blue"], "serve")}          Run a local dev server with live reloading`,
+    `  ${styleText(["bold", "blue"], "validate")}       Validate the output of the site`,
     "",
-    `${chalk.bold("Global flags")}:`,
+    `${styleText("bold", "Global flags")}:`,
     "",
-    `  ${chalk.bold.blue("-C, --directory")}`,
-    `      The directory to run the command in ${chalk.dim(`(default: ".")`)}`,
+    `  ${styleText(["bold", "blue"], "-C, --directory")}`,
+    `      The directory to run the command in ${styleText("dim", `(default: ".")`)}`,
   ]);
   console.log();
 
