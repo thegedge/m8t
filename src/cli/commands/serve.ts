@@ -155,7 +155,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
   // Normally you should close watchers once you're done with them, but since we're going to reload the process
   // we instead just unref them, to allow everything to terminate nicely.
-  for (const watchDir of site.watchDirs) {
+  for (const watchDir of site.additionalWatchDirs) {
     watch(watchDir.path, { recursive: true, signal: exiting }, (_event, filePath) => {
       if (!filePath) {
         return;

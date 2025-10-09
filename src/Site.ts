@@ -24,7 +24,7 @@ export type SiteOptions = {
   typesFile?: string;
 
   pipelines: Record<string, readonly PipelineStage[]>;
-  watchDirs?: readonly string[];
+  additionalWatchDirs?: readonly string[];
   devServer?: Partial<DevServerOptions>;
 };
 
@@ -48,7 +48,7 @@ export class Site extends EventEmitter<SiteEventMap> {
   readonly static: Filesystem;
 
   readonly pipelines: Record<string, readonly PipelineStage[]>;
-  readonly watchDirs: readonly Filesystem[];
+  readonly additionalWatchDirs: readonly Filesystem[];
   readonly mode: "development" | "production";
   readonly typesFile: string | null;
   readonly devServer: DevServerOptions | null;
@@ -67,9 +67,9 @@ export class Site extends EventEmitter<SiteEventMap> {
     this.mode = options.mode || (process.env.PUBLISH ? "production" : "development");
     this.pipelines = options.pipelines;
 
-    this.watchDirs = [
+    this.additionalWatchDirs = [
       this.root,
-      ...(options.watchDirs ?? []).map((dir) => new Filesystem(path.resolve(options.root, dir))),
+      ...(options.additionalWatchDirs ?? []).map((dir) => new Filesystem(path.resolve(options.root, dir))),
     ];
 
     this.devServer = options.devServer
