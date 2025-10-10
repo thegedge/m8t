@@ -189,7 +189,7 @@ const jsonViewerForData = (data: DatumShape, id: string | number) => {
 
 const DatumJsonReplacer = () => {
   const seen = new Set<unknown>();
-  return (key: string, value: unknown): unknown => {
+  return (_key: string, value: unknown): unknown => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
         return "<circular reference>";
@@ -213,7 +213,7 @@ const DatumJsonReplacer = () => {
           }
         }
 
-        return value;
+        return Object.fromEntries(Object.entries(value).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
       case "function":
         return value.name ? `<function ${value.name}>` : "<function>";
       default:
