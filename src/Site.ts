@@ -1,10 +1,10 @@
 import debug from "debug";
-import { keyBy } from "lodash-es";
 import EventEmitter from "node:events";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
 import { Filesystem } from "./Filesystem.js";
 import { Datum, Pipeline, type PipelineStage } from "./pipeline/index.js";
+import { keyBy } from "./utils/keyBy.js";
 
 export type SiteEventMap = {
   afterBuild: [site: Site];

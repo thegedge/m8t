@@ -1,6 +1,7 @@
-import { union, uniq } from "lodash-es";
 import path from "node:path";
 import type { ManyProcessor } from "../../index.js";
+import { union } from "../../utils/union.js";
+import { uniq } from "../../utils/uniq.js";
 import type { Datum } from "../Datum.js";
 import type { DefaultContext } from "../utils.js";
 

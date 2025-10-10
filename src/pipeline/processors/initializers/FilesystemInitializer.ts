@@ -1,6 +1,5 @@
 import debug from "debug";
 import fs from "fs";
-import { flatten } from "lodash-es";
 import pMap from "p-map";
 import path from "path";
 import { Filesystem } from "../../../Filesystem.js";
@@ -20,7 +19,7 @@ export class FilesystemInitializer implements ManyProcessor {
   }
 
   async processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]> {
-    return flatten(
+    return (
       await pMap(
         data,
         async (datum) => {
@@ -42,8 +41,8 @@ export class FilesystemInitializer implements ManyProcessor {
           }
         },
         { concurrency: 1 },
-      ),
-    );
+      )
+    ).flat();
   }
 
   private async *initData(context: DefaultContext, fileSystem: Filesystem, parentData: Datum): AsyncGenerator<Datum> {

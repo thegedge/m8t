@@ -5,12 +5,12 @@ import { chromium, devices, firefox, webkit, type Browser, type BrowserContextOp
 import { getComparator } from "playwright-core/lib/utils";
 
 import debug from "debug";
-import { flatten, sortBy } from "lodash-es";
 import fs from "node:fs/promises";
 import os from "node:os";
 import pMap from "p-map";
 import type { Site } from "../../Site.js";
 import type { Datum, DefaultDatumShape } from "../../types.js";
+import { sortBy } from "../../utils/sortBy.js";
 
 const log = debug("m8t:diff");
 
@@ -77,7 +77,7 @@ export const run = async (site: Site, _args: Record<string, unknown>, signal: Ab
 
     // Sort such that we distribute concurrent tasks across browser instances
     const tasks = sortBy(
-      flatten(
+      (
         await pMap(Object.entries(tests), async ([name, { browser, options }]) => {
           const sanitizedName = sanitizeForFilename(name);
           await site.out.ensureDir(`diff/${sanitizedName}`);
@@ -86,11 +86,12 @@ export const run = async (site: Site, _args: Record<string, unknown>, signal: Ab
             name,
             browser,
             options,
-            sitePage,
+            sitePage: sitePage.toRecord(),
           }));
-        }),
-      ),
-      ["sitePage.url", "name"],
+        })
+      ).flat(),
+      (v) => v.sitePage.url,
+      (v) => v.name,
     );
 
     const compare = getComparator("image/png") as (
@@ -113,7 +114,7 @@ export const run = async (site: Site, _args: Record<string, unknown>, signal: Ab
         });
 
         const page = await context.newPage();
-        const url = sitePage.get("url");
+        const url = sitePage.url;
         const sanitizedUrl = sanitizeForFilename(url == "/" ? "__root__" : url);
         const sanitizedName = sanitizeForFilename(name);
 

@@ -1,11 +1,11 @@
-import { isPlainObject } from "lodash-es";
+import { isPlainObject } from "./is.js";
 
 /**
  * Deep merge two objects.
  *
  * Does not mutate the `target` or `source` object.
  *
- * TODO maybe type this better
+ * TODO try to type this so that the return type is the merging of the two
  */
 export function merge<T extends Record<string, unknown> | null | undefined>(base: T, ...objects: T[]): T {
   if (objects.length > 1) {
@@ -36,10 +36,7 @@ export function merge<T extends Record<string, unknown> | null | undefined>(base
     const bValue: unknown = (b as NonNullable<T>)[key];
     const mergedKey = key as keyof NonNullable<T>;
     if (isPlainObject(aValue) && isPlainObject(bValue)) {
-      merged[mergedKey] = merge(
-        aValue as unknown as Record<string, unknown>,
-        bValue as unknown as Record<string, unknown>,
-      );
+      merged[mergedKey] = merge(aValue, bValue);
     } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
       merged[mergedKey] = (aValue === bValue ? aValue : [...aValue, ...bValue]) as (typeof merged)[typeof mergedKey];
     } else if (mergedKey in b) {

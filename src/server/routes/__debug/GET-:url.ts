@@ -1,6 +1,6 @@
-import { isEqual } from "lodash-es";
 import path from "node:path";
 import { symProcessedBy, symProcessingTimeMs, type Datum, type DatumShape } from "../../../pipeline/Datum.js";
+import { deepCompare } from "../../../utils/deepCompare.js";
 import { truncate } from "../../../utils/truncate.js";
 import type { MateRoute } from "../types.js";
 
@@ -135,7 +135,7 @@ const htmlForDataAndLineage = (datum: Datum): string => {
                   }
 
                   const previousValue = lineage[index + 1]?.[key];
-                  if (value === previousValue || isEqual(value, previousValue)) {
+                  if (value === previousValue || deepCompare(value, previousValue) === 0) {
                     return;
                   }
 

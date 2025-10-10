@@ -1,9 +1,9 @@
 import type { Datum, PipelineStage } from "../types.js";
 
 import debug from "debug";
-import { partition } from "lodash-es";
 import { counterPromise } from "../utils/counterPromise.js";
 import { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
+import { partition } from "../utils/partition.js";
 import { type DefaultContext, processManyWithSingle } from "./utils.js";
 
 type Task = {
