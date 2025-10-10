@@ -35,21 +35,22 @@ export class LayoutTransformer implements SingleProcessor {
       const layoutFile = context.site.root.absolute(this.#layoutDir, layout);
       const [layoutData] = await this.#pipeline.add(
         [
-          result.branch({
-            basePath: this.#layoutDir,
-            filename: layoutFile,
-
-            // If we don't do this, the final layout will repeat, until we run out of iterations.
-            // If the layout itself has a layout, it should get merged in by `this.#pipeline`,
-            // assuming the user properly set up the pipeline (TODO: how to ensure that?)
-            layout: null,
-
-            /**
-             * The sub pipeline will commonly use the {@linkcode SearchTransformer},
-             * but we don't want to index the layout datum
-             */
-            [noIndex]: true,
-          }),
+          result
+            .branch({
+              basePath: this.#layoutDir,
+              filename: layoutFile,
+              /**
+               * The sub pipeline will commonly use the {@linkcode SearchTransformer},
+               * but we don't want to index the layout datum
+               */
+              [noIndex]: true,
+            })
+            .delete(
+              // If we don't do this, the final layout will repeat, until we run out of iterations.
+              // If the layout itself has a layout, it should get merged in by `this.#pipeline`,
+              // assuming the user properly set up the pipeline (TODO: how to ensure that?)
+              "layout",
+            ),
         ],
         {
           ...context,
