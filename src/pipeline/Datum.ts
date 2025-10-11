@@ -34,7 +34,7 @@ export class Datum<Shape extends DatumShape = DatumShape> {
     this.#lineage = [...lineage];
   }
 
-  async onlyIfChanged<ResultT>(f: () => Promise<ResultT>): Promise<ResultT | null> {
+  async nullUnlessChanged<ResultT>(f: () => Promise<ResultT>): Promise<ResultT | null> {
     const previousEpoch = this.#epoch;
     const result = await f();
     if (result === (this as unknown) && previousEpoch === this.#epoch) {

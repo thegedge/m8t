@@ -39,7 +39,7 @@ export const processOne = async <ShapeT extends DatumShape, ResultT, ContextT ex
   processor: SingleProcessor<Datum<ShapeT>, ResultT, ContextT>,
 ): Promise<ResultT | null> => {
   const tracker = context.performanceTracker.track();
-  const result = await datum.onlyIfChanged(async () => await processor.processOne(datum, context));
+  const result = await datum.nullUnlessChanged(async () => await processor.processOne(datum, context));
   if (!result) {
     return null;
   }
