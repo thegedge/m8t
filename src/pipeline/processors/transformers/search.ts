@@ -14,7 +14,7 @@ export class SearchTransformer implements SingleProcessor {
   readonly #data: Datum[];
   readonly #search: Search;
 
-  constructor(data: Datum[] = [], index = true) {
+  constructor(data: Datum[] = []) {
     this.#data = data;
     this.#search = new Search(this.#data);
   }
@@ -35,7 +35,7 @@ export class SearchTransformer implements SingleProcessor {
       datum
         .with(searchResult)
         // unset search, so we don't run it again
-        .delete("search")
+        .delete_("search")
     );
   }
 }

@@ -10,7 +10,7 @@ export interface Search {
   nextPage(url: string, query: Query): Promise<DatumShape | null>;
 }
 
-export type MaybeArray<T> = T | (T extends readonly unknown[] ? readonly T[] : T[]);
+export type MaybeArray<T> = T | T[];
 export type MaybePromise<T> = T | Promise<T>;
 export type MaybeGenerator<T> = T | Generator<T>;
 

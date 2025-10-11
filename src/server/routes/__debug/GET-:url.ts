@@ -1,4 +1,3 @@
-import path from "node:path";
 import { symProcessedBy, symProcessingTimeMs, type Datum, type DatumShape } from "../../../pipeline/Datum.js";
 import { deepCompare } from "../../../utils/deepCompare.js";
 import { truncate } from "../../../utils/truncate.js";
@@ -135,6 +134,10 @@ const htmlForDataAndLineage = (datum: Datum): string => {
                     return [key, value] as const;
                   }
 
+                  if (key === symProcessedBy) {
+                    return [key, value] as const;
+                  }
+
                   const previousValue = lineage[index + 1]?.[key];
                   if (value === previousValue || deepCompare(value, previousValue) === 0) {
                     return;
@@ -147,27 +150,11 @@ const htmlForDataAndLineage = (datum: Datum): string => {
             ) as DatumShape)
           : lineageRecord;
 
-      let processorName: string;
-      if (symProcessedBy in changedRecord) {
-        const processor = changedRecord[symProcessedBy];
-        const processorConstructorName = processor?.constructor?.name;
-        if (processorConstructorName) {
-          processorName = processorConstructorName;
-        } else {
-          processorName = `&lt;${truncate(JSON.stringify(processor))}&gt;`;
-        }
-      } else if (/\/_data\..+$/.test(changedRecord.filename)) {
-        processorName = `&lt;data ${path.relative(datum.stringOrThrow("basePath"), changedRecord.filename)}&gt;`;
-      } else if (index < lineage.length - 1 && "layout" in lineage[index + 1]) {
-        processorName = `&lt;layout ${lineage[index + 1].layout}&gt;`;
-      } else {
-        processorName = `&lt;unknown&gt;`;
-      }
-
+      const processorName = processorNameForDatum(changedRecord);
       const processingTimeMs = changedRecord[symProcessingTimeMs] ?? 0;
 
       return `
-        <details>
+        <details open="open">
           <summary>${processorName} in ${processingTimeMs.toFixed(2)}ms</summary>
           ${jsonViewerForData(changedRecord, index)}
         </details>
@@ -186,6 +173,24 @@ const jsonViewerForData = (data: DatumShape, id: string | number) => {
       });
     </script>
   `;
+};
+
+const processorNameForDatum = (datum: DatumShape): string => {
+  const processor = datum[symProcessedBy];
+  if (processor) {
+    const processorConstructorName = processor?.constructor?.name;
+    if (processorConstructorName) {
+      return processorConstructorName;
+    }
+
+    if (typeof processor === "string") {
+      return `&lt;${processor}&gt;`;
+    }
+
+    return `&lt;${truncate(JSON.stringify(processor))}&gt;`;
+  }
+
+  return "&lt;unknown&gt;";
 };
 
 const DatumJsonReplacer = () => {

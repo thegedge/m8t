@@ -1,5 +1,6 @@
 import debug from "debug";
 import pMap from "p-map";
+import type { MaybeArray } from "../index.js";
 import type { Site } from "../Site.js";
 import type { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
 import { symProcessedBy, symProcessingTimeMs, type DatumShape } from "./Datum.js";
@@ -36,8 +37,8 @@ export const processManyWithSingle = async <
 export const processOne = async <ShapeT extends DatumShape, ResultT, ContextT extends DefaultContext = DefaultContext>(
   datum: Datum<ShapeT>,
   context: ContextT,
-  processor: SingleProcessor<Datum<ShapeT>, ResultT, ContextT>,
-): Promise<ResultT | null> => {
+  processor: SingleProcessor<Datum<ShapeT>, MaybeArray<ResultT>, ContextT>,
+): Promise<MaybeArray<ResultT> | null> => {
   const tracker = context.performanceTracker.track();
   const result = await datum.nullUnlessChanged(async () => await processor.processOne(datum, context));
   if (!result) {
@@ -45,8 +46,6 @@ export const processOne = async <ShapeT extends DatumShape, ResultT, ContextT ex
   }
 
   log("processed page %s with %s in %sms", datum.get("filename"), processor.constructor.name, tracker.cumulativeTime);
-
-  // TODO figure out why we need the `as Partial<ShapeT>` below
 
   if (Array.isArray(result)) {
     return result.map((newDatum) =>
@@ -56,7 +55,7 @@ export const processOne = async <ShapeT extends DatumShape, ResultT, ContextT ex
             [symProcessingTimeMs]: tracker.cumulativeTime,
           })
         : newDatum,
-    ) as ResultT;
+    );
   }
 
   return result instanceof Datum

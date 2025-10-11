@@ -34,6 +34,11 @@ export class Datum<Shape extends DatumShape = DatumShape> {
     this.#lineage = [...lineage];
   }
 
+  /**
+   * Run the given function and return its result if this datum changes during its call.
+   *
+   * @return the result of the given function, if this datum changes during its call, otherwise `null`.
+   */
   async nullUnlessChanged<ResultT>(f: () => Promise<ResultT>): Promise<ResultT | null> {
     const previousEpoch = this.#epoch;
     const result = await f();
@@ -41,6 +46,15 @@ export class Datum<Shape extends DatumShape = DatumShape> {
       return null;
     }
     return result;
+  }
+
+  /**
+   * Merge the given data into the existing data, forming a new lineage.
+   *
+   * Returns a new Datum whose lineage will diverge from the datum from which it was branched.
+   */
+  branch(additionalData?: Partial<Shape>): Datum {
+    return new Datum(merge(this.#data, additionalData) as unknown as Shape, [...this.#lineage, this.#data]);
   }
 
   /**
@@ -55,22 +69,11 @@ export class Datum<Shape extends DatumShape = DatumShape> {
 
   /**
    * Merge the given data into the existing data, without forming a new lineage.
-   *
-   * @private
    */
   with_(additionalData: Partial<Shape>): this {
     this.#epoch++;
     Object.assign(this.#data, additionalData);
     return this;
-  }
-
-  /**
-   * Merge the given data into the existing data, forming a new lineage.
-   *
-   * Returns a new Datum whose lineage will diverge from the datum from which it was branched.
-   */
-  branch(additionalData?: Partial<Shape>): Datum {
-    return new Datum(merge(this.#data, additionalData) as unknown as Shape, this.#lineage);
   }
 
   /**
@@ -84,14 +87,30 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   }
 
   /**
-   * Delete a given key from the datum (no new lineage is formed).
+   * Set the data to the given data, without forming a new lineage.
+   */
+  set_(additionalData: Shape): this {
+    this.#epoch++;
+    this.#data = { ...this.#data, ...additionalData };
+    return this;
+  }
+
+  /**
+   * Delete a given key from the datum, forming a new lineage.
    */
   delete(key: keyof Shape): this {
     this.#epoch++;
-    this.#data = {
-      ...this.#data,
-      [key]: undefined,
-    };
+    this.#lineage.push(Object.freeze(this.#data));
+    this.#data = { ...this.#data, [key]: undefined };
+    return this;
+  }
+
+  /**
+   * Delete a given key from the datum, without forming a new lineage.
+   */
+  delete_(key: keyof Shape): this {
+    this.#epoch++;
+    this.#data = { ...this.#data, [key]: undefined };
     return this;
   }
 

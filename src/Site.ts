@@ -3,6 +3,7 @@ import EventEmitter from "node:events";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
 import { Filesystem } from "./Filesystem.js";
+import { symProcessedBy } from "./pipeline/Datum.js";
 import { Datum, Pipeline, type PipelineStage } from "./pipeline/index.js";
 import { keyBy } from "./utils/keyBy.js";
 
@@ -117,7 +118,7 @@ export class Site extends EventEmitter<SiteEventMap> {
       for (const [pipelineRoot, stages] of Object.entries(this.pipelines)) {
         const pipeline = new Pipeline({ stages });
         const basePath = this.root.absolute(pipelineRoot);
-        const data = await pipeline.add([new Datum({ filename: basePath, basePath })], {
+        const data = await pipeline.add([new Datum({ filename: basePath, basePath, [symProcessedBy]: "root" })], {
           site: this,
           signal: AbortSignal.timeout(10_000),
         });

@@ -86,6 +86,7 @@ export class PageDefaultsTransformer implements SingleProcessor {
     }
 
     const mimeType: string | undefined = datum.maybeGetString("mimeType") || mime.lookup(url) || undefined;
+
     const dataTitle = datum.maybeGetString("title");
     const title = dataTitle ?? titleize(underscore(parsed.name));
 

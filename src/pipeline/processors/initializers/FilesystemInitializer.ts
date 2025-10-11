@@ -28,7 +28,7 @@ export class FilesystemInitializer implements ManyProcessor {
             const stat = await fs.promises.stat(pathname);
             if (stat.isDirectory()) {
               const pipelineRoot = new Filesystem(pathname);
-              return await Array.fromAsync(this.initData(context, pipelineRoot, datum));
+              return await Array.fromAsync(this.init(context, pipelineRoot, datum));
             } else if (stat.isFile()) {
               return await this.load(datum, context);
             } else {
@@ -45,17 +45,14 @@ export class FilesystemInitializer implements ManyProcessor {
     ).flat();
   }
 
-  private async *initData(context: DefaultContext, fileSystem: Filesystem, parentData: Datum): AsyncGenerator<Datum> {
+  private async *init(context: DefaultContext, fileSystem: Filesystem, parentData: Datum): AsyncGenerator<Datum> {
     const listing = await fileSystem.ls();
     const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
     if (dataFile) {
       log("found data file: %s", dataFile.name);
       try {
         const dataFilePath = path.join(fileSystem.path, dataFile.name);
-        const dataFileDatum = parentData.branch({
-          filename: dataFilePath,
-          [symProcessedBy]: this,
-        });
+        const dataFileDatum = parentData.branch({ filename: dataFilePath, [symProcessedBy]: this });
         const sharedData = await this.load(dataFileDatum, context);
         if (sharedData) {
           parentData = sharedData;
@@ -75,12 +72,12 @@ export class FilesystemInitializer implements ManyProcessor {
       }
 
       if (entry.isDirectory()) {
-        yield* this.initData(context, fileSystem.cd(entry.name), parentData);
+        yield* this.init(context, fileSystem.cd(entry.name), parentData);
       } else {
         try {
           const filePath = path.join(fileSystem.path, entry.name);
           log("found page to process: %s", filePath);
-          yield await this.load(parentData.branch({ filename: filePath }), context);
+          yield await this.load(parentData.branch({ filename: filePath, [symProcessedBy]: this }), context);
         } catch (error) {
           console.error(`Error loading ${entry.name} from ${fileSystem.path}`);
           console.error(error);
