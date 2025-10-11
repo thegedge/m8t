@@ -5,7 +5,7 @@ runs:
   using: "composite"
   steps:
     - name: Install and set up Nix
-      uses: nixbuild/nix-quick-install-action@v30
+      uses: nixbuild/nix-quick-install-action@v34
       with:
         nix_conf: |
           substituters = https://cache.nixos.org/ https://nix-community.cachix.org
