@@ -33,10 +33,36 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
 
   const staticFile = path.join(site.static.path, pagePath);
   try {
-    if ((await stat(staticFile)).isFile()) {
-      const mimeType = mime.lookup(staticFile) || "text/plain";
-      response.writeHead(200, { "content-type": mimeType });
-      createReadStream(staticFile).pipe(response);
+    const statResult = await stat(staticFile);
+    if (statResult.isFile()) {
+      response.writeHead(200, {
+        "Content-Type": mime.lookup(staticFile) || "application/octet-stream",
+        "Content-Length": statResult.size,
+      });
+
+      const stream = createReadStream(staticFile, {
+        autoClose: true,
+        emitClose: true,
+      });
+
+      stream.on("error", (error) => {
+        console.error("read stream error", error);
+        if (!response.writableEnded) {
+          if (!response.headersSent) {
+            response.writeHead(500, { "Content-Type": "text/plain" });
+          }
+          response.end(JSON.stringify(error, null, 2));
+        }
+      });
+
+      response.on("error", (error) => {
+        console.error("response error", error);
+        stream.destroy();
+        response.destroy();
+      });
+
+      stream.pipe(response);
+
       return;
     }
   } catch (_e) {
@@ -52,14 +78,21 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
     }
   }
 
-  const urls = await site.urls;
+  if (!response.headersSent) {
+    const urls = await site.urls;
+    if (!response.headersSent) {
+      response.writeHead(404, { "Content-Type": "text/plain" });
+    }
+    response.end(
+      `
+        Not found
+        path: ${url.pathname}
 
-  response.writeHead(404);
-  response.end(`
-Not found
-path: ${url.pathname}
-
-Possible paths:
-- ${urls.join("\n  - ")}
-`);
+        Possible paths:
+        - ${urls.join("\n  - ")}
+      `
+        .trim()
+        .replaceAll(/^\s+/gm, ""),
+    );
+  }
 };

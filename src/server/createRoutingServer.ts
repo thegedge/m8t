@@ -111,10 +111,23 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
     }
 
     if (!route) {
-      response.writeHead(404, { "content-type": "text/plain" });
+      response.writeHead(404, { "Content-Type": "text/plain" });
       response.end("Not found");
       return;
     }
+
+    const timeout = setTimeout(() => {
+      if (!response.writableEnded) {
+        if (!response.headersSent) {
+          response.writeHead(500, { "Content-Type": "text/plain" });
+        }
+        response.end("Request timed out");
+      }
+    }, 10_000); // TODO configurable timeout
+
+    response.on("close", () => {
+      clearTimeout(timeout);
+    });
 
     try {
       await route({ data: extraData, params, request, response });
@@ -122,16 +135,9 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
       console.error(error);
       if (!response.writableEnded) {
         if (!response.headersSent) {
-          response.writeHead(500, { "content-type": "text/plain" });
+          response.writeHead(404, { "Content-Type": "text/plain" });
         }
         response.end(`Internal Server Error\n\n${error.stack}`);
-      }
-    } finally {
-      if (!response.writableEnded) {
-        if (!response.headersSent) {
-          response.writeHead(204, { "content-type": "text/plain" });
-        }
-        response.end();
       }
     }
   });
