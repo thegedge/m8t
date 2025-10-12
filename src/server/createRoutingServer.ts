@@ -1,5 +1,4 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { isPromise } from "node:util/types";
 import type { MaybePromise } from "../index.js";
 
 export type RouteFunction<T> = (options: {
@@ -10,12 +9,36 @@ export type RouteFunction<T> = (options: {
 }) => MaybePromise<void>;
 
 export interface Routes<T> {
-  "/*"?: RouteFunction<T>;
+  [key: `/[...]` | `/[...${string}]`]: RouteFunction<T>;
   [key: `/${string}`]: Routes<T> | RouteFunction<T> | undefined;
 }
 
+/**
+ * Create a server that routes requests based on a given routing map.
+ *
+ * All routing functions receive an object with the following properties:
+ *
+ *   - `data`: the additional data, as provided by the user when creating the server;
+ *   - `params`: a record of any parameterized path segments;
+ *   - `request`: the incoming request; and
+ *   - `response`: the outgoing response.
+ *
+ * The routing map keys should always start with a forward slash and be a valid URL path segment.
+ * They can take one of three forms:
+ *
+ *   1. A literal path segment;
+ *   2. A parameter segment, e.g. `/[param]`;
+ *   3. A catchall segment, e.g. `/[...all]`.
+ *
+ * These then either map to a routing function, if the path segment is the last in the URL, or
+ * a nested routing map if the segment is in the middle of a URL.
+ *
+ * The catchall segment is used when no other route matches the request, if it exists. It is
+ * hierarchical in the sense that the nearest catchall route is used, even if it isn't in the
+ * current nested route map.
+ */
 export const createRoutingServer = <T extends Record<string, unknown>>(routes: Routes<T>, extraData: T) => {
-  return createServer({}, (request, response) => {
+  return createServer({}, async (request, response) => {
     const url = new URL(request.url ?? "", `https://${request.headers.host}`);
     const path = url.pathname;
 
@@ -30,7 +53,9 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
       .split("/")
       .map((v) => decodeURIComponent(v));
 
-    let catchall: RouteFunction<T> | undefined = routes["/*"];
+    let catchall = getCatchallRoute(routes);
+    let catchallPath = path;
+
     let route: RouteFunction<T> | undefined = undefined;
     let routesToTry = routes;
     let params: Record<string, string> = {};
@@ -40,13 +65,13 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
 
       let routeHandler = routesToTry[`/${pathSegment}`];
       if (!routeHandler) {
-        const paramRoute = Object.entries(routesToTry).find(
+        const parameterizedRoute = Object.entries(routesToTry).find(
           ([key]) => key.startsWith("/[") && !key.startsWith("/[..."),
         );
-        if (paramRoute) {
+        if (parameterizedRoute) {
           // Slice off the `/[` and ending `]`
-          params[paramRoute[0].slice(2, -1)] = pathSegment;
-          routeHandler = paramRoute[1];
+          params[parameterizedRoute[0].slice(2, -1)] = pathSegment;
+          routeHandler = parameterizedRoute[1];
         }
       }
 
@@ -66,7 +91,8 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
         //   }
         //
         // will still route the path `/a/c` to the fallback route.
-        catchall = routesToTry["/*"] ?? catchall;
+        catchall = getCatchallRoute(routesToTry) ?? catchall;
+        catchallPath = `/${pathSegment}/${pathSegments.join("/")}`;
       } else if (typeof routeHandler === "function") {
         // A literal path segment that resolves to a routing function MUST be the final segment
         if (pathSegments.length == 0) {
@@ -74,37 +100,48 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
         }
         break;
       } else {
-        route = catchall;
+        // Will use the catchall below, if one was set
         break;
       }
     }
 
-    route ??= catchall;
+    if (!route && catchall) {
+      params[catchall[0]] = catchallPath;
+      route = catchall[1];
+    }
 
-    if (route) {
-      try {
-        const result = route({ data: extraData, params, request, response });
-        if (isPromise(result)) {
-          result.catch((error) => {
-            console.error(error);
-
-            if (!response.headersSent) {
-              response.writeHead(500, { "content-type": "text/plain" });
-              response.end(`Internal Server Error\n\n${error.stack}`);
-            }
-          });
-        }
-      } catch (error) {
-        console.error(error);
-
-        if (!response.headersSent) {
-          response.writeHead(500, { "content-type": "text/plain" });
-          response.end(`Internal Server Error\n\n${error.stack}`);
-        }
-      }
-    } else {
+    if (!route) {
       response.writeHead(404, { "content-type": "text/plain" });
       response.end("Not found");
+      return;
+    }
+
+    try {
+      await route({ data: extraData, params, request, response });
+    } catch (error) {
+      console.error(error);
+      if (!response.writableEnded) {
+        if (!response.headersSent) {
+          response.writeHead(500, { "content-type": "text/plain" });
+        }
+        response.end(`Internal Server Error\n\n${error.stack}`);
+      }
+    } finally {
+      if (!response.writableEnded) {
+        if (!response.headersSent) {
+          response.writeHead(204, { "content-type": "text/plain" });
+        }
+        response.end();
+      }
     }
   });
+};
+
+const getCatchallRoute = <T>(routes: Routes<T>): [key: string, route: RouteFunction<T>] | undefined => {
+  const catchall = Object.entries(routes).find(([key]) => key.startsWith("/[..."));
+  if (!catchall) {
+    return undefined;
+  }
+
+  return [catchall[0].slice(5, -1) || "*", catchall[1]];
 };
