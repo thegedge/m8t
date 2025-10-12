@@ -40,10 +40,12 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
 
       let routeHandler = routesToTry[`/${pathSegment}`];
       if (!routeHandler) {
-        const paramRoute = Object.entries(routesToTry).find(([key]) => key.startsWith("/:"));
+        const paramRoute = Object.entries(routesToTry).find(
+          ([key]) => key.startsWith("/[") && !key.startsWith("/[..."),
+        );
         if (paramRoute) {
-          // Slice off the leading `/:`
-          params[paramRoute[0].substring(2)] = pathSegment;
+          // Slice off the `/[` and ending `]`
+          params[paramRoute[0].slice(2, -1)] = pathSegment;
           routeHandler = paramRoute[1];
         }
       }

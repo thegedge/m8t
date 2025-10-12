@@ -2,9 +2,9 @@ import fs from "node:fs/promises";
 import { Site } from "../Site.js";
 import { createRoutingServer } from "./createRoutingServer.js";
 import { Redirects } from "./Redirects.js";
-import { debugPageGet } from "./routes/__debug/GET-:url.js";
+import { debugPageGet } from "./routes/__debug/GET-[url].js";
 import { debugGet } from "./routes/__debug/GET.js";
-import { defaultRoute } from "./routes/GET-*.js";
+import { defaultRoute } from "./routes/GET-[...].js";
 
 export const run = async (): Promise<void> => {
   const root = process.env.SITE_ROOT;
@@ -45,10 +45,10 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
   const server = createRoutingServer(
     {
       "/__debug__": {
-        "/:url": debugPageGet,
-        "/*": debugGet,
+        "/[url]": debugPageGet,
+        "/[...]": debugGet,
       },
-      "/*": defaultRoute,
+      "/[...]": defaultRoute,
     },
     { site, redirects },
   );
