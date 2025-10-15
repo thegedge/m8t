@@ -20,11 +20,11 @@
   },
   "type": "module",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/src/index.js"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/src/index.js",
   "bin": {
-    "m8t": "./dist/cli/index.js"
+    "m8t": "./dist/src/cli/index.js"
   },
   "files": [
     "dist/**/*.{d.ts,js}",
@@ -38,7 +38,8 @@
     "lint:prettier": "./scripts/prettier-with-diff",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
-    "test": "echo 'No tests yet'",
+    "test": "node --experimental-vm-modules --test dist/**/*.test.{cjs,mjs,js}",
+    "test:watch": "node --experimental-vm-modules --test --watch dist/**/*.test.{cjs,mjs,js}",
     "update": "ncu --interactive",
     "watch": "tsc --watch"
   },

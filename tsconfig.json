@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "rootDir": "./",
     "outDir": "./dist",
 
     "pretty": false,
@@ -30,6 +31,6 @@
     "noImplicitOverride": true
   },
 
-  "include": ["./src", "./types", "./prettier.config.mjs"],
+  "include": ["./src", "./types", "./test", "./prettier.config.mjs"],
   "exclude": ["node_modules", "dist"]
 }

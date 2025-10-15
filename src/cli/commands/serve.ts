@@ -108,25 +108,10 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
       return;
     }
 
-    const nonIgnoredChangedPaths = changedPaths.filter((filename) => {
-      return !(
-        filename.endsWith(".d.ts") ||
-        filename.endsWith("profile.cpuprofile") ||
-        filename.endsWith(".rb") ||
-        filename.startsWith(site.static.path) || // static files shouldn't be cached, so ignore
-        filename.includes("/dist/") ||
-        filename.includes("/.git/") ||
-        filename.includes(site.out.absolute("/diff/"))
-      );
-    });
-
+    const paths = changedPaths.map((p) => path.relative(site.root.path, p));
+    const summary = paths.length > 10 ? paths.slice(0, 10).join(", ") + "..." : paths.join(", ");
+    log("reloading due to changes in %s", summary);
     changedPaths.length = 0;
-
-    if (nonIgnoredChangedPaths.length === 0) {
-      return;
-    }
-
-    log("reloading due to changes in %s", nonIgnoredChangedPaths.join(", "));
 
     // Start reload timing and animation
     reloadStartTime = performance.now();
@@ -162,13 +147,18 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
   // Normally you should close watchers once you're done with them, but since we're going to reload the process
   // we instead just unref them, to allow everything to terminate nicely.
-  for (const watchDir of site.additionalWatchDirs) {
+  for (const watchDir of site.watchDirs) {
+    const matcher = site.ignoredFilesMatcher.withBase(watchDir.path);
     watch(watchDir.path, { recursive: true, signal: exiting }, (_event, filePath) => {
       if (!filePath) {
         return;
       }
 
       const absolutePath = path.join(watchDir.path, filePath);
+      if (absolutePath.startsWith(site.static.path) || matcher.matches(absolutePath)) {
+        return;
+      }
+
       changedPaths.push(absolutePath);
       reload();
     }).unref();

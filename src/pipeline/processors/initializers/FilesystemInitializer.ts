@@ -25,6 +25,10 @@ export class FilesystemInitializer implements ManyProcessor {
         async (datum) => {
           try {
             const pathname = datum.get("filename");
+            if (context.site.ignoredFilesMatcher.matches(pathname)) {
+              return [];
+            }
+
             const stat = await fs.promises.stat(pathname);
             if (stat.isDirectory()) {
               const pipelineRoot = new Filesystem(pathname);
