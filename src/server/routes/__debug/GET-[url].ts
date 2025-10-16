@@ -1,5 +1,5 @@
 import { symProcessedBy, symProcessingTimeMs, type Datum, type DatumShape } from "../../../pipeline/Datum.js";
-import { deepCompare } from "../../../utils/deepCompare.js";
+import { diffObject, entryKeySort } from "../../../utils/diffObject.js";
 import { truncate } from "../../../utils/truncate.js";
 import type { MateRoute } from "../types.js";
 
@@ -123,53 +123,34 @@ const htmlForDataAndLineage = (datum: Datum): string => {
   return lineage
     .reverse()
     .map((lineageRecord, index) => {
-      const changedRecord =
+      const diff =
         index < lineage.length - 1
-          ? (Object.fromEntries(
-              Reflect.ownKeys(lineageRecord)
-                .map((key) => {
-                  // TODO extract this to a util
-                  const value = lineageRecord[key];
-                  if (!(key in lineage[index + 1])) {
-                    return [key, value] as const;
-                  }
+          ? diffObject<DatumShape>(lineage[index + 1], lineageRecord)
+          : { additions: Object.entries(lineageRecord).sort(entryKeySort), removals: [], updates: [], unchanged: [] };
 
-                  if (key === symProcessedBy) {
-                    return [key, value] as const;
-                  }
+      const processorName = processorNameForDatum(lineageRecord);
+      const processingTimeMs = lineageRecord[symProcessingTimeMs] ?? 0;
 
-                  const previousValue = lineage[index + 1]?.[key];
-                  if (value === previousValue || deepCompare(value, previousValue) === 0) {
-                    return;
-                  }
-
-                  return [key, value] as const;
-                })
-                .filter((entry) => entry !== undefined)
-                .sort(([keyA], [keyB]) => String(keyA).localeCompare(String(keyB))),
-            ) as DatumShape)
-          : lineageRecord;
-
-      const processorName = processorNameForDatum(changedRecord);
-      const processingTimeMs = changedRecord[symProcessingTimeMs] ?? 0;
+      const entries = [...diff.additions, ...diff.updates];
+      const entriesObject = Object.fromEntries(entries);
 
       return `
         <details open="open">
           <summary>${processorName} in ${processingTimeMs.toFixed(2)}ms</summary>
-          ${jsonViewerForData(changedRecord, index)}
+          ${jsonViewerForData(entriesObject, index)}
         </details>
       `;
     })
     .join("\n");
 };
 
-const jsonViewerForData = (data: DatumShape, id: string | number) => {
+const jsonViewerForData = (obj: Record<string | symbol, unknown>, id: string | number) => {
   return `
     <json-viewer id="data-${id}"></json-viewer>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const wrapper = document.getElementById("data-${id}");
-        wrapper.data = ${JSON.stringify(data, DatumJsonReplacer())};
+        wrapper.data = ${JSON.stringify(obj, DatumJsonReplacer())};
       });
     </script>
   `;
