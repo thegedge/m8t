@@ -38,8 +38,8 @@
     "lint:prettier": "./scripts/prettier-with-diff",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
-    "test": "node --experimental-vm-modules --test dist/**/*.test.{cjs,mjs,js}",
-    "test:watch": "node --experimental-vm-modules --test --watch dist/**/*.test.{cjs,mjs,js}",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "update": "ncu --interactive",
     "watch": "tsc --watch"
   },
@@ -71,7 +71,8 @@
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-packagejson": "^2.5.19",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "peerDependencies": {
     "react": "^19.1.0",
