@@ -8,11 +8,33 @@ import { Datum, type Pipeline, type SingleProcessor } from "./index.js";
 
 const log = debug("m8t:processing");
 
+/**
+ * The context provided to a pipeline's stages.
+ */
 export type DefaultContext = {
+  /**
+   * An instance of {@linkcode NonAsyncTimeMeasurement} for doing performance measurements
+   *
+   * Pipeline processing will compute the timings from a pipeline stage automatically, but this can allow a
+   * stage to perhaps compute more granular measurement.
+   */
   performanceTracker: NonAsyncTimeMeasurement;
+
+  /**
+   * The pipeline that is processing the incoming data.
+   */
   pipeline: Pipeline;
+
+  /**
+   * The site providing the data.
+   */
   site: Site;
+
+  /**
+   * An abort signal that can be used to cancel a processing pipeline
+   */
   signal: AbortSignal;
+
   [key: string | symbol]: unknown;
 };
 

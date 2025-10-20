@@ -6,10 +6,14 @@ import { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
 import { partition } from "../utils/partition.js";
 import { type DefaultContext, processManyWithSingle } from "./utils.js";
 
+type InternalContext = DefaultContext & {
+  until: number;
+};
+
 type Task = {
   stageIndex: number;
   data: readonly Datum[];
-  context: DefaultContext;
+  context: InternalContext;
 };
 
 const log = debug("m8t:pipeline");
@@ -46,15 +50,20 @@ export class Pipeline {
     data: readonly Datum[],
     context: Partial<DefaultContext> & Pick<Required<DefaultContext>, "site">,
   ): Promise<readonly Datum[]> {
+    return await this.add_(data, {
+      performanceTracker: this.#performanceTracker,
+      pipeline: this,
+      signal: context.signal ?? new AbortController().signal,
+      until: this.#stages.length,
+      ...context,
+    });
+  }
+
+  private async add_(data: readonly Datum[], context: InternalContext) {
     return await this.addTask({
       stageIndex: 0,
       data,
-      context: {
-        performanceTracker: this.#performanceTracker,
-        pipeline: this,
-        signal: context.signal ?? new AbortController().signal,
-        ...context,
-      },
+      context,
     });
   }
 
@@ -94,21 +103,28 @@ export class Pipeline {
         return newData;
       }
 
+      if (stageIndex == context.until) {
+        return newData;
+      }
+
       const [newItems, nextStage] = partition(newData, (datum) => !!datum.get(reprocess));
-      const [newItemsData, nextStageData] = await Promise.all([
-        this.addTask({
+      if (newItems.length > 0) {
+        const newItemsData = await this.addTask({
           stageIndex: 0,
           data: newItems.map((datum) => datum.delete(reprocess)),
-          context,
-        }),
-        this.addTask({
-          stageIndex: stageIndex + 1,
-          data: nextStage,
-          context,
-        }),
-      ]);
+          context: {
+            ...context,
+            until: stageIndex,
+          },
+        });
+        nextStage.push(...newItemsData);
+      }
 
-      return [...newItemsData, ...nextStageData];
+      return await this.addTask({
+        stageIndex: stageIndex + 1,
+        data: nextStage,
+        context,
+      });
     } finally {
       this.#working.decrement();
     }
