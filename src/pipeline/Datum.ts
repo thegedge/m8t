@@ -152,7 +152,7 @@ export class Datum<Shape extends DatumShape = DatumShape> {
       },
 
       getPrototypeOf(_target) {
-        return Object.getPrototypeOf(self.#data);
+        return Datum.prototype;
       },
 
       ownKeys(_target) {

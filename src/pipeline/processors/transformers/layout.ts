@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Pipeline, type PipelineStage, type SingleProcessor } from "../../../index.js";
 import { Datum, symProcessedBy } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
@@ -5,7 +6,7 @@ import { noIndex } from "./search.js";
 
 const MAX_ITERATIONS = 10;
 
-export const symLayoutLineage = Symbol("layoutLineage");
+export const symLayoutFilename = Symbol("layoutFilename");
 
 /**
  * A transformer that can render a data's content into another.
@@ -17,7 +18,10 @@ export const symLayoutLineage = Symbol("layoutLineage");
  * TODO detect layout chain loops
  */
 export class LayoutTransformer implements SingleProcessor {
-  readonly #layoutDir: string;
+  /** The directory containing the layouts, relative to the site root. */
+  readonly layoutDir: string;
+
+  /** The pipeline to use to repeatedly process data until there's no longer a layout. */
   readonly #pipeline: Pipeline;
 
   /**
@@ -25,7 +29,7 @@ export class LayoutTransformer implements SingleProcessor {
    * @param pipeline - The pipeline to use to repeatedly process data until there's no longer a layout
    */
   constructor(layoutDir: string, pipeline: readonly PipelineStage[]) {
-    this.#layoutDir = layoutDir;
+    this.layoutDir = layoutDir;
     this.#pipeline = new Pipeline({ stages: pipeline });
   }
 
@@ -38,13 +42,14 @@ export class LayoutTransformer implements SingleProcessor {
       }
 
       // TODO make this a process many so we can feed many datums through the pipeline concurrently
-      const layoutFile = context.site.root.absolute(this.#layoutDir, layout);
+      const layoutFile = context.site.root.absolute(this.layoutDir, layout);
       const [layoutDatum] = await this.#pipeline.add(
         [
           resultDatum
             .branch({
-              basePath: this.#layoutDir,
+              basePath: this.layoutDir,
               filename: layoutFile,
+
               /**
                * The sub pipeline will commonly use the {@linkcode SearchTransformer},
                * but we don't want to index the layout datum
@@ -81,7 +86,7 @@ export class LayoutTransformer implements SingleProcessor {
           layout: layoutDatum.get("layout"),
           content,
           [symProcessedBy]: this,
-          [symLayoutLineage]: layoutDatum.lineage,
+          [symLayoutFilename]: path.basename(layout),
         });
       } else {
         // TODO warn when this happens, or maintain the content and merge in other data?

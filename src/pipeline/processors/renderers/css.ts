@@ -20,6 +20,7 @@ export class CssRenderer implements SingleProcessor {
       return datum;
     }
 
+    // TODO figure out how this plugin could tell `TypesProcessor` to ignore `postcssPlugins`
     const processor = await this.processor(datum.get("postcssPlugins") as postcss.Plugin[]);
     const result = await processor.process(content, { from: filename });
     const warnings = result.warnings();
