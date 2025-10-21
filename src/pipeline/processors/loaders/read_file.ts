@@ -4,7 +4,7 @@ import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
 /**
- * A loader that reads a UTF8 file.
+ * A loader that reads a file and decodes it as a UTF-8 string.
  */
 export class ReadFileLoader implements SingleProcessor {
   async processOne(datum: Datum, _context: DefaultContext): Promise<Datum> {

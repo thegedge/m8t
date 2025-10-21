@@ -6,9 +6,9 @@ const loadedFor = Symbol.for("loadedFor");
 const JS_OR_TS_FILE_REGEX = /\.[mc]?[jt]sx?$/;
 
 /**
- * A loader that loads TypeScript files.
+ * A loader that imports TypeScript files as data.
  *
- * The default export is the content, and all other exports form the metadata.
+ * The default export is the content function, if it exists.
  */
 export class TypescriptLoader implements SingleProcessor {
   async processOne(datum: Datum, _context: DefaultContext): Promise<Datum> {

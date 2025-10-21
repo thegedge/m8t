@@ -6,18 +6,33 @@ import { noIndex } from "./search.js";
 
 const MAX_ITERATIONS = 10;
 
+/**
+ * A symbol that is used to store the filename of the layout on a datum.
+ *
+ * This is necessary since we delete the layout property during processing, so if you need to know
+ * which layout produced some final result in the lineage of a datum, you can look at the value
+ * stored under this symbol.
+ */
 export const symLayoutFilename = Symbol("layoutFilename");
 
 /**
- * A transformer that can render a data's content into another.
+ * A transformer that can render a datum's content and lay it out in a template.
  *
- * Will look for a `layout` value on a data blob, a string under a layouts directory, and
- * try to load and process that layout.
+ * Looks for a `layout` value on a datum, which is expected to be a relative path under a layouts
+ * directory.
  *
- * TODO what if layout wasn't a string point to a file, but another kind of content function?
- * TODO detect layout chain loops
+ * This transformer requires a pipeline for processing the layout file. This does not need to be,
+ * and typically is not, the original pipeline that is processing the datum. Usually it will be
+ * some stage that can load the layout file, and a transformer or two to process any exports (for
+ * example, the search transformer can process `search` functions exported from the layout file).
+ *
+ * Currently assumes that the layout file is a React component, or at least exports a `content`
+ * function that takes a single object as an argument with a `children` property.
  */
 export class LayoutTransformer implements SingleProcessor {
+  // TODO what if layout wasn't a string point to a file, but another kind of content function?
+  // TODO detect layout chain loops
+
   /** The directory containing the layouts, relative to the site root. */
   readonly layoutDir: string;
 

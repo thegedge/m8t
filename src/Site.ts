@@ -92,7 +92,12 @@ export type SiteOptions = {
   devServer?: Partial<DevServerOptions>;
 };
 
-export type ResolvedSiteOptions = {
+/**
+ * Site options with all properties resolved/defaulted.
+ *
+ * @private
+ */
+type ResolvedSiteOptions = {
   mode: "development" | "production";
   root: string;
   static: string;
@@ -103,9 +108,13 @@ export type ResolvedSiteOptions = {
   devServer?: Partial<DevServerOptions>;
 };
 
+/** The default port to serve the dev server on. */
 const DEFAULT_PORT = 3000;
+
+/** The filename to use for the CPU profile. */
 const CPU_PROFILE_FILENAME = "profile.cpuprofile";
 
+/** Debug logger for the site logs. */
 const log = debug("m8t:site");
 
 /**
@@ -163,14 +172,32 @@ export class Site extends EventEmitter<SiteEventMap> {
     });
   }
 
+  /** The root filesystem */
   readonly root: Filesystem;
+
+  /** The filesystem for build outputs */
   readonly out: Filesystem;
+
+  /** The filesystem under which static files are copied/served */
   readonly static: Filesystem;
+
+  /** The files ignored when building/serving/etc */
   readonly ignoredFilesMatcher: FileMatcher;
 
+  /**
+   * The pipelines used to process site data.
+   *
+   * Maps a root directory to a given set of stages.
+   */
   readonly pipelines: Record<string, readonly PipelineStage[]>;
+
+  /** The directories being watched (for reloads when serving data) */
   readonly watchDirs: readonly Filesystem[];
+
+  /** The mode this site is operating in */
   readonly mode: "development" | "production";
+
+  /** An optional dev server configuration */
   readonly devServer: DevServerOptions | null;
 
   private data_: Promise<readonly Datum[]> | null = null;
@@ -202,18 +229,37 @@ export class Site extends EventEmitter<SiteEventMap> {
 
   /**
    * All of the `url`s that have been processed by the site, sorted alphabetically.
+   *
+   * @returns a list of all the `url` properties found in the processed data.
    */
   get urls(): Promise<readonly string[]> {
     this.dataByUrl_ ??= this.data.then((data) => keyBy(data, (d) => d.maybeGetString("url") || ""));
     return this.dataByUrl_.then((dataByUrl) => Object.keys(dataByUrl).sort());
   }
 
+  /**
+   * Get data for a given url.
+   *
+   * @returns the datum with the given url, or `undefined` if no datum is found with the given url.
+   */
   async dataByUrl(url: string): Promise<Datum | undefined> {
     this.dataByUrl_ ??= this.data.then((data) => keyBy(data, (d) => d.maybeGetString("url") || ""));
     const dataByUrl = await this.dataByUrl_;
     return dataByUrl[url];
   }
 
+  /**
+   * Whether or not this site is operating in development mode.
+   */
+  get isDevelopment(): boolean {
+    return this.mode === "development";
+  }
+
+  /**
+   * Get all processed data.
+   *
+   * Note that this will start processing data if it hasn't already began processing.
+   */
   get data(): Promise<readonly Datum[]> {
     this.data_ ??= this.process();
     return this.data_;
@@ -251,9 +297,5 @@ export class Site extends EventEmitter<SiteEventMap> {
         session.disconnect();
       }
     }
-  }
-
-  get isDevelopment(): boolean {
-    return this.mode === "development";
   }
 }

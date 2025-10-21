@@ -29,9 +29,9 @@ export const reprocess = Symbol("reprocess");
  * return data.
  */
 export class Pipeline {
-  #performanceTracker = new NonAsyncTimeMeasurement();
-  #stages: readonly PipelineStage[];
-  #working: ReturnType<typeof counterPromise>;
+  readonly #performanceTracker = new NonAsyncTimeMeasurement();
+  readonly #stages: readonly PipelineStage[];
+  readonly #working: ReturnType<typeof counterPromise>;
 
   constructor(options: { stages: readonly PipelineStage[] }) {
     this.#stages = options.stages;

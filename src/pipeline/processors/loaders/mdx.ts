@@ -12,7 +12,8 @@ type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development"
 /**
  * A loader that processes markdown and MDX files.
  *
- * The resulting content will be a React element.
+ * The resulting content will be a React element, and all exported values in MDX will be available
+ * in the returned data.
  */
 export class MdxLoader implements SingleProcessor {
   readonly #mdxOptions: MdxOptions;
@@ -43,6 +44,7 @@ export class MdxLoader implements SingleProcessor {
     let mdxData: any;
     let mdxContent: any;
     try {
+      // TODO figure out why I had to do this instead of just using things directly, and then document the "why"
       const mdxModule = new vm.SourceTextModule(compiled.toString(), {
         identifier: filename,
         context: mdxContext,

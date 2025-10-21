@@ -1,18 +1,25 @@
 import type { Datum, DatumShape } from "./pipeline/Datum.js";
-import type { Search as SearchInterface } from "./types.js";
 
 export type Query = {
   where: Record<string, unknown>;
   sort?: readonly [string, "asc" | "desc"];
 };
 
-export class Search implements SearchInterface {
+/**
+ * A search interface for querying data in a pipeline.
+ */
+export class Search {
   readonly #data: readonly Datum[];
 
   constructor(data: readonly Datum[]) {
     this.#data = data;
   }
 
+  /**
+   * Find all data matching the given query.
+   *
+   * @returns a list of the data matching the given query.
+   */
   async pages(query: Query): Promise<DatumShape[]> {
     const filtered = this.#data.filter((page) => {
       for (const [key, value] of Object.entries(query.where)) {
@@ -42,7 +49,12 @@ export class Search implements SearchInterface {
     return filtered.map((datum) => datum.toProxy());
   }
 
-  async previousPage(url: string, query: Query): Promise<DatumShape | null> {
+  /**
+   * Find a datum with a given URL after the data has been filtered by a given query, and return the page before it.
+   *
+   * @returns the datum before the given; or `null` if no pages found, or no page is found with the given URL in the query results, otherwise
+   */
+  async previous(url: string, query: Query): Promise<DatumShape | null> {
     const pages = await this.pages(query);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {
@@ -51,7 +63,12 @@ export class Search implements SearchInterface {
     return index > 0 ? (pages[index - 1] as DatumShape) : null;
   }
 
-  async nextPage(url: string, query: Query): Promise<DatumShape | null> {
+  /**
+   * Find a datum with a given URL after the data has been filtered by a given query, and return the page after it.
+   *
+   * @returns the datum after the given; or `null` if no pages found, or no page is found with the given URL in the query results, otherwise
+   */
+  async next(url: string, query: Query): Promise<DatumShape | null> {
     const pages = await this.pages(query);
     const index = pages.findIndex((p) => p.url == url);
     if (index == -1) {

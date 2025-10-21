@@ -34,7 +34,7 @@ export const run = async (): Promise<void> => {
   await runServer(site, exiting.signal);
 };
 
-export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
+const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
   // Eagerly load the data, instead of lazily on first request
   await site.data;
 

@@ -1,10 +1,26 @@
+// These are included only for JSDocs
+import type { reprocess } from "../../../index.js";
+
 import { isGeneratorFunction } from "node:util/types";
-import { type MaybeArray, type SingleProcessor } from "../../../index.js";
+import type { MaybeArray, SingleProcessor } from "../../../index.js";
 import { Datum, type DatumShape } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
 /**
- * A transformer that will call `content` if it is a function.
+ * A transformer that will call the `content` property on a datum, if it is a function.
+ *
+ * The function will be provided the datum as a record (i.e., not a `Datum` instance) so it can be
+ * used to inform various bits of the result (for example, using the `date` property to show a date
+ * on a blog post).
+ *
+ * If the content function returns a generator, it will be iterated over and each result will be
+ * processed by this transformer. Since we can't map a single URL to all of the results produced
+ * by the generator, it is expected that the yielded values are objects with a `url` property.
+ *
+ * Also, when yielding multiple results from a single file, you'll often want to reprocess the data
+ * in this pipeline. For example, you may want new page defaults, or you may yield a content
+ * function that we need to run through this transformer again. In these cases, you can also include
+ * the {@linkcode reprocess} symbol in the result object.
  */
 export class ContentFunctionTransformer implements SingleProcessor {
   async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {

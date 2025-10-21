@@ -5,6 +5,7 @@ import {
   type ReactNode,
 } from "react";
 import { renderToReadableStream } from "react-dom/server.browser";
+import type { MaybeArray } from "./types.js";
 
 export type Element<P = Record<string, unknown>> = ReactElement<P>;
 export type Node = ReactNode;
@@ -31,10 +32,18 @@ export {
 export { jsxDEV } from "react/jsx-dev-runtime";
 export { jsx, jsxs } from "react/jsx-runtime";
 
-export const toChildArray = (children: ReactNode | ReactNode[]) => {
+/**
+ * Ensure a given children list/node is an array.
+ */
+export const toChildArray = (children: MaybeArray<Node>) => {
   return Children_.toArray(children);
 };
 
+/**
+ * Render a given node to an HTML string.
+ *
+ * @returns the HTML string.
+ */
 export const renderElementToHTML = async (element: Node): Promise<string> => {
   const stream = await renderToReadableStream(element);
   await stream.allReady;

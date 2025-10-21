@@ -1,7 +1,9 @@
 import { merge } from "../utils/merge.js";
 
-export const symLineage = Symbol("lineage");
+/** Datum key for the processor that processed the datum */
 export const symProcessedBy = Symbol("processedBy");
+
+/** Datum key for the time it took to process the datum, in milliseconds */
 export const symProcessingTimeMs = Symbol("processingTime");
 
 export type DatumShape = Readonly<{
@@ -23,13 +25,25 @@ export type DatumShape = Readonly<{
   [key: string | symbol]: unknown;
 }>;
 
+/**
+ * A bag of properties that has been processed by a pipeline.
+ *
+ * The properties are stored in an object. When noted by the method, changes to the datum are pushed
+ * into a list of previous states, known as the lineage. The lineage is frozen and cannot be
+ * changed. If the method name ends with an underscore, lineage is left unchanged.
+ */
 export class Datum<Shape extends DatumShape = DatumShape> {
   #data: Shape;
   #lineage: Shape[];
   #epoch = 0;
 
+  /**
+   * Create a new datum with the given data and lineage.
+   *
+   * @param data - The data to store in the datum (shallow copied)
+   * @param lineage - The lineage to store in the datum (shallow copied)
+   */
   constructor(data: Shape, lineage: Shape[] = []) {
-    // Create a shallow copy of the data. This way its lineage can diverge, if needed.
     this.#data = { ...data };
     this.#lineage = [...lineage];
   }

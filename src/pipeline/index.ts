@@ -20,7 +20,7 @@ export { SearchTransformer } from "./processors/transformers/search.js";
 export { TypesProcessor } from "./processors/types.js";
 
 /**
- * Something that can process a single piece of data with a given context.
+ * A processing object that can process a single piece of data with a given context.
  */
 export interface SingleProcessor<
   DataT = Datum<DatumShape>,
@@ -31,7 +31,7 @@ export interface SingleProcessor<
 }
 
 /**
- * Something that can process an array of data with a given context.
+ * A processing object that can process an array of data with a given context.
  */
 export interface ManyProcessor<
   DataT = Datum<DatumShape>,
@@ -41,6 +41,9 @@ export interface ManyProcessor<
   processMany(data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
 }
 
+/**
+ * A processing function that can process an array of data with a given context.
+ */
 export type ManyProcessorFunction<
   DataT = Datum<DatumShape>,
   ResultT = DataT,

@@ -11,6 +11,29 @@ export type Loader = SingleProcessor<Datum>;
 
 const log = debug("m8t:filesystemInitializer");
 
+/**
+ * A pipeline stage that can seed a pipeline with data.
+ *
+ * It takes a single datum with a "filename" property and does one of three things.
+ *
+ * First, if the filename is a regular file, that file is loaded as is.
+ *
+ * Second, if the filename points to a directory, the directory is traversed and all the files not
+ * included in any ignore lists are loaded as data. Any `_data.*` files are loaded as data and
+ * merged in a breadth-first manner. For example, if you have the following directory structure:
+ *
+ * ```plaintext
+ * src/
+ *   _data.ts
+ *   blog/
+ *     _data.ts
+ *     post-1.md
+ * ```
+ *
+ * Then `src/_data.ts` will be loaded and merged with `blog/_data.ts`, and then finally we merge in
+ * `post-1.md` at the end and `post-1.md` produces a datum to be processed by the rest of the
+ * pipeline. Data files *are not* processed, but act as an easy way to provide shared data.
+ */
 export class FilesystemInitializer implements ManyProcessor {
   readonly #loaders: readonly Loader[];
 

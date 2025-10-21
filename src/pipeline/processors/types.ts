@@ -10,10 +10,18 @@ import { symLayoutFilename } from "./transformers/layout.js";
 
 const DEFAULT_IGNORED_KEYS = ["components", "content", "htmlValidateRules", "layout", "mimeType"];
 
+/**
+ * A m8t pipeline stage that generates a TypeScript type declaration file for the data.
+ *
+ * It tries its best to simplify the types, but there will be some redundancy. In particular, it uses heuristics
+ * for data exported from shared files like layouts and `_data.ts` files.
+ *
+ * Any TypeScript file in the project can then reference the type with `DataProps` (no need for imports).
+ */
 export class TypesProcessor implements ManyProcessor {
-  #typesFile: string;
-  #ignoredKeys: readonly string[];
-  #literalKeys: readonly string[];
+  readonly #typesFile: string;
+  readonly #ignoredKeys: readonly string[];
+  readonly #literalKeys: readonly string[];
 
   constructor(options: {
     /** The output path where the types declaration file will be written */

@@ -6,6 +6,7 @@ import type { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.j
 import { symProcessedBy, symProcessingTimeMs, type DatumShape } from "./Datum.js";
 import { Datum, type Pipeline, type SingleProcessor } from "./index.js";
 
+/** Logging function for pipeline processing */
 const log = debug("m8t:processing");
 
 /**
@@ -56,6 +57,19 @@ export const processManyWithSingle = async <
   return results.flat() as unknown as readonly Datum<ShapeT>[];
 };
 
+/**
+ * Process a single datum with a given processor.
+ *
+ * The returned datum will also containing two special keys:
+ *  - {@linkcode symProcessedBy}: the processor that processed the datum; and
+ *  - {@linkcode symProcessingTimeMs}: the time it took to process the datum.
+ *
+ * @param datum - The datum to process.
+ * @param context - The context to use for the processing.
+ * @param processor - The processor to use for the processing.
+ *
+ * @returns The processed datum, or `null` if the datum was not changed.
+ */
 export const processOne = async <ShapeT extends DatumShape, ResultT, ContextT extends DefaultContext = DefaultContext>(
   datum: Datum<ShapeT>,
   context: ContextT,

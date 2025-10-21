@@ -6,6 +6,13 @@ type Redirect = {
   status: number;
 };
 
+/**
+ * A collection of redirects for a routing server.
+ *
+ * Syntax is roughly similar to Netlify's `_redirects` file.
+ *
+ * @see https://docs.netlify.com/manage/routing/redirects/overview/#syntax-for-the-_redirects-file
+ */
 export class Redirects {
   public static async fromFilesystem(filesystem: Filesystem, path: string): Promise<Redirects> {
     const redirects: Redirect[] = [];
@@ -37,14 +44,14 @@ export class Redirects {
     return new Redirects(redirects);
   }
 
-  readonly redirects: readonly Redirect[];
+  readonly #redirects: readonly Redirect[];
 
   constructor(redirects: readonly Redirect[]) {
-    this.redirects = redirects;
+    this.#redirects = redirects;
   }
 
   public match(pathname: string): [to: string, status: number] | undefined {
-    for (const redirect of this.redirects) {
+    for (const redirect of this.#redirects) {
       if (typeof redirect.from === "string") {
         if (pathname === redirect.from) {
           return [redirect.to, redirect.status];

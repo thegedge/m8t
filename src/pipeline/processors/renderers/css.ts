@@ -4,7 +4,7 @@ import type { Datum } from "../../Datum.js";
 import { type DefaultContext } from "../../utils.js";
 
 /**
- * A renderer that stringifies its content and processes it with PostCSS.
+ * A renderer that processes CSS files with PostCSS.
  */
 export class CssRenderer implements SingleProcessor {
   #processor!: postcss.Processor;

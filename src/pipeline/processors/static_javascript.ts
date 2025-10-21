@@ -7,7 +7,7 @@ import type { DefaultContext } from "../utils.js";
 const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
 
 /**
- * A processor that collects many entrypoints and runs them through esbuild.
+ * A processor that collects many JavaScript entrypoints and runs them through esbuild.
  *
  * This processor not only produces javascript files for the entrypoints, but also produces additional
  * chunks that load up all the libraries they reference.
@@ -16,6 +16,8 @@ export class StaticJavascriptProcessor implements ManyProcessor {
   readonly #publicPath: string;
 
   /**
+   * Constructs a static javascript processor.
+   *
    * @param publicPath - The path to where the JavaScript files will be served.
    */
   constructor(publicPath: string) {
