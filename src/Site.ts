@@ -285,7 +285,7 @@ export class Site extends EventEmitter<SiteEventMap> {
         const basePath = this.root.absolute(pipelineRoot);
         const data = await pipeline.add([new Datum({ filename: basePath, basePath, [symProcessedBy]: "root" })], {
           site: this,
-          signal: AbortSignal.timeout(10_000),
+          signal: AbortSignal.timeout(30_000),
         });
         results.push(...data);
       }
