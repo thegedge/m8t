@@ -1,6 +1,5 @@
 #!/usr/bin/env -S node --no-warnings --experimental-vm-modules --experimental-import-meta-resolve
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import debug from "debug";
@@ -53,9 +52,7 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
   return await Promise.race([await commandModule.run(site, args as any, exiting.signal), timedOut]);
 };
 
-const entryFile = process.argv?.[1];
-const __filename = fileURLToPath(import.meta.url);
-if (entryFile !== __filename && !entryFile.endsWith("node_modules/.bin/m8t")) {
+if (!import.meta.main) {
   console.log("Can only run this file as a main script");
   process.exit(1);
 }
