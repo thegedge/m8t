@@ -19,10 +19,10 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Type check
-        run: nix develop --command npm run tc
+        run: pnpm run tc
 
       - name: Lint
-        run: nix develop --command npm run lint
+        run: pnpm run lint
 
       - name: Test
-        run: nix develop --command npm run test
+        run: pnpm run test

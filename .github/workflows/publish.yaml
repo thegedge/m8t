@@ -19,13 +19,13 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Type check
-        run: nix develop --command npm run tc
+        run: pnpm run tc
 
       - name: Lint
-        run: nix develop --command npm run lint
+        run: pnpm run lint
 
       - name: Test
-        run: nix develop --command npm run test
+        run: pnpm run test
   publish:
     runs-on: ubuntu-latest
     needs: test
@@ -35,14 +35,17 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
 
-      - name: List npm config
-        run: nix develop --command npm config list
+      - name: List pnpm config
+        run: pnpm config list
 
       - name: Build
-        run: nix develop --command npm run prepublishOnly
+        run: pnpm run prepublishOnly
+
+      - name: Check working tree
+        run: git status --porcelain && git diff --stat
 
       - name: Publish
-        run: nix develop --command npm publish
+        run: pnpm publish
 
       - name: Tag release
         run: |

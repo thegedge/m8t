@@ -1,43 +1,32 @@
 name: "Setup"
-description: "Setup Nix and install node modules"
+description: "Setup environment"
 
 runs:
   using: "composite"
   steps:
-    - name: Install and set up Nix
-      uses: nixbuild/nix-quick-install-action@v34
-      with:
-        nix_conf: |
-          substituters = https://cache.nixos.org/ https://nix-community.cachix.org
-          trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
-          keep-env-derivations = true
-          keep-outputs = true
-
     - name: Configure git
       shell: bash
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+    - name: Install Node.js 26.x
+      uses: actions/setup-node@v6
+      with:
+        node-version: "26.x"
+
+    - name: Install pnpm
+      shell: bash
+      run: npm install -g pnpm@latest-11
+
     - name: Install node modules
       shell: bash
-      run: nix develop --command npm install
+      run: pnpm install
 
-    - name: Restore and save Nix store and npm cache
-      uses: nix-community/cache-nix-action@v6
-      with:
-        primary-key: nix-${{ runner.os }}-${{ hashFiles('.github/workflows/setup.yaml', '**/*.nix', '**/flake.lock') }}
-        restore-prefixes-first-match: nix-${{ runner.os }}-
-        gc-max-store-size: 0
-        purge: true
-        purge-prefixes: nix-${{ runner.os }}-
-        purge-created: 0
-        purge-primary-key: never
-
-    - name: Get npm cache directory
-      id: npm-cache-dir
+    - name: Get pnpm store path
+      id: pnpm-cache-dir
       shell: bash
-      run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
+      run: echo "dir=$(pnpm store path)" >> ${GITHUB_OUTPUT}
 
     - name: Cache node modules
       uses: actions/cache@v4
@@ -46,5 +35,5 @@ runs:
         restore-keys: |
           ${{ runner.os }}-node-
         path: |
-          ${{ steps.npm-cache-dir.outputs.dir }}
+          ${{ steps.pnpm-cache-dir.outputs.dir }}
           ./node_modules
