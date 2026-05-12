@@ -3,7 +3,7 @@
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs?ref=staging-next";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
   };
 
   outputs =
@@ -24,7 +24,7 @@
           packages = {
             direnv = pkgs.direnv;
             nix-direnv = pkgs.nix-direnv;
-            node = pkgs.nodejs_24;
+            node = pkgs.nodejs_25;
           };
 
           devShell = callPackage ./devShell.nix {
