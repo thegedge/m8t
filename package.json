@@ -1,6 +1,6 @@
 {
   "name": "m8t",
-  "version": "0.7.8",
+  "version": "0.8.0",
   "description": "A minimalist static site generator, and your best friend",
   "keywords": [
     "html",
