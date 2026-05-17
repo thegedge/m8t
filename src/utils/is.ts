@@ -4,6 +4,7 @@
  * @example
  * ```ts
  * isPlainObject({ a: 1, b: 2 }) // => true
+ * isPlainObject(Object.create(null)) // => true
  * isPlainObject(new Date()) // => false
  * isPlainObject(new Error()) // => false
  * isPlainObject(new Set()) // => false
@@ -17,6 +18,6 @@ export const isPlainObject = (value: unknown): value is Record<string, unknown> 
     typeof value === "object" &&
     value !== null &&
     !Array.isArray(value) &&
-    (Reflect.getPrototypeOf(value) === Object.prototype || Reflect.getPrototypeOf(value) === null)
+    Object.prototype.toString.call(value) === "[object Object]" // deal with cross-realm objects
   );
 };
