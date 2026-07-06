@@ -6,9 +6,23 @@ export type Query = {
 };
 
 /**
+ * The public search surface exposed to a page's search function. Implemented by {@link Search}.
+ */
+export interface Searcher {
+  /** Find all data matching the given query. */
+  pages(query: Query): Promise<DatumShape[]>;
+
+  /** Find the datum before the one with the given URL within the query results. */
+  previous(url: string, query: Query): Promise<DatumShape | null>;
+
+  /** Find the datum after the one with the given URL within the query results. */
+  next(url: string, query: Query): Promise<DatumShape | null>;
+}
+
+/**
  * A search interface for querying data in a pipeline.
  */
-export class Search {
+export class Search implements Searcher {
   readonly #data: readonly Datum[];
 
   constructor(data: readonly Datum[]) {

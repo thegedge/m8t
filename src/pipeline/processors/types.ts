@@ -1,5 +1,6 @@
 import { camelize } from "inflected";
 import path from "node:path";
+
 import { LayoutTransformer, TypescriptLoader, type ManyProcessor } from "../../index.js";
 import { dedent } from "../../utils/dedent.js";
 import { union } from "../../utils/union.js";
@@ -57,7 +58,7 @@ export class TypesProcessor implements ManyProcessor {
         const baseKeys = new Set<string>();
 
         // The type names that we will extend for this datum's interface
-        const baseTypeNames: string[] = [];
+        const baseTypeNames = new Set<string>();
 
         datum.lineage.forEach((ancestor) => {
           const processedBy = ancestor[symProcessedBy];
@@ -75,7 +76,7 @@ export class TypesProcessor implements ManyProcessor {
           }
 
           if (typeName) {
-            baseTypeNames.push(typeName);
+            baseTypeNames.add(typeName);
 
             const mapping = baseTypes.get(typeName) ?? new Map<string, Set<string>>();
             for (const key of Object.keys(ancestor)) {
@@ -109,18 +110,29 @@ export class TypesProcessor implements ManyProcessor {
           ignoredKeys: union(Array.from(baseKeys), this.#ignoredKeys),
         });
 
-        if (!typeString) {
+        if (datum.has("search")) {
+          // We don't check `typeof` on the search key, because it gets set to `undefined` by the
+          // `SearchProcessor`. We just assume it was a search function for now (but we could check
+          // the lineage, which might be best in the future).
+          const parts: string[] = [...baseTypeNames];
+          if (typeString && typeString !== "Record<string, unknown>") {
+            parts.push(typeString.trim());
+          }
+          parts.push(`Awaited<ReturnType<typeof import("${relativeModulePath}").search>>`);
+
+          typeString = `export type DataProps = ${parts.join(" & ")};`;
+        } else if (!typeString) {
           typeString = "export type DataProps = never;";
         } else if (typeString == "Record<string, unknown>") {
-          if (baseTypeNames.length == 0) {
+          if (baseTypeNames.size == 0) {
             typeString = "export type DataProps = Record<string, unknown>;";
           } else {
-            typeString = `export type DataProps = ${baseTypeNames.join(" & ")};`;
+            typeString = `export type DataProps = ${[...baseTypeNames].join(" & ")};`;
           }
         } else {
           let extendsString = "";
-          if (baseTypeNames.length > 0) {
-            extendsString = `extends ${baseTypeNames.join(", ")} `;
+          if (baseTypeNames.size > 0) {
+            extendsString = `extends ${[...baseTypeNames].join(", ")} `;
           }
 
           // Slice/trim below is removing the curly braces + indent added by `javascriptValueToTypescriptType`
@@ -143,7 +155,9 @@ export class TypesProcessor implements ManyProcessor {
     const baseTypesString = baseTypes
       .entries()
       .map(([typeName, mapping]) => {
-        const keyTypes = mapping.entries().map(([key, types]) => `${key}: ${Array.from(types).join(" | ")}`);
+        const keyTypes = mapping
+          .entries()
+          .map(([key, types]) => `${key}: ${Array.from(types).join(" | ")}`);
         return dedent`
           export interface ${typeName} {
             ${keyTypes.toArray().join(";\n  ")};
@@ -231,7 +245,13 @@ const javascriptValueToTypescriptType = (
     return;
   }
 
-  const { indent = "", seen = new Set(), literal = false, literalKeys = [], ignoredKeys = [] } = options ?? {};
+  const {
+    indent = "",
+    seen = new Set(),
+    literal = false,
+    literalKeys = [],
+    ignoredKeys = [],
+  } = options ?? {};
   if (indent.length > 50) {
     // Avoid too much recursion
     return "any";
@@ -310,7 +330,6 @@ const javascriptValueToTypescriptType = (
       return `${indent}{\n${lines.join("\n")}\n${indent}}`;
     }
     case "function":
-      // TODO can we derive this?
       return `${indent}(...args: any[]) => any`;
     case "string":
       if (literal) {

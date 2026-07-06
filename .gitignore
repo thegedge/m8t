@@ -2,3 +2,4 @@ dist
 node_modules
 .vscode/settings.json
 m8t-0.7.0.tgz
+TASKS.md
