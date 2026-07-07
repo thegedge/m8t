@@ -1,6 +1,7 @@
 import path from "node:path";
 import { Readable } from "node:stream";
 import { describe, expect, test } from "vitest";
+
 import { FileMatcher } from "../../src/utils/FileMatcher.js";
 
 expect.extend({
@@ -24,7 +25,9 @@ declare module "vitest" {
 describe("FileMatcher", () => {
   describe("fromOptions", () => {
     test("throws an error if given a relative base path", async () => {
-      await expect(() => FileMatcher.fromOptions({ base: "test" })).rejects.toThrow("base must be an absolute path");
+      await expect(() => FileMatcher.fromOptions({ base: "test" })).rejects.toThrow(
+        "base must be an absolute path",
+      );
     });
 
     describe("with only globs", () => {

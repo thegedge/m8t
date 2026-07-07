@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+
 import type { MaybePromise } from "../index.js";
 
 export type RouteFunction<T> = (options: {
@@ -37,7 +38,10 @@ export interface Routes<T> {
  * hierarchical in the sense that the nearest catchall route is used, even if it isn't in the
  * current nested route map.
  */
-export const createRoutingServer = <T extends Record<string, unknown>>(routes: Routes<T>, extraData: T) => {
+export const createRoutingServer = <T extends Record<string, unknown>>(
+  routes: Routes<T>,
+  extraData: T,
+) => {
   return createServer({}, async (request, response) => {
     const url = new URL(request.url ?? "", `https://${request.headers.host}`);
     const path = url.pathname;
@@ -143,7 +147,9 @@ export const createRoutingServer = <T extends Record<string, unknown>>(routes: R
   });
 };
 
-const getCatchallRoute = <T>(routes: Routes<T>): [key: string, route: RouteFunction<T>] | undefined => {
+const getCatchallRoute = <T>(
+  routes: Routes<T>,
+): [key: string, route: RouteFunction<T>] | undefined => {
   const catchall = Object.entries(routes).find(([key]) => key.startsWith("/[..."));
   if (!catchall) {
     return undefined;

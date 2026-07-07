@@ -41,39 +41,36 @@ export class MdxLoader implements SingleProcessor {
 
     const mdxContext = createContext({ parentURL: baseUrl });
 
-    let mdxData: any;
-    let mdxContent: any;
-    try {
-      // TODO figure out why I had to do this instead of just using things directly, and then document the "why"
-      const mdxModule = new vm.SourceTextModule(compiled.toString(), {
-        identifier: filename,
-        context: mdxContext,
-        initializeImportMeta(meta) {
-          meta.dirname = path.dirname(filename);
-          meta.filename = filename;
-          meta.url = baseUrl.toString();
+    // TODO figure out why I had to do this instead of just using things directly, and then document the "why"
+    const mdxModule = new vm.SourceTextModule(compiled.toString(), {
+      identifier: filename,
+      context: mdxContext,
+      initializeImportMeta(meta) {
+        meta.dirname = path.dirname(filename);
+        meta.filename = filename;
+        meta.url = baseUrl.toString();
+      },
+    });
+    await mdxModule.link(async (specifier, _referencingModule, _extra) => {
+      const resolved = import.meta.resolve(specifier, baseUrl.toString());
+      const mod = await import(resolved);
+      const exportNames = Object.keys(mod).filter((name) => name != "module.exports");
+      return new SyntheticModule(
+        exportNames,
+        function () {
+          for (const exportName of exportNames) {
+            this.setExport(exportName, mod[exportName]);
+          }
         },
-      });
-      await mdxModule.link(async (specifier, _referencingModule, _extra) => {
-        const resolved = import.meta.resolve(specifier, baseUrl.toString());
-        const mod = await import(resolved);
-        const exportNames = Object.keys(mod).filter((name) => name != "module.exports");
-        return new SyntheticModule(
-          exportNames,
-          function () {
-            for (const exportName of exportNames) {
-              this.setExport(exportName, mod[exportName]);
-            }
-          },
-          { context: mdxContext, identifier: specifier },
-        );
-      });
-      await mdxModule.evaluate();
-      ({ default: mdxContent, ...mdxData } = mdxModule.namespace as unknown as Record<string, any>);
-    } catch (e) {
-      throw e;
-    }
+        { context: mdxContext, identifier: specifier },
+      );
+    });
+    await mdxModule.evaluate();
 
+    const { default: mdxContent, ...mdxData } = mdxModule.namespace as unknown as Record<
+      string,
+      any
+    >;
     return datum.with({
       ...mdxData,
       content: (props: any) => mdxContent(props),

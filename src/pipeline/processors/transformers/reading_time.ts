@@ -37,7 +37,11 @@ type ReadingTimeObject =
       };
     };
 
-const readingTime = (datum: Datum, content: unknown, wordsPerMinute: number): number | undefined => {
+const readingTime = (
+  datum: Datum,
+  content: unknown,
+  wordsPerMinute: number,
+): number | undefined => {
   if (typeof content != "string" && typeof content != "object") {
     return undefined;
   }

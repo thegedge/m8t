@@ -68,7 +68,10 @@ export class Datum<Shape extends DatumShape = DatumShape> {
    * Returns a new Datum whose lineage will diverge from the datum from which it was branched.
    */
   branch(additionalData?: Partial<Shape>): Datum {
-    return new Datum(merge(this.#data, additionalData) as unknown as Shape, [...this.#lineage, this.#data]);
+    return new Datum(merge(this.#data, additionalData) as unknown as Shape, [
+      ...this.#lineage,
+      this.#data,
+    ]);
   }
 
   /**
@@ -154,8 +157,10 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   }
 
   toProxy(): Shape {
-    // We do it this way to allow potentially loading data that will be merged in later.
+    // oxlint-disable no-this-alias -- TODO: verify this is necessary
     const self = this;
+
+    // We do it this way to allow potentially loading data that will be merged in later.
     return new Proxy(this, {
       isExtensible(_target) {
         return false;

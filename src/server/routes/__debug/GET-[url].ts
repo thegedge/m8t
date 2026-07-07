@@ -1,9 +1,18 @@
-import { symProcessedBy, symProcessingTimeMs, type Datum, type DatumShape } from "../../../pipeline/Datum.js";
+import {
+  symProcessedBy,
+  symProcessingTimeMs,
+  type Datum,
+  type DatumShape,
+} from "../../../pipeline/Datum.js";
 import { diffObject, entryKeySort } from "../../../utils/diffObject.js";
 import { truncate } from "../../../utils/truncate.js";
 import type { MateRoute } from "../types.js";
 
-export const debugPageGet: MateRoute = async ({ data: { site }, params: { url }, response }): Promise<void> => {
+export const debugPageGet: MateRoute = async ({
+  data: { site },
+  params: { url },
+  response,
+}): Promise<void> => {
   const data = await site.dataByUrl(url);
   if (!data) {
     response.writeHead(404, { "content-type": "text/html" });
@@ -126,7 +135,12 @@ const htmlForDataAndLineage = (datum: Datum): string => {
       const diff =
         index < lineage.length - 1
           ? diffObject<DatumShape>(lineage[index + 1], lineageRecord)
-          : { additions: Object.entries(lineageRecord).sort(entryKeySort), removals: [], updates: [], unchanged: [] };
+          : {
+              additions: Object.entries(lineageRecord).sort(entryKeySort),
+              removals: [],
+              updates: [],
+              unchanged: [],
+            };
 
       const processorName = processorNameForDatum(lineageRecord);
       const processingTimeMs = lineageRecord[symProcessingTimeMs] ?? 0;
@@ -195,12 +209,17 @@ const DatumJsonReplacer = () => {
 
         if ("$$typeof" in value && "type" in value) {
           const type = value.type;
-          if (typeof type !== "object" || (type && type.constructor !== Object.prototype.constructor)) {
+          if (
+            typeof type !== "object" ||
+            (type && type.constructor !== Object.prototype.constructor)
+          ) {
             return `<React (${String(type)})>`;
           }
         }
 
-        return Object.fromEntries(Object.entries(value).sort((a, b) => String(a[0]).localeCompare(String(b[0]))));
+        return Object.fromEntries(
+          Object.entries(value).sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+        );
       case "function":
         return value.name ? `<function ${value.name}>` : "<function>";
       default:

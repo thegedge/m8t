@@ -1,0 +1,28 @@
+#!/bin/bash
+
+main() {
+  trap 'exit 1' SIGINT SIGTERM SIGQUIT
+
+  cd "$(git rev-parse --show-toplevel)" || return 1
+
+  UNFORMATTED_FILES=$(./node_modules/.bin/oxfmt --list-different .)
+  if [[ -z "${UNFORMATTED_FILES}" ]]; then
+    echo "✅ All files are properly formatted"
+    exit 0
+  fi
+
+  echo "⚠️ Found files that need formatting"
+  echo "${UNFORMATTED_FILES}"
+  echo
+
+  for file in ${UNFORMATTED_FILES}; do
+    if [[ -f "${file}" ]]; then
+      cat "${file}" | node_modules/.bin/oxfmt --stdin-filepath="${file}" | diff --unified=2 --color=auto "${file}" -
+      echo
+    fi
+  done
+
+  exit 1
+}
+
+main "$@"

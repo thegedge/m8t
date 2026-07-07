@@ -1,6 +1,6 @@
 import type { MateRoute } from "../types.js";
 
-export const debugGet: MateRoute = async ({ data: { site }, request, response }): Promise<void> => {
+export const debugGet: MateRoute = async ({ data: { site }, response }): Promise<void> => {
   // TODO if we guaranteed a unique identifier, we wouldn't need the concept of a URL
   const urls = await site.urls;
 

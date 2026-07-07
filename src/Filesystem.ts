@@ -16,7 +16,9 @@ export class Filesystem {
    */
   constructor(path: string) {
     this.path = ensureEndSlash(
-      pathModule.isAbsolute(path) ? path : pathModule.normalize(pathModule.join(process.cwd(), path)),
+      pathModule.isAbsolute(path)
+        ? path
+        : pathModule.normalize(pathModule.join(process.cwd(), path)),
     );
   }
 

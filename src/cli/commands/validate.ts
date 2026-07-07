@@ -1,6 +1,7 @@
 import { link } from "ansi-escapes";
 import debug from "debug";
 import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
+
 import type { Site } from "../../Site.js";
 
 const log = debug("m8t:validate");
@@ -86,7 +87,11 @@ const dumpMessages = (results: Result[]) => {
   }
 };
 
-const contextString = (source: string, offset: number, options?: { context?: number; indent?: string }) => {
+const contextString = (
+  source: string,
+  offset: number,
+  options?: { context?: number; indent?: string },
+) => {
   const { context = 100, indent = "" } = options || {};
   const maybeStartEllipsis = offset > context ? `${indent}...` : "";
   const maybeEndEllipsis = offset + context < source.length ? "..." : "";

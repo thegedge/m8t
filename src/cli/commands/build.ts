@@ -1,10 +1,15 @@
 import debug from "debug";
 import path from "node:path";
+
 import { Site } from "../../Site.js";
 
 const log = debug("m8t:build");
 
-export const run = async (site: Site, _args: { _: [string] }, signal: AbortSignal): Promise<number> => {
+export const run = async (
+  site: Site,
+  _args: { _: [string] },
+  signal: AbortSignal,
+): Promise<number> => {
   log("initializing tsx loader");
   await import("@nodejs-loaders/tsx");
 
@@ -38,7 +43,10 @@ export const run = async (site: Site, _args: { _: [string] }, signal: AbortSigna
     }
 
     if (file.isFile()) {
-      await site.out.copyFileFrom(site.static, path.join(path.relative(site.static.path, file.parentPath), file.name));
+      await site.out.copyFileFrom(
+        site.static,
+        path.join(path.relative(site.static.path, file.parentPath), file.name),
+      );
     }
   }
 

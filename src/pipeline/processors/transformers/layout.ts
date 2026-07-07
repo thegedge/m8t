@@ -1,4 +1,5 @@
 import path from "node:path";
+
 import { Pipeline, type PipelineStage, type SingleProcessor } from "../../../index.js";
 import { Datum, symProcessedBy } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";

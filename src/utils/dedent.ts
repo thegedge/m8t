@@ -24,7 +24,9 @@ export const dedent = (strings: TemplateStringsArray, ...values: unknown[]) => {
   // we trim them before doing our computation.
   const trimmedLeadingTrailingNewlines = strings.map((s, index) => {
     if (strings.length === 1) {
-      return s.replace(LEADING_WHITESPACE_ONLY_LINE_REGEX, "").replace(TRAILING_WHITESPACE_ONLY_LINE_REGEX, "");
+      return s
+        .replace(LEADING_WHITESPACE_ONLY_LINE_REGEX, "")
+        .replace(TRAILING_WHITESPACE_ONLY_LINE_REGEX, "");
     } else if (index === 0) {
       return s.replace(LEADING_WHITESPACE_ONLY_LINE_REGEX, "");
     } else if (index === strings.length - 1) {
@@ -52,9 +54,11 @@ export const dedent = (strings: TemplateStringsArray, ...values: unknown[]) => {
   //   - One or more whitespace characters
   //
   // We have to use a positive-lookahead so that the match length counts the whitespace
-  const leastLeadingWhitespace = stringifiedNoValues.matchAll(/^([^\S\n]*(?=\S)|[^\S\n]+)/gm).reduce((acc, match) => {
-    return Math.min(acc, match[0].length);
-  }, Number.POSITIVE_INFINITY);
+  const leastLeadingWhitespace = stringifiedNoValues
+    .matchAll(/^([^\S\n]*(?=\S)|[^\S\n]+)/gm)
+    .reduce((acc, match) => {
+      return Math.min(acc, match[0].length);
+    }, Number.POSITIVE_INFINITY);
 
   // Now that we've computed the least leading whitespace, we can combine all of the strings and values
   let regex: RegExp | null = null;

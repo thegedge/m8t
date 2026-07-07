@@ -9,23 +9,15 @@
     "react",
     "static site generator"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/thegedge/m8t.git"
-  },
   "license": "MIT",
   "author": {
     "name": "Jason Gedge",
     "email": "jason@gedge.ca"
   },
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/src/index.js"
-    }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thegedge/m8t.git"
   },
-  "main": "./dist/src/index.js",
   "bin": {
     "m8t": "./dist/src/cli/index.js"
   },
@@ -36,20 +28,25 @@
     "README.md",
     "types/**/*.d.ts"
   ],
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
   "scripts": {
-    "lint": "pnpm lint:prettier",
-    "lint:prettier": "./scripts/prettier-with-diff",
+    "lint": "pnpm lint:format && pnpm lint:syntax",
+    "lint:format": "./scripts/format-with-diff",
+    "lint:format:fix": "oxfmt --write .",
+    "lint:syntax": "oxlint",
+    "lint:syntax:fix": "oxlint --fix .",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "update": "ncu --interactive --upgrade",
     "watch": "tsc --watch"
-  },
-  "overrides": {
-    "@nodejs-loaders/tsx": {
-      "esbuild": "0.27.2"
-    }
   },
   "dependencies": {
     "@mdx-js/mdx": "^3.1.1",
@@ -71,10 +68,8 @@
     "@types/node": "^25.2.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
-    "npm-check-updates": "^19.3.2",
-    "prettier": "^3.8.1",
-    "prettier-plugin-organize-imports": "^4.3.0",
-    "prettier-plugin-packagejson": "^3.0.0",
+    "oxfmt": "^0.58.0",
+    "oxlint": "^1.73.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.6"
   },
@@ -88,5 +83,10 @@
     "playwright": "*",
     "playwright-core": "*",
     "postcss-discard-comments": "*"
+  },
+  "overrides": {
+    "@nodejs-loaders/tsx": {
+      "esbuild": "0.27.2"
+    }
   }
 }

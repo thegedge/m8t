@@ -1,20 +1,30 @@
-// TODO dynamic import in `run` function, catch if missing (since optional) and relay a message to add playwright to package.json
-import { chromium, devices, firefox, webkit, type Browser, type BrowserContextOptions } from "playwright";
-
-// @ts-expect-error no types
-import { getComparator } from "playwright-core/lib/utils";
-
 import debug from "debug";
 import fs from "node:fs/promises";
 import os from "node:os";
 import pMap from "p-map";
+// TODO dynamic import in `run` function, catch if missing (since optional) and relay a message to add playwright to package.json
+import {
+  chromium,
+  devices,
+  firefox,
+  webkit,
+  type Browser,
+  type BrowserContextOptions,
+} from "playwright";
+// @ts-expect-error no types
+import { getComparator } from "playwright-core/lib/utils";
+
 import type { Site } from "../../Site.js";
 import type { Datum, DefaultDatumShape } from "../../types.js";
 import { sortBy } from "../../utils/sortBy.js";
 
 const log = debug("m8t:diff");
 
-export const run = async (site: Site, _args: Record<string, unknown>, signal: AbortSignal): Promise<number> => {
+export const run = async (
+  site: Site,
+  _args: Record<string, unknown>,
+  signal: AbortSignal,
+): Promise<number> => {
   const [chromeBrowser, firefoxBrowser, webkitBrowser] = await Promise.all([
     chromium.launch(),
     firefox.launch(),
@@ -149,11 +159,15 @@ export const run = async (site: Site, _args: Record<string, unknown>, signal: Ab
             mask: [page.locator("img[src*='.gif']"), page.locator("img[src*='.webp']")],
           });
 
-          const outputPath = site.out.absolute(`diff/${sanitizedName}/${sanitizedUrl}-${index}.png`);
+          const outputPath = site.out.absolute(
+            `diff/${sanitizedName}/${sanitizedUrl}-${index}.png`,
+          );
           if (await fileExists(outputPath)) {
             const previous = await fs.readFile(outputPath);
             const result = compare(previous, current, { maxDiffPixelRatio: 0.01 });
-            const outputDiffPath = site.out.absolute(`diff/${sanitizedName}/${sanitizedUrl}-${index}.diff.png`);
+            const outputDiffPath = site.out.absolute(
+              `diff/${sanitizedName}/${sanitizedUrl}-${index}.diff.png`,
+            );
             if (result) {
               await fs.writeFile(outputDiffPath, result.diff);
             } else if (await fileExists(outputDiffPath)) {

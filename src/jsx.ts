@@ -5,6 +5,7 @@ import {
   type ReactNode,
 } from "react";
 import { renderToReadableStream } from "react-dom/server.browser";
+
 import type { MaybeArray } from "./types.js";
 
 export type Element<P = Record<string, unknown>> = ReactElement<P>;

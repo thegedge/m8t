@@ -1,4 +1,5 @@
 import postcss from "postcss";
+
 import type { MaybeArray, SingleProcessor } from "../../../index.js";
 import type { Datum } from "../../Datum.js";
 import { type DefaultContext } from "../../utils.js";
@@ -42,7 +43,9 @@ export class CssRenderer implements SingleProcessor {
         const tailwindcssNesting = await maybeImportDefault(import("@tailwindcss/nesting"));
         const tailwindcssPlugin = await maybeImportDefault(import("@tailwindcss/postcss"));
         const postcssDiscardComments = await maybeImportDefault(import("postcss-discard-comments"));
-        this.#processor = postcss([tailwindcssNesting, tailwindcssPlugin, postcssDiscardComments].filter((v) => !!v));
+        this.#processor = postcss(
+          [tailwindcssNesting, tailwindcssPlugin, postcssDiscardComments].filter((v) => !!v),
+        );
       }
     }
     return this.#processor;
@@ -53,7 +56,7 @@ const maybeImportDefault = async <T>(module: Promise<{ default: T }>): Promise<T
   try {
     const { default: value } = await module;
     return value;
-  } catch (e) {
+  } catch {
     return null;
   }
 };

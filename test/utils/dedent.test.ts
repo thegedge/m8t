@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+
 import { dedent } from "../../src/utils/dedent.js";
 
 describe("dedent", () => {

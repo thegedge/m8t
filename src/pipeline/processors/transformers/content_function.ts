@@ -1,8 +1,8 @@
-// These are included only for JSDocs
-import type { reprocess } from "../../../index.js";
-
 import { isGeneratorFunction } from "node:util/types";
+
 import type { MaybeArray, SingleProcessor } from "../../../index.js";
+// oxlint-disable no-unused-vars -- only here for jsdocs
+import type { reprocess } from "../../../index.js";
 import { Datum, type DatumShape } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
@@ -48,7 +48,9 @@ export class ContentFunctionTransformer implements SingleProcessor {
             }
 
             if (!("url" in result) || typeof result.url != "string") {
-              throw new Error(`expected url in result, but found object with keys ${Object.keys(result).join(", ")}`);
+              throw new Error(
+                `expected url in result, but found object with keys ${Object.keys(result).join(", ")}`,
+              );
             }
 
             newData.push(datum.branch(result as unknown as DatumShape));

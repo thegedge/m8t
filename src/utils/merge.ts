@@ -19,7 +19,10 @@ import { isPlainObject } from "./is.js";
  *
  * @returns a new object with the merged contents of the two objects.
  */
-export function merge<T extends Record<string, unknown> | null | undefined>(base: T, ...objects: T[]): T {
+export function merge<T extends Record<string, unknown> | null | undefined>(
+  base: T,
+  ...objects: T[]
+): T {
   // TODO try to type this so that the return type is the merging of the two
 
   if (objects.length == 0) {
@@ -57,7 +60,9 @@ export function merge<T extends Record<string, unknown> | null | undefined>(base
     if (isPlainObject(aValue) && isPlainObject(bValue)) {
       merged[mergedKey] = merge(aValue, bValue);
     } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
-      merged[mergedKey] = (aValue === bValue ? aValue : [...aValue, ...bValue]) as (typeof merged)[typeof mergedKey];
+      merged[mergedKey] = (
+        aValue === bValue ? aValue : [...aValue, ...bValue]
+      ) as (typeof merged)[typeof mergedKey];
     } else if (mergedKey in b) {
       merged[mergedKey] = bValue as (typeof merged)[typeof mergedKey];
     } else {

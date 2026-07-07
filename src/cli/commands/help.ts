@@ -1,8 +1,13 @@
 import { styleText } from "node:util";
+
 import type { Site } from "../../Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
-export const run = async (_site: Site, _args: Record<string, unknown>, _signal: AbortSignal): Promise<number> => {
+export const run = async (
+  _site: Site,
+  _args: Record<string, unknown>,
+  _signal: AbortSignal,
+): Promise<number> => {
   console.log();
   printLogoAndTitleWithLines(process.stdout, [
     `${styleText("bold", "Available commands")}:`,

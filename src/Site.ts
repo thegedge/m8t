@@ -2,6 +2,7 @@ import debug from "debug";
 import EventEmitter from "node:events";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
+
 import { Filesystem } from "./Filesystem.js";
 import { symProcessedBy } from "./pipeline/Datum.js";
 import { Datum, Pipeline, type PipelineStage } from "./pipeline/index.js";
@@ -134,7 +135,9 @@ export class Site extends EventEmitter<SiteEventMap> {
   static async forRoot(root: string): Promise<Site> {
     log("initializing site from %s", root);
 
-    const { default: siteOptions } = (await import(path.join(root, "site.ts"))) as { default: SiteOptions };
+    const { default: siteOptions } = (await import(path.join(root, "site.ts"))) as {
+      default: SiteOptions;
+    };
     if (typeof siteOptions !== "object" || siteOptions === null) {
       throw new Error("site.ts must export site options");
     }
@@ -283,10 +286,13 @@ export class Site extends EventEmitter<SiteEventMap> {
       for (const [pipelineRoot, stages] of Object.entries(this.pipelines)) {
         const pipeline = new Pipeline({ stages });
         const basePath = this.root.absolute(pipelineRoot);
-        const data = await pipeline.add([new Datum({ filename: basePath, basePath, [symProcessedBy]: "root" })], {
-          site: this,
-          signal: AbortSignal.timeout(30_000),
-        });
+        const data = await pipeline.add(
+          [new Datum({ filename: basePath, basePath, [symProcessedBy]: "root" })],
+          {
+            site: this,
+            signal: AbortSignal.timeout(30_000),
+          },
+        );
         results.push(...data);
       }
       return results;

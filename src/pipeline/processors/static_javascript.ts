@@ -1,5 +1,6 @@
 import * as esbuild from "esbuild";
 import path from "node:path";
+
 import type { ManyProcessor } from "../../index.js";
 import { Datum } from "../Datum.js";
 import type { DefaultContext } from "../utils.js";
@@ -81,7 +82,9 @@ export class StaticJavascriptProcessor implements ManyProcessor {
     });
 
     if (result.errors.length > 0) {
-      throw new Error("Failed to build static bundle:\n\n" + result.errors.map((e) => e.text).join("\n"));
+      throw new Error(
+        "Failed to build static bundle:\n\n" + result.errors.map((e) => e.text).join("\n"),
+      );
     }
 
     const mapping = new Map<string, esbuild.OutputFile>();

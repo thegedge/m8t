@@ -76,7 +76,8 @@ export const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
   }
 };
 
-const stripAnsi = (str: string) => str.replaceAll(/[\e\u001B]\[(?:(8;;.+?\u0007)|(.*?m))/g, "");
+// oxlint-disable no-control-regex -- oxlint suggests using a unicode escape instead...
+const stripAnsi = (str: string) => str.replaceAll(/[e\u001B]\[(?:(8;;.+?\u0007)|(.*?m))/g, "");
 
 const C = bgRgb(249, 140, 0)(" ");
 const S = " ";

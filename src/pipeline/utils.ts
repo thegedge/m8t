@@ -1,5 +1,6 @@
 import debug from "debug";
 import pMap from "p-map";
+
 import type { MaybeArray } from "../index.js";
 import type { Site } from "../Site.js";
 import type { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
@@ -70,18 +71,29 @@ export const processManyWithSingle = async <
  *
  * @returns The processed datum, or `null` if the datum was not changed.
  */
-export const processOne = async <ShapeT extends DatumShape, ResultT, ContextT extends DefaultContext = DefaultContext>(
+export const processOne = async <
+  ShapeT extends DatumShape,
+  ResultT,
+  ContextT extends DefaultContext = DefaultContext,
+>(
   datum: Datum<ShapeT>,
   context: ContextT,
   processor: SingleProcessor<Datum<ShapeT>, MaybeArray<ResultT>, ContextT>,
 ): Promise<MaybeArray<ResultT> | null> => {
   const tracker = context.performanceTracker.track();
-  const result = await datum.nullUnlessChanged(async () => await processor.processOne(datum, context));
+  const result = await datum.nullUnlessChanged(
+    async () => await processor.processOne(datum, context),
+  );
   if (!result) {
     return null;
   }
 
-  log("processed page %s with %s in %sms", datum.get("filename"), processor.constructor.name, tracker.cumulativeTime);
+  log(
+    "processed page %s with %s in %sms",
+    datum.get("filename"),
+    processor.constructor.name,
+    tracker.cumulativeTime,
+  );
 
   if (Array.isArray(result)) {
     return result.map((newDatum) =>

@@ -1,6 +1,7 @@
 import { parameterize as slugify, titleize, underscore } from "inflected";
 import mime from "mime-types";
 import path from "node:path";
+
 import type { MaybeArray, SingleProcessor } from "../../../index.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
@@ -159,7 +160,8 @@ export class PageDefaultsTransformer implements SingleProcessor {
       }
     }
 
-    const mimeType: string | undefined = datum.maybeGetString("mimeType") || mime.lookup(url) || undefined;
+    const mimeType: string | undefined =
+      datum.maybeGetString("mimeType") || mime.lookup(url) || undefined;
 
     const dataTitle = datum.maybeGetString("title");
     const title = dataTitle ?? titleize(underscore(parsed.name));

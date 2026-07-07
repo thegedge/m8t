@@ -2,6 +2,7 @@ import mime from "mime-types";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
+
 import type { MateRoute } from "./types.js";
 
 export const defaultRoute: MateRoute = async ({ data: { redirects, site }, request, response }) => {
@@ -65,7 +66,7 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
 
       return;
     }
-  } catch (_e) {
+  } catch {
     // fall through to 404
   }
 

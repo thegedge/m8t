@@ -1,6 +1,6 @@
-import type { Datum, PipelineStage } from "../types.js";
-
 import debug from "debug";
+
+import type { Datum, PipelineStage } from "../types.js";
 import { counterPromise } from "../utils/counterPromise.js";
 import { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
 import { partition } from "../utils/partition.js";

@@ -2,6 +2,7 @@ import debug from "debug";
 import fs from "fs";
 import pMap from "p-map";
 import path from "path";
+
 import { Filesystem } from "../../../Filesystem.js";
 import type { Datum, ManyProcessor, SingleProcessor } from "../../../types.js";
 import { symProcessedBy } from "../../Datum.js";
@@ -62,7 +63,7 @@ export class FilesystemInitializer implements ManyProcessor {
               // Assume something further in the pipeline will handle it
               return datum;
             }
-          } catch (error) {
+          } catch {
             // Assume "file not found" error
             return datum;
           }
@@ -72,7 +73,11 @@ export class FilesystemInitializer implements ManyProcessor {
     ).flat();
   }
 
-  private async *init(context: DefaultContext, fileSystem: Filesystem, parentData: Datum): AsyncGenerator<Datum> {
+  private async *init(
+    context: DefaultContext,
+    fileSystem: Filesystem,
+    parentData: Datum,
+  ): AsyncGenerator<Datum> {
     const listing = await fileSystem.ls();
     const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
     if (dataFile) {
@@ -104,7 +109,10 @@ export class FilesystemInitializer implements ManyProcessor {
         try {
           const filePath = path.join(fileSystem.path, entry.name);
           log("found page to process: %s", filePath);
-          yield await this.load(parentData.branch({ filename: filePath, [symProcessedBy]: this }), context);
+          yield await this.load(
+            parentData.branch({ filename: filePath, [symProcessedBy]: this }),
+            context,
+          );
         } catch (error) {
           console.error(`Error loading ${entry.name} from ${fileSystem.path}`);
           console.error(error);

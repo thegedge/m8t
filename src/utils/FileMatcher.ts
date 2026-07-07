@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import { getSystemErrorName } from "node:util";
+
 import { memoize } from "./memoize.js";
 
 type Matcher = {
@@ -111,7 +112,9 @@ export class FileMatcher {
       lines.push(...options.globs);
     }
 
-    const filteredLines = lines.map((line) => line.trim()).filter((line) => line.length > 0 && !line.startsWith("#"));
+    const filteredLines = lines
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith("#"));
 
     return new FileMatcher({
       base,
@@ -157,7 +160,9 @@ export class FileMatcher {
     //   - OPtherwise, match everything if there are only ignoring matchers. In other words, if there is some non-ignoring
     //     matcher we want to start with a non-match.
     this.#defaultReturn =
-      this.#matchers.length == 0 ? true : this.#matchers.every(({ isIgnorePattern }) => isIgnorePattern);
+      this.#matchers.length == 0
+        ? true
+        : this.#matchers.every(({ isIgnorePattern }) => isIgnorePattern);
   }
 
   /**
@@ -214,7 +219,17 @@ export class FileMatcher {
     });
 
     return this.#matchers.reduce(
-      (fileMatches, { pattern, matchAnySegment, onlyDirectories, isIgnorePattern, matchDotFiles }) => {
+      (
+        fileMatches,
+        {
+          pattern,
+          matchAnySegment,
+          onlyDirectories,
+          isIgnorePattern,
+          // TODO implement this
+          // matchDotFiles
+        },
+      ) => {
         if (isIgnorePattern !== fileMatches) {
           // No need to check this pattern if either
           //   - previously did not match and this is an ignore pattern, or

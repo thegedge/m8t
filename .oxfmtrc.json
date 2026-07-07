@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/refs/heads/main/npm/oxfmt/configuration_schema.json",
+
+  "printWidth": 100,
+  "proseWrap": "always",
+  "semi": true,
+  "singleQuote": false,
+  "sortImports": {
+    "newlinesBetween": true,
+    "groups": [
+      ["value-builtin", "value-external", "type-builtin", "type-external"],
+      [
+        "value-internal",
+        "value-parent",
+        "value-sibling",
+        "value-index",
+        "type-internal",
+        "type-parent",
+        "type-sibling",
+        "type-index"
+      ],
+      "unknown"
+    ]
+  },
+  "sortPackageJson": {
+    "sortScripts": true
+  },
+  "tabWidth": 2,
+  "trailingComma": "all",
+  "useTabs": false
+}

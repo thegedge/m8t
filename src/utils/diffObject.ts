@@ -42,7 +42,10 @@ export type Changes<T extends Record<string | symbol, unknown>> = {
  *
  * @returns an object containing the diff between the two objects.
  */
-export const diffObject = <T extends Record<string | symbol, unknown>>(from: T, to: T): Changes<T> => {
+export const diffObject = <T extends Record<string | symbol, unknown>>(
+  from: T,
+  to: T,
+): Changes<T> => {
   const additions: ChangedArray<T> = [];
   const removals: ChangedArray<T> = [];
   const updates: ChangedArray<T> = [];
@@ -78,6 +81,9 @@ export const diffObject = <T extends Record<string | symbol, unknown>>(from: T, 
   };
 };
 
-export const entryKeySort = (a: [string | number | symbol, unknown], b: [string | number | symbol, unknown]) => {
+export const entryKeySort = (
+  a: [string | number | symbol, unknown],
+  b: [string | number | symbol, unknown],
+) => {
   return String(a[0]).localeCompare(String(b[0]));
 };

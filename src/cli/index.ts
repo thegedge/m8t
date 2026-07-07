@@ -1,8 +1,7 @@
 #!/usr/bin/env -S node --no-warnings --experimental-vm-modules --experimental-import-meta-resolve
+import debug from "debug";
 import path from "node:path";
 import { parseArgs } from "node:util";
-
-import debug from "debug";
 
 import { Site } from "../Site.js";
 
@@ -49,7 +48,7 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
   process.on("SIGTERM", shutdown);
 
   const commandModule = await COMMANDS[actualCommand]();
-  return await Promise.race([await commandModule.run(site, args as any, exiting.signal), timedOut]);
+  return await Promise.race([commandModule.run(site, args as any, exiting.signal), timedOut]);
 };
 
 if (!import.meta.main) {

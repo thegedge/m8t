@@ -5,26 +5,14 @@ import { fork, type ChildProcess } from "node:child_process";
 import path from "node:path";
 import { styleText } from "node:util";
 import pDebounce from "p-debounce";
+
 import type { Site } from "../../Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 const log = debug("m8t:serve");
 
-// Animation characters for reloading indicator
-const ANIMATION_CHARS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-let animationIndex = 0;
-let globalAnimationInterval: NodeJS.Timeout | null = null;
-
 const clearLine = () => {
   process.stdout.write("\r" + " ".repeat(80) + "\r");
-};
-
-const showReloadingMessage = (isInitialLoad = false) => {
-  const animationChar = ANIMATION_CHARS[animationIndex];
-  animationIndex = (animationIndex + 1) % ANIMATION_CHARS.length;
-
-  const message = isInitialLoad ? "Server starting up" : "Reloading";
-  process.stdout.write(styleText("blue", `\r${animationChar} ${message}...`));
 };
 
 const showReadyMessage = (startTime: number, url: string, isInitialLoad = false) => {
@@ -40,19 +28,20 @@ const showReadyMessage = (startTime: number, url: string, isInitialLoad = false)
       styleText("green", `✓ Server loaded in: ${styleText("bold", `${elapsed}ms`)}`),
     ]);
   } else {
-    process.stdout.write(styleText("green", `\r✓ Reloaded in ${styleText("bold", `${elapsed}ms`)}`));
+    process.stdout.write(
+      styleText("green", `\r✓ Reloaded in ${styleText("bold", `${elapsed}ms`)}`),
+    );
   }
 };
 
-export const run = async (site: Site, _args: Record<string, unknown>, signal: AbortSignal): Promise<number> => {
+export const run = async (
+  site: Site,
+  _args: Record<string, unknown>,
+  signal: AbortSignal,
+): Promise<number> => {
   const { resolve: finished, promise: finishedPromise } = Promise.withResolvers<number>();
 
   signal.addEventListener("abort", () => {
-    if (globalAnimationInterval) {
-      clearInterval(globalAnimationInterval);
-      globalAnimationInterval = null;
-    }
-
     setTimeout(() => {
       finished(0);
     }, 1500);
@@ -89,11 +78,6 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
   currentServer.on("message", (message) => {
     if (message === "ready") {
-      if (globalAnimationInterval) {
-        clearInterval(globalAnimationInterval);
-        globalAnimationInterval = null;
-      }
-
       showReadyMessage(reloadStartTime, url, true);
     }
   });
@@ -128,7 +112,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     nextServer?.kill("SIGTERM");
     nextServer = newServer;
 
-    newServer.on("error", (message: unknown) => {
+    newServer.on("error", (_message: unknown) => {
       // suppress errors
       // TODO is there something we can do here? show error? try again?
     });

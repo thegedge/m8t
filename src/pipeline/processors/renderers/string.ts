@@ -19,7 +19,10 @@ export class StringRenderer implements SingleProcessor {
 
     return datum.with({
       mimeType: mimeType || "text/plain",
-      content: typeof content === "object" && content && "toString" in content ? content.toString() : String(content),
+      content:
+        typeof content === "object" && content && "toString" in content
+          ? content.toString()
+          : String(content),
     });
   }
 }
