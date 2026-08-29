@@ -37,6 +37,7 @@
     }
   },
   "scripts": {
+    "build": "tsc",
     "lint": "pnpm lint:format && pnpm lint:syntax",
     "lint:format": "./scripts/format-with-diff",
     "lint:format:fix": "oxfmt --write .",
