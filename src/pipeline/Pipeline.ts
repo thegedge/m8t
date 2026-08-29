@@ -74,11 +74,15 @@ export class Pipeline {
 
     this.#working.increment();
 
-    const workStopped = new Promise<never>((_resolve, reject) => {
-      context.signal?.addEventListener("abort", () => {
-        reject(new Error("work stopped"));
-      });
-    });
+    if (context.signal?.aborted) {
+      throw new Error("work stopped");
+    }
+
+    const { reject: rejectWork, promise: workStopped } = Promise.withResolvers<never>();
+    const stop = () => {
+      rejectWork(new Error("work stopped"));
+    };
+    context.signal?.addEventListener("abort", stop);
 
     const stage = this.#stages[stageIndex];
     if (!stage) {
@@ -127,6 +131,7 @@ export class Pipeline {
       });
     } finally {
       this.#working.decrement();
+      context.signal?.removeEventListener("abort", stop);
     }
   }
 }
