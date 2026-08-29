@@ -3,6 +3,7 @@ import debug from "debug";
 import { watch } from "fs";
 import { fork, type ChildProcess } from "node:child_process";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { styleText } from "node:util";
 import pDebounce from "p-debounce";
 
@@ -67,7 +68,11 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
       },
       cwd: path.join(import.meta.dirname, "../../../"),
       // Until node can load jsx/tsx files, we need to use a special loader
-      execArgv: [...process.execArgv, "--import", "@nodejs-loaders/tsx"],
+      execArgv: [
+        ...process.execArgv,
+        "--import",
+        pathToFileURL(path.join(import.meta.dirname, "../../loader/register.js")).href,
+      ],
       signal: exiting,
     });
   };

@@ -51,7 +51,6 @@
   },
   "dependencies": {
     "@mdx-js/mdx": "^3.1.1",
-    "@nodejs-loaders/tsx": "^1.1.2",
     "ansi-escapes": "^7.2.0",
     "debug": "^4.4.3",
     "esbuild": "^0.27.2",
@@ -60,7 +59,7 @@
     "mime-types": "^3.0.2",
     "p-debounce": "^5.1.0",
     "p-map": "^7.0.4",
-    "postcss": "^8.5.14"
+    "postcss": "^8.5.26"
   },
   "devDependencies": {
     "@types/debug": "^4.1.13",
@@ -80,14 +79,9 @@
   },
   "optionalDependencies": {
     "@tailwindcss/nesting": "0.0.0-insiders.565cd3e",
-    "@tailwindcss/postcss": "*",
-    "playwright": "*",
-    "playwright-core": "*",
-    "postcss-discard-comments": "*"
-  },
-  "overrides": {
-    "@nodejs-loaders/tsx": {
-      "esbuild": "0.27.2"
-    }
+    "@tailwindcss/postcss": "^4.1.11",
+    "playwright": "^1.55.1",
+    "playwright-core": "^1.55.1",
+    "postcss-discard-comments": "^7.0.4"
   }
 }

@@ -79,7 +79,7 @@ export const run = async (
   try {
     // TODO why do we have to do these in every command?
     log("initializing tsx loader");
-    await import("@nodejs-loaders/tsx");
+    await import("../../loader/register.js");
 
     const sitePages = Object.values(await site.data)
       .filter((datum) => datum.get("mimeType") === "text/html")

@@ -12,7 +12,7 @@ export const run = async (
   signal: AbortSignal,
 ): Promise<number> => {
   log("initializing tsx loader");
-  await import("@nodejs-loaders/tsx");
+  await import("../../loader/register.js");
 
   const validator = new HtmlValidate({
     root: true,
