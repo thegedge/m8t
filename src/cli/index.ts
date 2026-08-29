@@ -1,9 +1,14 @@
 #!/usr/bin/env -S node --no-warnings --experimental-vm-modules --experimental-import-meta-resolve
 import debug from "debug";
+import module from "node:module";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
-import { Site } from "../Site.js";
+try {
+  module.enableCompileCache();
+} catch {
+  // best effort, not necessary though
+}
 
 type Args = {
   _: string[];
@@ -32,6 +37,9 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
   } else {
     actualCommand = "help";
   }
+
+  // Imported here so the compile cache is in place
+  const { Site } = await import("../Site.js");
 
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
   const site = await Site.forRoot(root);
