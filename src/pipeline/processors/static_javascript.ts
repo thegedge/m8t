@@ -75,7 +75,7 @@ export class StaticJavascriptProcessor implements ManyProcessor {
       format: "esm",
       bundle: true,
       splitting: true,
-      minify: site.isDevelopment,
+      minify: !site.isDevelopment,
       sourcemap: site.isDevelopment ? "inline" : undefined,
       logLevel: "silent",
       write: false,
