@@ -2,6 +2,7 @@ import debug from "debug";
 import EventEmitter from "node:events";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
+import pMap from "p-map";
 
 import { Filesystem } from "./Filesystem.js";
 import { symProcessedBy } from "./pipeline/Datum.js";
@@ -282,20 +283,23 @@ export class Site extends EventEmitter<SiteEventMap> {
     }
 
     try {
-      const results: Datum[] = [];
-      for (const [pipelineRoot, stages] of Object.entries(this.pipelines)) {
-        const pipeline = new Pipeline({ stages });
-        const basePath = this.root.absolute(pipelineRoot);
-        const data = await pipeline.add(
-          [new Datum({ filename: basePath, basePath, [symProcessedBy]: "root" })],
-          {
-            site: this,
-            signal: AbortSignal.timeout(30_000),
-          },
-        );
-        results.push(...data);
-      }
-      return results;
+      const results = await pMap(
+        Object.entries(this.pipelines),
+        async ([pipelineRoot, stages]) => {
+          const pipeline = new Pipeline({ stages });
+          const basePath = this.root.absolute(pipelineRoot);
+          const data = await pipeline.add(
+            [new Datum({ filename: basePath, basePath, [symProcessedBy]: "root" })],
+            {
+              site: this,
+              signal: AbortSignal.timeout(30_000),
+            },
+          );
+          return data;
+        },
+        { concurrency: 4 },
+      );
+      return results.flat();
     } finally {
       if (session) {
         const { profile } = await session.post("Profiler.stop");
