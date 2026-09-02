@@ -129,7 +129,7 @@ export class Site extends EventEmitter<SiteEventMap> {
   /**
    * Initialize a site from a root directory.
    *
-   * @param root - The root directory of the site, which should contain a `site.ts` file.
+   * @param root - the root directory of the site, which should contain a `site.ts` file.
    *
    * @returns A {@linkcode Site} instance.
    */
@@ -143,9 +143,21 @@ export class Site extends EventEmitter<SiteEventMap> {
       throw new Error("site.ts must export site options");
     }
 
-    const siteRoot = path.resolve(root, siteOptions.root || "");
-    const staticRoot = path.resolve(siteRoot, siteOptions.static || "static");
-    const outRoot = path.resolve(siteRoot, siteOptions.out || "out");
+    return await Site.fromOptions(root, siteOptions);
+  }
+
+  /**
+   * Initial a site from a given set of options
+   *
+   * @param root - the root directory of the site
+   * @param options - the options to initialize the site from
+   *
+   * @returns A {@linkcode Site} instance.
+   */
+  static async fromOptions(root: string, options: SiteOptions) {
+    const siteRoot = path.resolve(root, options.root || "");
+    const staticRoot = path.resolve(siteRoot, options.static || "static");
+    const outRoot = path.resolve(siteRoot, options.out || "out");
 
     let fileMatcherOptions: FileMatcherOptions = {
       base: siteRoot,
@@ -154,13 +166,13 @@ export class Site extends EventEmitter<SiteEventMap> {
       dot: false,
     };
 
-    if (Array.isArray(siteOptions.ignore)) {
-      fileMatcherOptions.globs = [...fileMatcherOptions.globs, ...siteOptions.ignore];
-    } else if (typeof siteOptions.ignore === "object") {
+    if (Array.isArray(options.ignore)) {
+      fileMatcherOptions.globs = [...fileMatcherOptions.globs, ...options.ignore];
+    } else if (typeof options.ignore === "object") {
       fileMatcherOptions = {
         ...fileMatcherOptions,
-        globs: [...fileMatcherOptions.globs, ...(siteOptions.ignore.globs ?? [])],
-        files: [...fileMatcherOptions.files, ...(siteOptions.ignore.files ?? [])],
+        globs: [...fileMatcherOptions.globs, ...(options.ignore.globs ?? [])],
+        files: [...fileMatcherOptions.files, ...(options.ignore.files ?? [])],
       };
     }
 
@@ -168,11 +180,11 @@ export class Site extends EventEmitter<SiteEventMap> {
       root: siteRoot,
       static: staticRoot,
       out: outRoot,
-      mode: siteOptions.mode || (process.env.PUBLISH ? "production" : "development"),
-      additionalWatchDirs: siteOptions.additionalWatchDirs ?? [],
+      mode: options.mode || (process.env.PUBLISH ? "production" : "development"),
+      additionalWatchDirs: options.additionalWatchDirs ?? [],
       ignore: await FileMatcher.fromOptions(fileMatcherOptions),
-      pipelines: siteOptions.pipelines,
-      devServer: siteOptions.devServer,
+      pipelines: options.pipelines,
+      devServer: options.devServer,
     });
   }
 
@@ -207,7 +219,8 @@ export class Site extends EventEmitter<SiteEventMap> {
   private data_: Promise<readonly Datum[]> | null = null;
   private dataByUrl_: Promise<Readonly<Record<string, Datum>>> | null = null;
 
-  private constructor(options: ResolvedSiteOptions) {
+  /** private */
+  constructor(options: ResolvedSiteOptions) {
     super({ captureRejections: true });
 
     this.root = new Filesystem(options.root);

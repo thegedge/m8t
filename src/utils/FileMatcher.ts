@@ -151,7 +151,8 @@ export class FileMatcher {
   readonly #base: string;
   readonly #defaultReturn: boolean;
 
-  private constructor(options: { base: string; matchers: readonly Matcher[] }) {
+  /** @private */
+  constructor(options: { base: string; matchers: readonly Matcher[] }) {
     this.#base = options.base.endsWith("/") ? options.base.slice(0, -1) : options.base;
     this.#matchers = options.matchers;
 

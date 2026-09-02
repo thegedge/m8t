@@ -5,6 +5,7 @@ import path from "path";
 
 import { Filesystem } from "../../../Filesystem.js";
 import type { Datum, ManyProcessor, SingleProcessor } from "../../../types.js";
+import { partition } from "../../../utils/partition.js";
 import { symProcessedBy } from "../../Datum.js";
 import { processOne, type DefaultContext } from "../../utils.js";
 
@@ -97,7 +98,9 @@ export class FilesystemInitializer implements ManyProcessor {
       }
     }
 
-    for (const entry of listing) {
+    // Process files in current dir before descending
+    const [dirs, files] = partition(listing, (entry) => entry.isDirectory());
+    for (const entry of [...files, ...dirs]) {
       if (entry.name.startsWith(".") || entry === dataFile) {
         // skip hidden files and directories
         continue;
