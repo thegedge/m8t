@@ -9,6 +9,8 @@ import type { DefaultContext } from "../../utils.js";
 
 type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development" | "baseUrl">;
 
+// TODO maybe we can make this an import hook instead?
+
 /**
  * A loader that processes markdown and MDX files.
  *
@@ -17,6 +19,7 @@ type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development"
  */
 export class MdxLoader implements SingleProcessor {
   readonly #mdxOptions: MdxOptions;
+  readonly #resolveCache = new Map<string, string>();
 
   constructor(options: MdxOptions) {
     this.#mdxOptions = options;
@@ -52,7 +55,13 @@ export class MdxLoader implements SingleProcessor {
       },
     });
     await mdxModule.link(async (specifier, _referencingModule, _extra) => {
-      const resolved = import.meta.resolve(specifier, baseUrl.toString());
+      const resolveCacheKey = `${filename}##${specifier}`;
+      let resolved = this.#resolveCache.get(resolveCacheKey);
+      if (!resolved) {
+        resolved = import.meta.resolve(specifier, baseUrl.toString());
+        this.#resolveCache.set(resolveCacheKey, resolved);
+      }
+
       const mod = await import(resolved);
       const exportNames = Object.keys(mod).filter((name) => name != "module.exports");
       return new SyntheticModule(
