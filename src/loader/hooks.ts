@@ -1,5 +1,6 @@
 import { transformSync } from "esbuild";
 import type { LoadFnOutput, LoadHookContext } from "node:module";
+import path from "node:path";
 
 const ESBUILD_LOADERS = {
   ".ts": "ts",
@@ -8,6 +9,7 @@ const ESBUILD_LOADERS = {
   ".jsx": "jsx",
 } as const;
 
+type LoaderType = (typeof ESBUILD_LOADERS)[keyof typeof ESBUILD_LOADERS];
 type NextLoad = (url: string, context?: Partial<LoadHookContext>) => LoadFnOutput;
 
 /**
@@ -16,26 +18,38 @@ type NextLoad = (url: string, context?: Partial<LoadHookContext>) => LoadFnOutpu
  * Intended to be registered as an import hook in Node.
  */
 export const load = (url: string, context: LoadHookContext, nextLoad: NextLoad): LoadFnOutput => {
-  const extension = Object.keys(ESBUILD_LOADERS).find((ext) => url.endsWith(ext)) as
-    | keyof typeof ESBUILD_LOADERS
-    | undefined;
-  if (!extension) {
+  if (!URL.canParse(url)) {
     return nextLoad(url, context);
   }
 
-  const result = nextLoad(url, { ...context, format: "module" });
-  const { code } = transformSync(String(result.source), {
-    loader: ESBUILD_LOADERS[extension],
-    jsx: "automatic",
-    jsxDev: true,
-    sourcemap: "inline",
-    sourcefile: url,
-    format: "esm",
-  });
+  const resolvedUrl = new URL(url);
+  if (resolvedUrl.protocol != "file:") {
+    return nextLoad(url, context);
+  }
 
-  return {
-    format: "module",
-    source: code,
-    shortCircuit: true,
-  };
+  const extension = path.extname(resolvedUrl.pathname) as keyof typeof ESBUILD_LOADERS;
+  const loader: LoaderType = ESBUILD_LOADERS[extension];
+  switch (loader) {
+    case "ts":
+    case "tsx":
+    case "jsx": {
+      const result = nextLoad(url, { ...context, format: "module" });
+      const { code } = transformSync(String(result.source), {
+        loader,
+        jsx: "automatic",
+        jsxDev: true,
+        sourcemap: "inline",
+        sourcefile: url,
+        format: "esm",
+      });
+
+      return {
+        format: "module",
+        source: code,
+        shortCircuit: true,
+      };
+    }
+    case undefined:
+      return nextLoad(url, context);
+  }
 };
