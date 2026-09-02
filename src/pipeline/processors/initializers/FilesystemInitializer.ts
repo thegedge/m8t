@@ -57,7 +57,7 @@ export class FilesystemInitializer implements ManyProcessor {
             const stat = await fs.promises.stat(pathname);
             if (stat.isDirectory()) {
               const pipelineRoot = new Filesystem(pathname);
-              return await Array.fromAsync(this.init(context, pipelineRoot, datum));
+              return await this.init(context, pipelineRoot, datum);
             } else if (stat.isFile()) {
               return await this.load(datum, context);
             } else {
@@ -69,16 +69,16 @@ export class FilesystemInitializer implements ManyProcessor {
             return datum;
           }
         },
-        { concurrency: 1 },
+        { concurrency: 4 },
       )
     ).flat();
   }
 
-  private async *init(
+  private async init(
     context: DefaultContext,
     fileSystem: Filesystem,
     parentData: Datum,
-  ): AsyncGenerator<Datum> {
+  ): Promise<readonly Datum[]> {
     const listing = await fileSystem.ls();
     const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
     if (dataFile) {
@@ -100,28 +100,36 @@ export class FilesystemInitializer implements ManyProcessor {
 
     // Process files in current dir before descending
     const [dirs, files] = partition(listing, (entry) => entry.isDirectory());
-    for (const entry of [...files, ...dirs]) {
-      if (entry.name.startsWith(".") || entry === dataFile) {
-        // skip hidden files and directories
-        continue;
-      }
+    const results = await pMap(
+      [...files, ...dirs],
+      async (entry): Promise<readonly Datum[]> => {
+        if (entry.name.startsWith(".") || entry === dataFile) {
+          // skip hidden files and directories
+          return [];
+        }
 
-      if (entry.isDirectory()) {
-        yield* this.init(context, fileSystem.cd(entry.name), parentData);
-      } else {
+        if (entry.isDirectory()) {
+          return await this.init(context, fileSystem.cd(entry.name), parentData);
+        }
+
         try {
           const filePath = path.join(fileSystem.path, entry.name);
           log("found page to process: %s", filePath);
-          yield await this.load(
-            parentData.branch({ filename: filePath, [symProcessedBy]: this }),
-            context,
-          );
+          return [
+            await this.load(
+              parentData.branch({ filename: filePath, [symProcessedBy]: this }),
+              context,
+            ),
+          ];
         } catch (error) {
           console.error(`Error loading ${entry.name} from ${fileSystem.path}`);
           console.error(error);
+          return [];
         }
-      }
-    }
+      },
+      { concurrency: 4 },
+    );
+    return results.flat();
   }
 
   private async load(datum: Datum, context: DefaultContext): Promise<Datum> {
