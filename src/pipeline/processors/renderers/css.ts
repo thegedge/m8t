@@ -8,7 +8,11 @@ import { type DefaultContext } from "../../utils.js";
  * A renderer that processes CSS files with PostCSS.
  */
 export class CssRenderer implements SingleProcessor {
-  #processor!: postcss.Processor;
+  #processor: postcss.Processor;
+
+  constructor(postcssPlugins?: postcss.Plugin[]) {
+    this.#processor = postcss(postcssPlugins);
+  }
 
   async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {
     const filename = datum.get("filename");
@@ -21,9 +25,7 @@ export class CssRenderer implements SingleProcessor {
       return datum;
     }
 
-    // TODO figure out how this plugin could tell `TypesProcessor` to ignore `postcssPlugins`
-    const processor = await this.processor(datum.get("postcssPlugins") as postcss.Plugin[]);
-    const result = await processor.process(content, { from: filename });
+    const result = await this.#processor.process(content, { from: filename });
     const warnings = result.warnings();
     if (warnings.length > 0) {
       console.warn(`Warnings while processing ${filename}:`, warnings.join("\n\n"));
@@ -34,29 +36,4 @@ export class CssRenderer implements SingleProcessor {
       content: result.toString(),
     });
   }
-
-  private async processor(postcssPlugins?: postcss.Plugin[]) {
-    if (!this.#processor) {
-      if (postcssPlugins) {
-        this.#processor = postcss(postcssPlugins);
-      } else {
-        const tailwindcssNesting = await maybeImportDefault(import("@tailwindcss/nesting"));
-        const tailwindcssPlugin = await maybeImportDefault(import("@tailwindcss/postcss"));
-        const postcssDiscardComments = await maybeImportDefault(import("postcss-discard-comments"));
-        this.#processor = postcss(
-          [tailwindcssNesting, tailwindcssPlugin, postcssDiscardComments].filter((v) => !!v),
-        );
-      }
-    }
-    return this.#processor;
-  }
 }
-
-const maybeImportDefault = async <T>(module: Promise<{ default: T }>): Promise<T | null> => {
-  try {
-    const { default: value } = await module;
-    return value;
-  } catch {
-    return null;
-  }
-};

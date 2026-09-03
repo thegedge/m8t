@@ -53,8 +53,8 @@
     "@mdx-js/mdx": "^3.1.1",
     "ansi-escapes": "^7.3.0",
     "debug": "^4.4.3",
-    "esbuild": "^0.27.7",
-    "html-validate": "^10.17.0",
+    "esbuild": "^0.28.2",
+    "html-validate": "^11.12.0",
     "inflected": "^2.1.0",
     "mime-types": "^3.0.2",
     "p-debounce": "^5.1.0",
@@ -65,11 +65,11 @@
     "@types/debug": "^4.1.13",
     "@types/inflected": "^2.1.3",
     "@types/mime-types": "^3.0.1",
-    "@types/node": "^25.9.5",
+    "@types/node": "^26.4.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
-    "oxfmt": "^0.58.0",
-    "oxlint": "^1.80.0",
+    "oxfmt": "^0.66.0",
+    "oxlint": "^1.81.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11"
   },
@@ -78,10 +78,7 @@
     "react-dom": "^19.1.0"
   },
   "optionalDependencies": {
-    "@tailwindcss/nesting": "0.0.0-insiders.565cd3e",
-    "@tailwindcss/postcss": "^4.3.3",
     "playwright": "^1.62.1",
-    "playwright-core": "^1.62.1",
-    "postcss-discard-comments": "^7.0.8"
+    "playwright-core": "^1.62.1"
   }
 }
