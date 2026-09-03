@@ -2,6 +2,7 @@
   "compilerOptions": {
     "rootDir": "./",
     "outDir": "./dist",
+    "types": ["node"],
 
     "pretty": false,
     "allowJs": false,
