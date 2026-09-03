@@ -4,6 +4,13 @@ import module from "node:module";
 import path from "node:path";
 import { parseArgs } from "node:util";
 
+const log = debug("m8t:cli");
+
+if (!import.meta.main) {
+  log("must only run this file as a main script");
+  process.exit(1);
+}
+
 try {
   module.enableCompileCache();
 } catch {
@@ -27,8 +34,6 @@ const COMMANDS = {
 const isCommand = (command: string | undefined): command is keyof typeof COMMANDS => {
   return !!command && command in COMMANDS;
 };
-
-const log = debug("m8t:cli");
 
 const main = async (command: string | undefined, args: Args): Promise<number> => {
   let actualCommand: keyof typeof COMMANDS;
@@ -59,30 +64,30 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
   return await Promise.race([commandModule.run(site, args as any, exiting.signal), timedOut]);
 };
 
-if (!import.meta.main) {
-  console.log("Can only run this file as a main script");
-  process.exit(1);
-}
-
-const { positionals, values } = parseArgs({
-  args: process.argv.slice(2),
-  allowPositionals: true,
-  strict: true,
-  options: {
-    directory: {
-      type: "string",
-      short: "C",
+try {
+  const { positionals, values } = parseArgs({
+    args: process.argv.slice(2),
+    allowPositionals: true,
+    strict: true,
+    options: {
+      directory: {
+        type: "string",
+        short: "C",
+      },
     },
-  },
-});
+  });
 
-const subcommand = positionals.shift();
-log("running command %s", subcommand);
+  const subcommand = positionals.shift();
+  log("running command %s", subcommand);
 
-process.exitCode = await main(subcommand, {
-  ...values,
-  _: positionals,
-});
-
-// Ideally this wouldn't be necessary, but esbuild — used by the tsx loader — lingers.
-process.exit();
+  process.exitCode = await main(subcommand, {
+    ...values,
+    _: positionals,
+  });
+} catch (e) {
+  log("error %s", e);
+  process.exitCode = 1;
+} finally {
+  // Ideally this wouldn't be necessary, but esbuild (for importing tsx/jsx) lingers.
+  process.exit();
+}
