@@ -1,4 +1,4 @@
-import type { MaybeArray } from "../index.js";
+import type { MaybeArray, Site } from "../index.js";
 import type { Datum, DatumShape } from "./Datum.js";
 import type { DefaultContext } from "./utils.js";
 
@@ -27,6 +27,7 @@ export interface SingleProcessor<
   ResultT = MaybeArray<DataT>,
   ContextT extends DefaultContext = DefaultContext,
 > {
+  init?(site: Site): void;
   processOne(data: DataT, context: ContextT): Promise<ResultT>;
 }
 
@@ -38,6 +39,7 @@ export interface ManyProcessor<
   ResultT = DataT,
   ContextT extends DefaultContext = DefaultContext,
 > {
+  init?(site: Site): void;
   processMany(data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
 }
 

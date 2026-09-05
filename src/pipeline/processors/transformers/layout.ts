@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { Pipeline, type PipelineStage, type SingleProcessor } from "../../../index.js";
+import { Pipeline, Site, type PipelineStage, type SingleProcessor } from "../../../index.js";
 import { Datum, symProcessedBy } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 import { noIndex } from "./search.js";
@@ -40,13 +40,25 @@ export class LayoutTransformer implements SingleProcessor {
   /** The pipeline to use to repeatedly process data until there's no longer a layout. */
   readonly #pipeline: Pipeline;
 
+  /** The stages this transformer's pipeline was initialized with */
+  readonly #stages: readonly PipelineStage[];
+
   /**
    * @param layoutDir - The directory containing the layouts, relative to the site root.
    * @param pipeline - The pipeline to use to repeatedly process data until there's no longer a layout
    */
   constructor(layoutDir: string, pipeline: readonly PipelineStage[]) {
     this.layoutDir = layoutDir;
+    this.#stages = pipeline;
     this.#pipeline = new Pipeline({ stages: pipeline });
+  }
+
+  init(site: Site) {
+    for (const stage of this.#stages) {
+      if ("init" in stage) {
+        stage.init?.(site);
+      }
+    }
   }
 
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {

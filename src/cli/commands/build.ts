@@ -12,9 +12,6 @@ export const run = async (
   _args: { _: [string] },
   signal: AbortSignal,
 ): Promise<number> => {
-  log("initializing tsx loader");
-  await import("../../loader/register.js");
-
   log(`clearing out directory ${site.out.path}`);
   await site.out.clear();
 

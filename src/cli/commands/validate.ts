@@ -11,9 +11,6 @@ export const run = async (
   args: { _: string[]; "fail-fast": boolean },
   signal: AbortSignal,
 ): Promise<number> => {
-  log("initializing tsx loader");
-  await import("../../loader/register.js");
-
   const validator = new HtmlValidate({
     root: true,
     extends: ["html-validate:recommended", "html-validate:a11y"],

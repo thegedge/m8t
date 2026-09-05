@@ -1,4 +1,3 @@
-import debug from "debug";
 import fs from "node:fs/promises";
 import os from "node:os";
 import pMap from "p-map";
@@ -17,8 +16,6 @@ import { getComparator } from "playwright-core/lib/utils";
 import type { Site } from "../../Site.js";
 import type { Datum, DefaultDatumShape } from "../../types.js";
 import { sortBy } from "../../utils/sortBy.js";
-
-const log = debug("m8t:diff");
 
 export const run = async (
   site: Site,
@@ -77,10 +74,6 @@ export const run = async (
   } satisfies Record<string, { browser: Browser; options: BrowserContextOptions }>;
 
   try {
-    // TODO why do we have to do these in every command?
-    log("initializing tsx loader");
-    await import("../../loader/register.js");
-
     const sitePages = Object.values(await site.data)
       .filter((datum) => datum.get("mimeType") === "text/html")
       .filter((datum): datum is Datum<DefaultDatumShape & { url: string }> => !!datum.get("url"));

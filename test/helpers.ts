@@ -1,4 +1,4 @@
-import fs from "node:fs";
+import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -17,7 +17,7 @@ export class StubLoader implements Loader {
 
   async processOne(datum: Datum, _context: DefaultContext): Promise<Datum> {
     const filename = datum.stringOrThrow("filename");
-    const contents = await fs.promises.readFile(filename, "utf-8");
+    const contents = await fs.readFile(filename, "utf-8");
     const parsed: unknown = JSON.parse(contents);
     this.loadedFilenames.push(filename);
     return datum.branch(parsed as Record<string, unknown>);
@@ -37,7 +37,7 @@ export type TestContext = DefaultContext & {
  * Empty pipeline,
  */
 export const makeContext = async (options: SiteOptions): Promise<TestContext> => {
-  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), "m8t-test-"));
+  const root = await fixturesRoot("m8t-test-");
   const site = await Site.fromOptions(root, options);
   return {
     performanceTracker: new NonAsyncTimeMeasurement(),
@@ -47,15 +47,31 @@ export const makeContext = async (options: SiteOptions): Promise<TestContext> =>
     signal: new AbortController().signal,
 
     [Symbol.asyncDispose]: async () => {
-      await fs.promises.rm(root, { recursive: true, force: true });
+      await fs.rm(root, { recursive: true, force: true });
     },
   };
 };
 
+/**
+ * Get a temp directory to which fixtures can be written.
+ */
+export const fixturesRoot = async (prefix: string) => {
+  const tmpdir = await fs.realpath(os.tmpdir());
+  return await fs.mkdtemp(path.join(tmpdir, prefix));
+};
+
+/**
+ * Write files to a given root.
+ *
+ * Intermediate directories will be written.
+ *
+ * @param root the root directory to which the files are written
+ * @param files a mapping from filename to contents
+ */
 export const writeFixtures = async (root: string, files: Record<string, string>) => {
   for (const [relativePath, contents] of Object.entries(files)) {
     const absolutePath = path.join(root, relativePath);
-    await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });
-    await fs.promises.writeFile(absolutePath, contents);
+    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    await fs.writeFile(absolutePath, contents);
   }
 };

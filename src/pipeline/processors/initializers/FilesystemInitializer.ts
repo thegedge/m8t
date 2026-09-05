@@ -4,6 +4,7 @@ import pMap from "p-map";
 import path from "path";
 
 import { Filesystem } from "../../../Filesystem.js";
+import type { Site } from "../../../Site.js";
 import type { Datum, ManyProcessor, SingleProcessor } from "../../../types.js";
 import { partition } from "../../../utils/partition.js";
 import { symProcessedBy } from "../../Datum.js";
@@ -43,6 +44,14 @@ export class FilesystemInitializer implements ManyProcessor {
     this.#loaders = options.loaders;
   }
 
+  init(site: Site) {
+    for (const loader of this.#loaders) {
+      if ("init" in loader) {
+        loader.init?.(site);
+      }
+    }
+  }
+
   async processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]> {
     return (
       await pMap(
@@ -57,7 +66,7 @@ export class FilesystemInitializer implements ManyProcessor {
             const stat = await fs.promises.stat(pathname);
             if (stat.isDirectory()) {
               const pipelineRoot = new Filesystem(pathname);
-              return await this.init(context, pipelineRoot, datum);
+              return await this.initDirectory(context, pipelineRoot, datum);
             } else if (stat.isFile()) {
               return await this.load(datum, context);
             } else {
@@ -74,7 +83,7 @@ export class FilesystemInitializer implements ManyProcessor {
     ).flat();
   }
 
-  private async init(
+  private async initDirectory(
     context: DefaultContext,
     fileSystem: Filesystem,
     parentData: Datum,
@@ -109,7 +118,7 @@ export class FilesystemInitializer implements ManyProcessor {
         }
 
         if (entry.isDirectory()) {
-          return await this.init(context, fileSystem.cd(entry.name), parentData);
+          return await this.initDirectory(context, fileSystem.cd(entry.name), parentData);
         }
 
         try {

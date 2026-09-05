@@ -5,6 +5,7 @@ import path from "node:path";
 import pMap from "p-map";
 
 import { Filesystem } from "./Filesystem.js";
+import { ModuleLoader } from "./loader/ModuleLoader.js";
 import { symProcessedBy } from "./pipeline/Datum.js";
 import { Datum, Pipeline, type PipelineStage } from "./pipeline/index.js";
 import { FileMatcher, type FileMatcherOptions } from "./utils/FileMatcher.js";
@@ -200,6 +201,9 @@ export class Site extends EventEmitter<SiteEventMap> {
   /** The files ignored when building/serving/etc */
   readonly ignoredFilesMatcher: FileMatcher;
 
+  /** The loader pipelines should use for modules */
+  readonly loader: ModuleLoader;
+
   /**
    * The pipelines used to process site data.
    *
@@ -242,6 +246,16 @@ export class Site extends EventEmitter<SiteEventMap> {
           redirectsPath: options.devServer.redirectsPath,
         }
       : null;
+
+    this.loader = new ModuleLoader();
+
+    for (const pipeline of Object.values(this.pipelines)) {
+      for (const stage of pipeline) {
+        if ("init" in stage) {
+          stage.init?.(this);
+        }
+      }
+    }
   }
 
   /**

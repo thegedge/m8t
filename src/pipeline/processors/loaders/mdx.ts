@@ -1,15 +1,16 @@
 import { compile, type CompileOptions } from "@mdx-js/mdx";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
-import vm, { createContext, SyntheticModule } from "node:vm";
+import { pathToFileURL } from "node:url";
 
-import type { SingleProcessor } from "../../../index.js";
+import type { SingleProcessor, Site } from "../../../index.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
 type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development" | "baseUrl">;
 
 // TODO maybe we can make this an import hook instead?
+
+const MARKDOWN_PATH_REGEX = /\.mdx?$/;
 
 /**
  * A loader that processes markdown and MDX files.
@@ -19,70 +20,47 @@ type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development"
  */
 export class MdxLoader implements SingleProcessor {
   readonly #mdxOptions: MdxOptions;
-  readonly #resolveCache = new Map<string, string>();
 
   constructor(options: MdxOptions) {
     this.#mdxOptions = options;
   }
 
+  init(site: Site): void {
+    site.loader.use((filename) => this.#compile(filename, site.isDevelopment));
+  }
+
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {
     const filename = datum.get("filename");
-    if (!filename.endsWith(".md") && !filename.endsWith(".mdx")) {
+    if (!MARKDOWN_PATH_REGEX.test(filename)) {
       return datum;
     }
 
-    const fileContents = await readFile(filename);
-    const baseUrl = new URL("file://" + filename);
+    const { default: mdxContent, ...mdxData } = await context.site.loader.load(filename);
+    if (typeof mdxContent != "function") {
+      throw new Error("expected default MDX export to be a function");
+    }
 
-    const compiled = await compile(fileContents, {
-      ...this.#mdxOptions,
-      format: "mdx",
-      outputFormat: "program",
-      development: context.site.isDevelopment,
-      baseUrl,
-    });
-
-    const mdxContext = createContext({ parentURL: baseUrl });
-
-    // TODO figure out why I had to do this instead of just using things directly, and then document the "why"
-    const mdxModule = new vm.SourceTextModule(compiled.toString(), {
-      identifier: filename,
-      context: mdxContext,
-      initializeImportMeta(meta) {
-        meta.dirname = path.dirname(filename);
-        meta.filename = filename;
-        meta.url = baseUrl.toString();
-      },
-    });
-    await mdxModule.link(async (specifier, _referencingModule, _extra) => {
-      const resolveCacheKey = `${filename}##${specifier}`;
-      let resolved = this.#resolveCache.get(resolveCacheKey);
-      if (!resolved) {
-        resolved = import.meta.resolve(specifier, baseUrl.toString());
-        this.#resolveCache.set(resolveCacheKey, resolved);
-      }
-
-      const mod = await import(resolved);
-      const exportNames = Object.keys(mod).filter((name) => name != "module.exports");
-      return new SyntheticModule(
-        exportNames,
-        function () {
-          for (const exportName of exportNames) {
-            this.setExport(exportName, mod[exportName]);
-          }
-        },
-        { context: mdxContext, identifier: specifier },
-      );
-    });
-    await mdxModule.evaluate();
-
-    const { default: mdxContent, ...mdxData } = mdxModule.namespace as unknown as Record<
-      string,
-      any
-    >;
     return datum.with({
       ...mdxData,
       content: (props: any) => mdxContent(props),
     });
+  }
+
+  async #compile(filename: string, development = false) {
+    if (!MARKDOWN_PATH_REGEX.test(filename)) {
+      return undefined;
+    }
+
+    const fileContents = await readFile(filename);
+
+    const compiled = await compile(fileContents, {
+      ...this.#mdxOptions,
+      format: filename.endsWith(".mdx") ? "mdx" : "md",
+      outputFormat: "program",
+      development,
+      baseUrl: pathToFileURL(filename),
+    });
+
+    return String(compiled);
   }
 }

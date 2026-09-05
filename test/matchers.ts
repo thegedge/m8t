@@ -17,7 +17,7 @@ expect.extend({
     const rendered = await renderElementToHTML(received);
     return {
       pass: rendered === expected,
-      message: () => `${received} is${isNot ? " not" : ""} ${expected}`,
+      message: () => `${rendered} is${isNot ? "" : " not"} ${expected}`,
     };
   },
 });
