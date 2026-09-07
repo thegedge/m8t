@@ -11,11 +11,15 @@ import {
   type BrowserContextOptions,
 } from "playwright";
 // @ts-expect-error no types
-import { getComparator } from "playwright-core/lib/utils";
+import { utils } from "playwright-core/lib/coreBundle";
 
 import type { Site } from "../../Site.js";
 import type { Datum, DefaultDatumShape } from "../../types.js";
 import { sortBy } from "../../utils/sortBy.js";
+
+// TODO Check for a running server instead of processing everything and then failing.
+//      Even better: just start the server, if it isn't already running.
+//      Also, make sure to retry on connection failure. Sometimes it slips.
 
 export const run = async (
   site: Site,
@@ -97,7 +101,7 @@ export const run = async (
       (v) => v.name,
     );
 
-    const compare = getComparator("image/png") as (
+    const compare = utils.getComparator("image/png") as (
       previous: Buffer,
       current: Buffer,
       options?: Record<string, unknown>,
