@@ -128,10 +128,7 @@ export const run = async (
         console.log(`Processing ${url} with context '${name}'`);
         await page.goto(url);
 
-        const [pageWidth, pageHeight] = await page.evaluate<[number, number]>(
-          "[document.documentElement.scrollWidth, document.documentElement.scrollHeight]",
-        );
-
+        const pageHeight = await page.evaluate<number>("document.documentElement.scrollHeight");
         const MAX_PAGE_HEIGHT = 30000;
 
         for (let y = 0, index = 1; y < pageHeight; y += MAX_PAGE_HEIGHT, ++index) {
@@ -140,7 +137,7 @@ export const run = async (
           }
 
           await page.setViewportSize({
-            width: pageWidth,
+            width: options.viewport.width,
             height: Math.min(MAX_PAGE_HEIGHT, pageHeight - y),
           });
 
