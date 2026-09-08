@@ -20,7 +20,7 @@ import type { DefaultContext } from "../../utils.js";
  * Also, when yielding multiple results from a single file, you'll often want to reprocess the data
  * in this pipeline. For example, you may want new page defaults, or you may yield a content
  * function that we need to run through this transformer again. In these cases, you can also include
- * the {@linkcode reprocess} symbol in the result object.
+ * the {@link reprocess} symbol in the result object.
  */
 export class ContentFunctionTransformer implements SingleProcessor {
   async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {

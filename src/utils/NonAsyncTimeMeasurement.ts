@@ -7,6 +7,8 @@ export type Tracker = {
 
 /**
  * Measure the time for synchronous blocks during the execution of an async function.
+ *
+ * @internal
  */
 export class NonAsyncTimeMeasurement {
   #trackers = new Map<number, Tracker>();

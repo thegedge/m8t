@@ -6,7 +6,7 @@ import type { DefaultContext } from "../../utils.js";
  * A processor that computes the reading time of the content based on reading time estimate.
  *
  * The processor understands both strings and objects, the latter of which it will descend through to find strings.
- * Words are counted by using an {@linkcode Intl.Segmenter} with the "word" granularity, based on the `lang` key in the datum.
+ * Words are counted by using a `Intl.Segmenter` with the "word" granularity, based on the `lang` key in the datum.
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter
  */

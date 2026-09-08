@@ -15,10 +15,12 @@ const log = debug("m8t:processing");
  */
 export type DefaultContext = {
   /**
-   * An instance of {@linkcode NonAsyncTimeMeasurement} for doing performance measurements
+   * A performance tracking instance.
    *
    * Pipeline processing will compute the timings from a pipeline stage automatically, but this can allow a
    * stage to perhaps compute more granular measurement.
+   *
+   * @internal
    */
   performanceTracker: NonAsyncTimeMeasurement;
 
@@ -62,8 +64,8 @@ export const processManyWithSingle = async <
  * Process a single datum with a given processor.
  *
  * The returned datum will also containing two special keys:
- *  - {@linkcode symProcessedBy}: the processor that processed the datum; and
- *  - {@linkcode symProcessingTimeMs}: the time it took to process the datum.
+ *  - {@link symProcessedBy}: the processor that processed the datum; and
+ *  - {@link symProcessingTimeMs}: the time it took to process the datum.
  *
  * @param datum - The datum to process.
  * @param context - The context to use for the processing.

@@ -51,7 +51,7 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   /**
    * Run the given function and return its result if this datum changes during its call.
    *
-   * @return the result of the given function, if this datum changes during its call, otherwise `null`.
+   * @returns the result of the given function, if this datum changes during its call, otherwise `null`.
    */
   async nullUnlessChanged<ResultT>(f: () => Promise<ResultT>): Promise<ResultT | null> {
     const previousEpoch = this.#epoch;

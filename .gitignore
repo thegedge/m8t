@@ -1,5 +1,6 @@
-dist
-node_modules
+dist/
+node_modules/
+tmp/
+
 .vscode/settings.json
-m8t-0.7.0.tgz
-TASKS.md
+m8t-*.tgz

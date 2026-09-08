@@ -11,18 +11,21 @@ import { Resolver } from "./Resolver.js";
 /** A function that takes a URL and maybe transpiles it into javascript */
 export type Transpiler = (filename: string) => MaybePromise<string | undefined>;
 
-type ModuleLoaderOptions = {
+/**
+ * Options for {@link ModuleLoader} construction.
+ */
+export type ModuleLoaderOptions = {
   /**
    * The transpilers the constructed loader should use to transpile files
    *
-   * @default []
+   * @defaultValue []
    */
   transpilers?: Transpiler[];
 
   /**
    * The context the used
    *
-   * @default undefined (the surrounding context in which the loader was constructed)
+   * @defaultValue undefined (the surrounding context in which the loader was constructed)
    */
   context?: Context;
 };
@@ -34,7 +37,7 @@ type ModuleLoaderOptions = {
  */
 export class ModuleLoader {
   /**
-   * Construct a {@linkcode ModuleLoader} with a given set of transpilers.
+   * Construct a {@link ModuleLoader} with a given set of transpilers.
    */
   static with(...transpilers: Transpiler[]) {
     return new ModuleLoader({ transpilers });
@@ -54,7 +57,7 @@ export class ModuleLoader {
    * a realm split between builtin modules and libs from `node_modules`, which are loaded with the
    * native loader. Prototypes will differ and certain things may subtly break.
    *
-   * @param options various options to configure the loader
+   * @param options - various options to configure the loader
    */
   constructor(options?: ModuleLoaderOptions) {
     this.#transpilers = [...(options?.transpilers ?? [])];

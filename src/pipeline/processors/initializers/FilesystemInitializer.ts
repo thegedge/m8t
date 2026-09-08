@@ -6,12 +6,12 @@ import path from "path";
 import { Filesystem } from "../../../Filesystem.js";
 import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Site } from "../../../Site.js";
-import type { Datum, ManyProcessor, SingleProcessor } from "../../../types.js";
 import { partition } from "../../../utils/partition.js";
 import { symProcessedBy } from "../../Datum.js";
+import type { Datum, ManyProcessor, SingleProcessor } from "../../index.js";
 import { processOne, type DefaultContext } from "../../utils.js";
 
-export type Loader = SingleProcessor<Datum>;
+export type FilesystemLoader = SingleProcessor<Datum>;
 
 const log = debug("m8t:filesystemInitializer");
 
@@ -39,9 +39,9 @@ const log = debug("m8t:filesystemInitializer");
  * pipeline. Data files *are not* processed, but act as an easy way to provide shared data.
  */
 export class FilesystemInitializer implements ManyProcessor {
-  readonly #loaders: readonly Loader[];
+  readonly #loaders: readonly FilesystemLoader[];
 
-  constructor(options: { loaders: readonly Loader[] }) {
+  constructor(options: { loaders: readonly FilesystemLoader[] }) {
     this.#loaders = options.loaders;
   }
 

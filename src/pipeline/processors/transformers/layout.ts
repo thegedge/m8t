@@ -75,7 +75,7 @@ export class LayoutTransformer implements SingleProcessor {
               filename: layoutFile,
 
               /**
-               * The sub pipeline will commonly use the {@linkcode SearchTransformer},
+               * The sub pipeline will commonly use the {@link SearchTransformer},
                * but we don't want to index the layout datum
                *
                * TODO can you think of a better way to do this?

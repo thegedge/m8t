@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { Datum, Pipeline, Site, type SiteOptions } from "../src/index.js";
-import type { Loader } from "../src/pipeline/processors/initializers/FilesystemInitializer.js";
+import type { FilesystemLoader } from "../src/pipeline/processors/initializers/FilesystemInitializer.js";
 import type { DefaultContext } from "../src/pipeline/utils.js";
 import { NonAsyncTimeMeasurement } from "../src/utils/NonAsyncTimeMeasurement.js";
 
@@ -12,7 +12,7 @@ import { NonAsyncTimeMeasurement } from "../src/utils/NonAsyncTimeMeasurement.js
  *
  * Files containing invalid JSON make the load throw, which lets tests exercise the error paths.
  */
-export class StubLoader implements Loader {
+export class StubLoader implements FilesystemLoader {
   readonly loadedFilenames: string[] = [];
 
   async processOne(datum: Datum, _context: DefaultContext): Promise<Datum> {

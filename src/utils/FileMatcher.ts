@@ -6,7 +6,7 @@ import { getSystemErrorName } from "node:util";
 
 import { memoize } from "./memoize.js";
 
-type Matcher = {
+export type Matcher = {
   /** The pattern to match against */
   pattern: string;
 
@@ -49,7 +49,7 @@ export type FileMatcherOptions = {
    * For example, if `base` is `/Users/jane`, then the matcher will match `/Users/jane/file.txt`
    * but not `/Users/john/file.txt` if `*.txt` is an include pattern.
    *
-   * @default `process.cwd()`
+   * @defaultValue `process.cwd()`
    */
   base: string;
 };
@@ -57,7 +57,7 @@ export type FileMatcherOptions = {
 /**
  * A utility class for matching file paths against a set of patterns.
  *
- * This class essentially implements similar logic to how {@linkcode https://git-scm.com/docs/gitignore|.gitignore}
+ * This class essentially implements similar logic to how {@link https://git-scm.com/docs/gitignore|.gitignore}
  * files work, so read those docs for more information on specific syntax. Primarily:
  *
  *   1. Empty lines and lines starting with `#` are ignored.
@@ -67,15 +67,15 @@ export type FileMatcherOptions = {
  *   5. `**` can match any number of path segments.
  *   6. The order of patterns matters. If the last pattern that matches is an ignore, the file does not match. Otherwise,
  *
- * @see {@linkcode Site} for an example of how to use this class.
+ * @see {@link Site} for an example of how to use this class.
  */
 export class FileMatcher {
   /**
-   * Create a {@linkcode FileMatcher} from the given options.
+   * Create a {@link FileMatcher} from the given options.
    *
-   * @param options - The options to create the {@linkcode FileMatcher} from.
+   * @param options - The options to create the {@link FileMatcher} from.
    *
-   * @returns A {@linkcode FileMatcher} instance.
+   * @returns A {@link FileMatcher} instance.
    */
   static async fromOptions(options: Partial<FileMatcherOptions>): Promise<FileMatcher> {
     if (options.base && !options.base.startsWith("/")) {
@@ -151,8 +151,7 @@ export class FileMatcher {
   readonly #base: string;
   readonly #defaultReturn: boolean;
 
-  /** @private */
-  constructor(options: { base: string; matchers: readonly Matcher[] }) {
+  private constructor(options: { base: string; matchers: readonly Matcher[] }) {
     this.#base = options.base.endsWith("/") ? options.base.slice(0, -1) : options.base;
     this.#matchers = options.matchers;
 
@@ -167,11 +166,11 @@ export class FileMatcher {
   }
 
   /**
-   * Create a copy of this {@linkcode FileMatcher}'s rules but a different base directory.
+   * Create a copy of this {@link FileMatcher}'s rules but a different base directory.
    *
    * @param base - The base directory to match paths against.
    *
-   * @returns A new {@linkcode FileMatcher} instance
+   * @returns A new {@link FileMatcher} instance
    */
   public withBase(base: string): FileMatcher {
     return new FileMatcher({
@@ -183,7 +182,7 @@ export class FileMatcher {
   /**
    * Match a given file path against the rules in this matcher.
    *
-   * @see {@linkcode FileMatcher} for details on the matching logic.
+   * @see {@link FileMatcher} for details on the matching logic.
    */
   public matches(filepath: string): boolean {
     let pathToCheck = path.isAbsolute(filepath) ? path.relative(this.#base, filepath) : filepath;

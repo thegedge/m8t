@@ -1,9 +1,10 @@
 import debug from "debug";
 
-import type { Datum, PipelineStage } from "../types.js";
+import type { PipelineStage } from "../index.js";
 import { counterPromise } from "../utils/counterPromise.js";
 import { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
 import { partition } from "../utils/partition.js";
+import type { Datum } from "./Datum.js";
 import { type DefaultContext, processManyWithSingle } from "./utils.js";
 
 type InternalContext = DefaultContext & {

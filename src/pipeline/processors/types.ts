@@ -206,14 +206,14 @@ const javascriptValueToTypescriptType = (
      *
      * This is incremented by two spaces for each nested level.
      *
-     * @default ""
+     * @defaultValue ""
      */
     indent?: string;
 
     /**
      * Whether the value should be typed as a literal.
      *
-     * @default false
+     * @defaultValue false
      */
     literal?: boolean;
 
@@ -222,21 +222,21 @@ const javascriptValueToTypescriptType = (
      *
      * This is used to avoid infinite recursion.
      *
-     * @default new Set()
+     * @defaultValue new Set()
      */
     seen?: Set<unknown>;
 
     /**
      * The keys that should be typed as literals.
      *
-     * @default []
+     * @defaultValue []
      */
     literalKeys?: readonly string[];
 
     /**
      * The keys that should be ignored.
      *
-     * @default []
+     * @defaultValue []
      */
     ignoredKeys?: readonly string[];
   },

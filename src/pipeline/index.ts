@@ -5,8 +5,11 @@ import type { DefaultContext } from "./utils.js";
 
 export { Datum, type DatumShape as DefaultDatumShape } from "./Datum.js";
 export { Pipeline, reprocess } from "./Pipeline.js";
-export { FilesystemInitializer } from "./processors/initializers/FilesystemInitializer.js";
-export { MdxLoader } from "./processors/loaders/mdx.js";
+export {
+  FilesystemInitializer,
+  type FilesystemLoader as Loader,
+} from "./processors/initializers/FilesystemInitializer.js";
+export { MdxLoader, type MdxOptions } from "./processors/loaders/mdx.js";
 export { ReadFileLoader } from "./processors/loaders/read_file.js";
 export { TypescriptLoader } from "./processors/loaders/typescript.js";
 export { CssRenderer } from "./processors/renderers/css.js";
@@ -19,6 +22,7 @@ export { PageDefaultsTransformer } from "./processors/transformers/page_defaults
 export { ReadingTimeTransformer } from "./processors/transformers/reading_time.js";
 export { SearchTransformer } from "./processors/transformers/search.js";
 export { TypesProcessor } from "./processors/types.js";
+export type { DefaultContext } from "./utils.js";
 
 /**
  * A processing object that can process a single piece of data with a given context.

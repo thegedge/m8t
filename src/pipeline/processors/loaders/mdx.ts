@@ -7,7 +7,10 @@ import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
-type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development" | "baseUrl">;
+export type MdxOptions = Omit<
+  CompileOptions,
+  "format" | "outputFormat" | "development" | "baseUrl"
+>;
 
 // TODO maybe we can make this an import hook instead?
 

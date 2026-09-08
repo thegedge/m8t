@@ -25,7 +25,7 @@ export class Filesystem {
   /**
    * Change the root of this filesystem.
    *
-   * @returns a new fileystem rooted at the given directory.
+   * @returns a new filesystem rooted at the given directory.
    */
   cd(root: string) {
     const dir = pathModule.isAbsolute(root) ? root : pathModule.join(this.rootPath, root);
@@ -38,7 +38,7 @@ export class Filesystem {
   /**
    * Check whether or not the a path is a directory.
    *
-   * @return `true` if the
+   * @returns `true` if the given path is a directory, `false` otherwise
    */
   isDirectory(dir: string) {
     return fs.statSync(dir).isDirectory();
@@ -92,7 +92,7 @@ export class Filesystem {
    * Read contents of a given file.
    *
    * @see `fs.promises.readFile`
-   * @return the string contents of the file if utf8 encoding specified, otherwise a {@linkcode Buffer} containing the contents
+   * @returns the string contents of the file if utf8 encoding specified, otherwise a {@link buffer#Buffer} containing the contents
    */
   async readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;
   async readFile(path: string, encoding: BufferEncoding): Promise<string | Buffer | null> {

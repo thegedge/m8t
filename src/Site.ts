@@ -31,7 +31,7 @@ export type SiteOptions = {
    *
    * If not an absolute path, it will be relative to the root directory.
    *
-   * @default "static"
+   * @defaultValue "static"
    */
   static?: string;
 
@@ -40,7 +40,7 @@ export type SiteOptions = {
    *
    * If not an absolute path, it will be relative to the root directory.
    *
-   * @default "out"
+   * @defaultValue "out"
    */
   out?: string;
 
@@ -92,8 +92,6 @@ export type SiteOptions = {
 
 /**
  * Site options with all properties resolved/defaulted.
- *
- * @private
  */
 type ResolvedSiteOptions = {
   mode: "development" | "production";
@@ -127,7 +125,7 @@ export class Site {
    *
    * @param root - the root directory of the site, which should contain a `site.ts` file.
    *
-   * @returns A {@linkcode Site} instance.
+   * @returns A {@link Site} instance.
    */
   static async forRoot(root: string): Promise<Site> {
     log("initializing site from %s", root);
@@ -148,7 +146,7 @@ export class Site {
    * @param root - the root directory of the site
    * @param options - the options to initialize the site from
    *
-   * @returns A {@linkcode Site} instance.
+   * @returns A {@link Site} instance.
    */
   static async fromOptions(root: string, options: SiteOptions) {
     const siteRoot = path.resolve(root, options.root || "");
@@ -218,8 +216,7 @@ export class Site {
   private data_: Promise<readonly Datum[]> | null = null;
   private dataByUrl_: Promise<Readonly<Record<string, Datum>>> | null = null;
 
-  /** private */
-  constructor(options: ResolvedSiteOptions) {
+  private constructor(options: ResolvedSiteOptions) {
     this.root = new Filesystem(options.root);
     this.out = new Filesystem(path.resolve(options.root, options.out || "./out"));
     this.static = new Filesystem(path.resolve(options.root, options.static || "./static"));
@@ -285,7 +282,6 @@ export class Site {
     return this.data_;
   }
 
-  /** @private */
   private async process() {
     let session: Session | undefined = undefined;
     if (process.env.PROFILE) {
