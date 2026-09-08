@@ -165,9 +165,9 @@ export const run = async (
             const outputDiffPath = site.out.absolute(
               `diff/${sanitizedName}/${sanitizedUrl}-${index}.diff.png`,
             );
-            if (result) {
+            if (result && result.errorMessage == "Buffers differ") {
               await fs.writeFile(outputDiffPath, result.diff);
-            } else if (await fileExists(outputDiffPath)) {
+            } else if (!result && (await fileExists(outputDiffPath))) {
               await fs.unlink(outputDiffPath);
             }
           }
