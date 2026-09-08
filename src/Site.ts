@@ -1,5 +1,4 @@
 import debug from "debug";
-import EventEmitter from "node:events";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
 import pMap from "p-map";
@@ -10,10 +9,6 @@ import { symProcessedBy } from "./pipeline/Datum.js";
 import { Datum, Pipeline, type PipelineStage } from "./pipeline/index.js";
 import { FileMatcher, type FileMatcherOptions } from "./utils/FileMatcher.js";
 import { keyBy } from "./utils/keyBy.js";
-
-export type SiteEventMap = {
-  afterBuild: [site: Site];
-};
 
 export type DevServerOptions = {
   port: number;
@@ -126,7 +121,7 @@ const log = debug("m8t:site");
  * It is primarily responsible for running the various pipelines that process the site's data, but also
  * maintains various configuration that is used by the various commands.
  */
-export class Site extends EventEmitter<SiteEventMap> {
+export class Site {
   /**
    * Initialize a site from a root directory.
    *
@@ -225,8 +220,6 @@ export class Site extends EventEmitter<SiteEventMap> {
 
   /** private */
   constructor(options: ResolvedSiteOptions) {
-    super({ captureRejections: true });
-
     this.root = new Filesystem(options.root);
     this.out = new Filesystem(path.resolve(options.root, options.out || "./out"));
     this.static = new Filesystem(path.resolve(options.root, options.static || "./static"));
