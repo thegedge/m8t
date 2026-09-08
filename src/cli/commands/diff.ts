@@ -26,6 +26,9 @@ export const run = async (
   _args: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<number> => {
+  await site.out.ensureDir("diff");
+  const out = site.out.cd("diff");
+
   const [chromeBrowser, firefoxBrowser, webkitBrowser] = await Promise.all([
     chromium.launch(),
     firefox.launch(),
@@ -87,7 +90,7 @@ export const run = async (
       (
         await pMap(Object.entries(tests), async ([name, { browser, options }]) => {
           const sanitizedName = sanitizeForFilename(name);
-          await site.out.ensureDir(`diff/${sanitizedName}`);
+          await out.ensureDir(sanitizedName);
 
           return sitePages.map((sitePage) => ({
             name,
@@ -153,14 +156,12 @@ export const run = async (
             mask: [page.locator("img[src*='.gif']"), page.locator("img[src*='.webp']")],
           });
 
-          const outputPath = site.out.absolute(
-            `diff/${sanitizedName}/${sanitizedUrl}-${index}.png`,
-          );
+          const outputPath = out.absolute(`${sanitizedName}/${sanitizedUrl}-${index}.png`);
           if (await fileExists(outputPath)) {
             const previous = await fs.readFile(outputPath);
             const result = compare(previous, current, { maxDiffPixelRatio: 0.01 });
-            const outputDiffPath = site.out.absolute(
-              `diff/${sanitizedName}/${sanitizedUrl}-${index}.diff.png`,
+            const outputDiffPath = out.absolute(
+              `${sanitizedName}/${sanitizedUrl}-${index}.diff.png`,
             );
             if (result && result.errorMessage == "Buffers differ") {
               await fs.writeFile(outputDiffPath, result.diff);

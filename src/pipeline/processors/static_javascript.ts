@@ -42,13 +42,14 @@ export class StaticJavascriptProcessor implements ManyProcessor {
       throw new Error("Could not find any base path in data");
     }
 
+    const outPath = path.join(context.site.out.rootPath, "build");
     const buildResult = await this.build(context, basePath, entryPoints);
     return buildResult
       .values()
       .map((outputFile) => {
         const baseOutputPath = path.join(
           this.#publicPath,
-          path.relative(context.site.out.rootPath, toJSFile(outputFile.path)),
+          path.relative(outPath, toJSFile(outputFile.path)),
         );
 
         // TODO perhaps try to map some outputs to the original data. Chunks are brand new things though.
@@ -65,11 +66,13 @@ export class StaticJavascriptProcessor implements ManyProcessor {
   }
 
   private async build({ site }: DefaultContext, basePath: string, entryPoints: string[]) {
+    // TODO not ideal to hardcode this
+    const outdir = path.join(site.out.rootPath, "build");
     const result = await esbuild.build({
       entryPoints,
-      absWorkingDir: site.root.rootPath,
+      absWorkingDir: outdir,
       outbase: basePath,
-      outdir: site.out.rootPath,
+      outdir,
       publicPath: this.#publicPath,
       target: "esnext",
       format: "esm",
@@ -89,7 +92,7 @@ export class StaticJavascriptProcessor implements ManyProcessor {
 
     const mapping = new Map<string, esbuild.OutputFile>();
     for (const output of result.outputFiles) {
-      mapping.set(path.relative(site.out.rootPath, output.path), output);
+      mapping.set(path.relative(outdir, output.path), output);
     }
 
     return mapping;
