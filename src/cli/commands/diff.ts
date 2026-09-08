@@ -130,7 +130,7 @@ export const run = async (
 
         const page = await context.newPage();
         const url = sitePage.url;
-        const sanitizedUrl = sanitizeForFilename(url == "/" ? "__root__" : url);
+        const sanitizedUrl = sanitizeForFilename(url);
         const sanitizedName = sanitizeForFilename(name);
 
         console.log(`Processing ${url} with context '${name}'`);
@@ -199,8 +199,22 @@ const fileExists = async (path: string) => {
 };
 
 const sanitizeForFilename = (value: string) => {
-  return value
-    .replaceAll(/[^a-zA-Z0-9]+/g, "-")
-    .replaceAll(/-+/g, "-")
-    .replaceAll(/^-+|-+$/g, "");
+  if (!value || value == "/") {
+    return "__root__";
+  }
+
+  let encoded: string;
+  if (value.includes("--")) {
+    encoded = encodeURIComponent(value);
+  } else {
+    // If we won't have any collisions with --, replace `/` with `--` for nicer filenames
+    encoded = encodeURIComponent(value.replaceAll("/", "--"));
+  }
+
+  // Replace some other common URI-escaped characters with valid path characters
+  encoded = encoded.replaceAll("%20", " ");
+
+  // Finally, `.` and `..` aren't a great idea. By this point, we should have a relative
+  // path without any dots. Encode something a bit obnoxious, so it stands out.
+  return encoded.replaceAll(".", "__dot__");
 };
