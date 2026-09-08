@@ -128,13 +128,7 @@ export class ModuleLoader {
       // TODO this.#graph.add(referrerPath, resolvedPath);
     }
 
-    try {
-      return this.#moduleFor(resolved, attributes);
-    } catch (error) {
-      throw new Error(`unable to load "${specifier}" from ${referrer.identifier}`, {
-        cause: error,
-      });
-    }
+    return this.#moduleFor(resolved, attributes);
   }
 
   #moduleFor(url: string, attributes: ImportAttributes): Promise<Module> {
@@ -238,7 +232,12 @@ export class ModuleLoader {
             return this.#moduleFrom(specifier, referrer, extra.attributes);
           });
         }
+
+        // Important to first push the promise. If it were already resolved, we'd shift something
+        // else off of the queue THEN push
         this.#linkQueue.push(promise);
+        promise.finally(() => this.#linkQueue.shift());
+
         break;
       case "linking":
         promise = this.#linkQueue.at(-1) ?? Promise.resolve();
