@@ -99,6 +99,7 @@ export const run = async (
 
           return sitePages.map((sitePage) => ({
             name,
+            sanitizedName,
             browser,
             options,
             sitePage: sitePage.toRecord(),
@@ -117,7 +118,7 @@ export const run = async (
 
     await pMap(
       tasks,
-      async ({ name, browser, options, sitePage }) => {
+      async ({ name, sanitizedName, browser, options, sitePage }) => {
         if (signal.aborted) {
           return;
         }
@@ -131,7 +132,6 @@ export const run = async (
         const page = await context.newPage();
         const url = sitePage.url;
         const sanitizedUrl = sanitizeForFilename(url);
-        const sanitizedName = sanitizeForFilename(name);
 
         console.log(`Processing ${url} with context '${name}'`);
         await page.goto(url);
