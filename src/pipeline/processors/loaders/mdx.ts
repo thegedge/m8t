@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 import type { SingleProcessor, Site } from "../../../index.js";
+import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
@@ -25,8 +26,8 @@ export class MdxLoader implements SingleProcessor {
     this.#mdxOptions = options;
   }
 
-  init(site: Site): void {
-    site.loader.use((filename) => this.#compile(filename, site.isDevelopment));
+  transpilersFor(site: Site): Transpiler[] {
+    return [(filename) => this.#compile(filename, site.isDevelopment)];
   }
 
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {

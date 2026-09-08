@@ -12,13 +12,10 @@ describe("MdxLoader", () => {
   let mdxRoot: string;
   let context: TestContext;
 
-  beforeEach(async () => {
-    context = await makeContext({ pipelines: {} });
-    mdxRoot = context.root;
-  });
-
   afterEach(async () => {
-    await context[Symbol.asyncDispose]();
+    if (context) {
+      await context[Symbol.asyncDispose]();
+    }
   });
 
   const writeMdxFixtures = async (files: Record<string, string>) => {
@@ -41,7 +38,8 @@ describe("MdxLoader", () => {
 
     beforeEach(async () => {
       loader = new MdxLoader({});
-      loader.init(context.site);
+      context = await makeContext({ pipelines: { test: [loader] } });
+      mdxRoot = context.root;
     });
 
     test("passes the datum through unchanged for files that aren't .md or .mdx", async () => {
@@ -207,7 +205,8 @@ describe("MdxLoader", () => {
           },
         ],
       });
-      loader.init(context.site);
+      context = await makeContext({ pipelines: { test: [loader] } });
+      mdxRoot = context.root;
 
       await writeMdxFixtures({ "plugin.md": "hello world" });
       const datum = datumFor("plugin.md");

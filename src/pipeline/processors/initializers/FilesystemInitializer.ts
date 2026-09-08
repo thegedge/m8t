@@ -4,6 +4,7 @@ import pMap from "p-map";
 import path from "path";
 
 import { Filesystem } from "../../../Filesystem.js";
+import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Site } from "../../../Site.js";
 import type { Datum, ManyProcessor, SingleProcessor } from "../../../types.js";
 import { partition } from "../../../utils/partition.js";
@@ -44,12 +45,8 @@ export class FilesystemInitializer implements ManyProcessor {
     this.#loaders = options.loaders;
   }
 
-  init(site: Site) {
-    for (const loader of this.#loaders) {
-      if ("init" in loader) {
-        loader.init?.(site);
-      }
-    }
+  transpilersFor(site: Site): Transpiler[] {
+    return this.#loaders.flatMap((loader) => loader.transpilersFor?.(site) ?? []);
   }
 
   async processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]> {

@@ -8,8 +8,24 @@ import type { MaybePromise } from "../types.js";
 import { canonicalModulePath } from "./canonicalModulePath.js";
 import { Resolver } from "./Resolver.js";
 
-/** A function that takes a URL and maybe compiles it into javascript */
-export type Compiler = (filename: string) => MaybePromise<string | undefined>;
+/** A function that takes a URL and maybe transpiles it into javascript */
+export type Transpiler = (filename: string) => MaybePromise<string | undefined>;
+
+type ModuleLoaderOptions = {
+  /**
+   * The transpilers the constructed loader should use to transpile files
+   *
+   * @default []
+   */
+  transpilers?: Transpiler[];
+
+  /**
+   * The context the used
+   *
+   * @default undefined (the surrounding context in which the loader was constructed)
+   */
+  context?: Context;
+};
 
 /**
  * Loads modules in a given realm/context.
@@ -17,11 +33,18 @@ export type Compiler = (filename: string) => MaybePromise<string | undefined>;
  * This class exists to support cache busting by using versioned URLs for cache busting.
  */
 export class ModuleLoader {
+  /**
+   * Construct a {@linkcode ModuleLoader} with a given set of transpilers.
+   */
+  static with(...transpilers: Transpiler[]) {
+    return new ModuleLoader({ transpilers });
+  }
+
   #moduleCache = new Map<string, Promise<Module>>();
   #evaluations = new WeakMap<Module, Promise<void>>();
   #linkQueue: Promise<void>[]; // serialize linking across multiple load calls
   #resolver = new Resolver();
-  #compilers: Compiler[] = [];
+  #transpilers: Transpiler[];
   #context: Context | undefined;
 
   /**
@@ -31,21 +54,12 @@ export class ModuleLoader {
    * a realm split between builtin modules and libs from `node_modules`, which are loaded with the
    * native loader. Prototypes will differ and certain things may subtly break.
    *
-   * @param context optional context to use for this loader (defaults to current context)
+   * @param options various options to configure the loader
    */
-  constructor(context?: Context) {
-    this.#context = context;
+  constructor(options?: ModuleLoaderOptions) {
+    this.#transpilers = [...(options?.transpilers ?? [])];
+    this.#context = options?.context;
     this.#linkQueue = [];
-  }
-
-  /**
-   * Add a source compiler to this loader.
-   *
-   * A source compiler can take a filename and either transpile the contents into valid
-   * javascript for the module, or `undefined` to pass on unsupported files.
-   */
-  use(compiler: Compiler) {
-    this.#compilers.push(compiler);
   }
 
   /**
@@ -67,9 +81,9 @@ export class ModuleLoader {
 
   /** Asks each provider, in order, for the source of a claimed file. */
   async #loadSource(filename: string): Promise<string | undefined> {
-    for (const compiler of this.#compilers) {
+    for (const transpiler of this.#transpilers) {
       try {
-        const source = await compiler(filename);
+        const source = await transpiler(filename);
         if (source !== undefined) {
           return source;
         }
@@ -77,8 +91,8 @@ export class ModuleLoader {
         // TODO
         //   Suppressing for now, but then we're not surfacing useful context for the
         //   user to fix any issues. Three options:
-        //     1. Separate into "can parse" and "compile"
-        //     2. Require all compile functions to properly handle errors
+        //     1. Separate into "can parse" and "transpile"
+        //     2. Require all transpilers to properly handle errors
         //     3. Collect all errors, report after `load` completes
       }
     }
@@ -135,7 +149,7 @@ export class ModuleLoader {
   /**
    * Load the module for the given url.
    *
-   * Uses the current set of compilers to attempt to transpile the file into javascript.
+   * Uses the current set of transpilers to attempt to transpile the file into javascript.
    */
   async #createModule(url: string, attributes: ImportAttributes): Promise<Module> {
     const filename = canonicalModulePath(url);

@@ -247,15 +247,11 @@ export class Site extends EventEmitter<SiteEventMap> {
         }
       : null;
 
-    this.loader = new ModuleLoader();
-
-    for (const pipeline of Object.values(this.pipelines)) {
-      for (const stage of pipeline) {
-        if ("init" in stage) {
-          stage.init?.(this);
-        }
-      }
-    }
+    this.loader = ModuleLoader.with(
+      ...Object.values(options.pipelines).flatMap((p) => {
+        return p.flatMap((s) => s.transpilersFor?.(this) ?? []);
+      }),
+    );
   }
 
   /**

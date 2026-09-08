@@ -1,4 +1,5 @@
 import type { MaybeArray, Site } from "../index.js";
+import type { Transpiler } from "../loader/ModuleLoader.js";
 import type { Datum, DatumShape } from "./Datum.js";
 import type { DefaultContext } from "./utils.js";
 
@@ -27,7 +28,7 @@ export interface SingleProcessor<
   ResultT = MaybeArray<DataT>,
   ContextT extends DefaultContext = DefaultContext,
 > {
-  init?(site: Site): void;
+  transpilersFor?(site: Site): Transpiler[];
   processOne(data: DataT, context: ContextT): Promise<ResultT>;
 }
 
@@ -39,7 +40,7 @@ export interface ManyProcessor<
   ResultT = DataT,
   ContextT extends DefaultContext = DefaultContext,
 > {
-  init?(site: Site): void;
+  transpilersFor?(site: Site): Transpiler[];
   processMany(data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
 }
 
@@ -50,7 +51,10 @@ export type ManyProcessorFunction<
   DataT = Datum<DatumShape>,
   ResultT = DataT,
   ContextT extends DefaultContext = DefaultContext,
-> = (data: readonly DataT[], context: ContextT) => Promise<readonly ResultT[]>;
+> = {
+  (data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
+  transpilersFor?(site: Site): Transpiler;
+};
 
 /**
  * A pipeline stage that takes an array of data, transforms it in some way, and then produces data for the next stage.

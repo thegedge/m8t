@@ -14,7 +14,7 @@ describe("ModuleLoader", () => {
 
   beforeEach(async () => {
     root = await fixturesRoot("m8t-loader-test-");
-    loader = new ModuleLoader();
+    loader = ModuleLoader.with(async (filename) => await fs.promises.readFile(filename, "utf-8"));
   });
 
   afterEach(async () => {
@@ -23,7 +23,6 @@ describe("ModuleLoader", () => {
 
   test("resolves the namespace for a simple module with no dependencies", async () => {
     await writeFixtures(root, { "simple.mjs": 'export const value = "hi";\n' });
-    loader.use(async (filename) => await fs.promises.readFile(filename, "utf-8"));
 
     const namespace = await loader.load(path.join(root, "simple.mjs"));
 
@@ -38,7 +37,6 @@ describe("ModuleLoader", () => {
         export const value = os.userInfo();
       `,
     });
-    loader.use(async (filename) => await fs.promises.readFile(filename, "utf-8"));
 
     const namespace = await loader.load(path.join(root, "simple.mjs"));
 
@@ -64,7 +62,7 @@ describe("ModuleLoader", () => {
     const cycleA = path.join(root, "cycleA.mjs");
     const cycleB = path.join(root, "cycleB.mjs");
 
-    loader.use(async (filename) => {
+    const loader = ModuleLoader.with(async (filename) => {
       if (filename === cycleA || filename === cycleB) {
         return await fs.promises.readFile(filename, "utf-8");
       }
@@ -112,7 +110,7 @@ describe("ModuleLoader", () => {
     const libGate = Promise.withResolvers<void>();
     const libRequested = Promise.withResolvers<void>();
 
-    loader.use(async (filename) => {
+    const loader = ModuleLoader.with(async (filename) => {
       if (filename === entryA || filename === entryB || filename === shared) {
         return await fs.promises.readFile(filename, "utf-8");
       }

@@ -53,12 +53,8 @@ export class LayoutTransformer implements SingleProcessor {
     this.#pipeline = new Pipeline({ stages: pipeline });
   }
 
-  init(site: Site) {
-    for (const stage of this.#stages) {
-      if ("init" in stage) {
-        stage.init?.(site);
-      }
-    }
+  transpilersFor(site: Site) {
+    return this.#stages.flatMap((stage) => stage.transpilersFor?.(site) ?? []);
   }
 
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {

@@ -5,6 +5,7 @@ import path from "node:path/posix";
 import { pathToFileURL } from "node:url";
 
 import type { SingleProcessor, Site } from "../../../index.js";
+import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
@@ -17,8 +18,8 @@ const JS_OR_TS_FILE_REGEX = /\.[mc]?[jt]sx?$/;
  * The default export is the content function, if it exists.
  */
 export class TypescriptLoader implements SingleProcessor {
-  init(site: Site): void {
-    site.loader.use((filename) => this.#compile(filename, site.isDevelopment));
+  transpilersFor(site: Site): Transpiler[] {
+    return [(filename) => this.#compile(filename, site.isDevelopment)];
   }
 
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {
