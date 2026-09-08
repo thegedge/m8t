@@ -12,10 +12,10 @@ export const run = async (
   _args: { _: [string] },
   signal: AbortSignal,
 ): Promise<number> => {
-  log(`clearing out directory ${site.out.path}`);
+  log(`clearing out directory ${site.out.rootPath}`);
   await site.out.clear();
 
-  log(`building pages to ${site.out.path}`);
+  log(`building pages to ${site.out.rootPath}`);
   await pMap(
     await site.urls,
     async (url) => {
@@ -41,7 +41,7 @@ export const run = async (
     { concurrency: CONCURRENCY, signal },
   );
 
-  log(`copying static files to ${site.out.path}`);
+  log(`copying static files to ${site.out.rootPath}`);
   const staticFiles = await site.static.ls(true);
   await pMap(
     staticFiles,
@@ -52,7 +52,7 @@ export const run = async (
 
       await site.out.copyFileFrom(
         site.static,
-        path.join(path.relative(site.static.path, file.parentPath), file.name),
+        path.join(path.relative(site.static.rootPath, file.parentPath), file.name),
       );
     },
     { concurrency: CONCURRENCY, signal },

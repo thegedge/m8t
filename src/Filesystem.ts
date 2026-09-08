@@ -9,13 +9,13 @@ import pathModule from "path";
  */
 export class Filesystem {
   /** Absolute path of the root for this filesystem */
-  readonly path: string;
+  readonly rootPath: string;
 
   /**
    * Construct a new filesystem rooted at the given path.
    */
   constructor(path: string) {
-    this.path = ensureEndSlash(
+    this.rootPath = ensureEndSlash(
       pathModule.isAbsolute(path)
         ? path
         : pathModule.normalize(pathModule.join(process.cwd(), path)),
@@ -28,7 +28,7 @@ export class Filesystem {
    * @returns a new fileystem rooted at the given directory.
    */
   cd(root: string) {
-    const dir = pathModule.isAbsolute(root) ? root : pathModule.join(this.path, root);
+    const dir = pathModule.isAbsolute(root) ? root : pathModule.join(this.rootPath, root);
     if (!this.isDirectory(dir)) {
       throw new Error(`can't descend into a non-directory ${dir}`);
     }
@@ -51,7 +51,7 @@ export class Filesystem {
    * @returns a list of the found files
    */
   async ls(recursive = false) {
-    return await fs.promises.readdir(this.path, {
+    return await fs.promises.readdir(this.rootPath, {
       withFileTypes: true,
       encoding: "utf-8",
       recursive,
@@ -62,7 +62,7 @@ export class Filesystem {
    * Remove all files under this filesystem.
    */
   async clear() {
-    await fs.promises.rm(this.path, { recursive: true, force: true });
+    await fs.promises.rm(this.rootPath, { recursive: true, force: true });
     await this.ensureDir();
   }
 
@@ -85,7 +85,7 @@ export class Filesystem {
    * @param path - the path to ensure (optional)
    */
   async ensureDir(path?: string) {
-    await fs.promises.mkdir(path ? this.absolute(path) : this.path, { recursive: true });
+    await fs.promises.mkdir(path ? this.absolute(path) : this.rootPath, { recursive: true });
   }
 
   /**
@@ -131,7 +131,7 @@ export class Filesystem {
    * @returns the absolute path
    */
   absolute(...paths: string[]) {
-    return pathModule.resolve(this.path, ...paths);
+    return pathModule.resolve(this.rootPath, ...paths);
   }
 }
 

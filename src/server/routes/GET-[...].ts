@@ -32,7 +32,7 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
     return;
   }
 
-  const staticFile = path.join(site.static.path, pagePath);
+  const staticFile = path.join(site.static.rootPath, pagePath);
   try {
     const statResult = await stat(staticFile);
     if (statResult.isFile()) {

@@ -63,7 +63,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     return fork(path.join(import.meta.dirname, "../../server/entry.js"), {
       env: {
         ...process.env,
-        SITE_ROOT: site.root.path,
+        SITE_ROOT: site.root.rootPath,
       },
       cwd: path.join(import.meta.dirname, "../../../"),
       execArgv: process.execArgv,
@@ -91,7 +91,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
       return;
     }
 
-    const paths = changedPaths.map((p) => path.relative(site.root.path, p));
+    const paths = changedPaths.map((p) => path.relative(site.root.rootPath, p));
     const summary = paths.length > 10 ? paths.slice(0, 10).join(", ") + "..." : paths.join(", ");
     log("reloading due to changes in %s", summary);
     changedPaths.length = 0;
@@ -131,14 +131,14 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
   // Normally you should close watchers once you're done with them, but since we're going to reload the process
   // we instead just unref them, to allow everything to terminate nicely.
   for (const watchDir of site.watchDirs) {
-    const matcher = site.ignoredFilesMatcher.withBase(watchDir.path);
-    watch(watchDir.path, { recursive: true, signal: exiting }, (_event, filePath) => {
+    const matcher = site.ignoredFilesMatcher.withBase(watchDir.rootPath);
+    watch(watchDir.rootPath, { recursive: true, signal: exiting }, (_event, filePath) => {
       if (!filePath) {
         return;
       }
 
-      const absolutePath = path.join(watchDir.path, filePath);
-      if (absolutePath.startsWith(site.static.path) || matcher.matches(absolutePath)) {
+      const absolutePath = path.join(watchDir.rootPath, filePath);
+      if (absolutePath.startsWith(site.static.rootPath) || matcher.matches(absolutePath)) {
         return;
       }
 

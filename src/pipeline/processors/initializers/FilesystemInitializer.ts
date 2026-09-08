@@ -93,7 +93,7 @@ export class FilesystemInitializer implements ManyProcessor {
     if (dataFile) {
       log("found data file: %s", dataFile.name);
       try {
-        const dataFilePath = path.join(fileSystem.path, dataFile.name);
+        const dataFilePath = path.join(fileSystem.rootPath, dataFile.name);
         const dataFileDatum = parentData.branch({ filename: dataFilePath, [symProcessedBy]: this });
         const sharedData = await this.load(dataFileDatum, context);
         if (sharedData) {
@@ -102,7 +102,7 @@ export class FilesystemInitializer implements ManyProcessor {
           console.warn(`Could not load data file ${dataFilePath}. Ignoring...`);
         }
       } catch (error) {
-        console.warn(`Error loading _data from ${fileSystem.path}. Ignoring...`);
+        console.warn(`Error loading _data from ${fileSystem.rootPath}. Ignoring...`);
         console.warn(error);
       }
     }
@@ -122,7 +122,7 @@ export class FilesystemInitializer implements ManyProcessor {
         }
 
         try {
-          const filePath = path.join(fileSystem.path, entry.name);
+          const filePath = path.join(fileSystem.rootPath, entry.name);
           log("found page to process: %s", filePath);
           return [
             await this.load(
@@ -131,7 +131,7 @@ export class FilesystemInitializer implements ManyProcessor {
             ),
           ];
         } catch (error) {
-          console.error(`Error loading ${entry.name} from ${fileSystem.path}`);
+          console.error(`Error loading ${entry.name} from ${fileSystem.rootPath}`);
           console.error(error);
           return [];
         }
