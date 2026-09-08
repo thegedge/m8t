@@ -26,6 +26,11 @@ export const run = async (
   _args: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<number> => {
+  if (!site.devServer) {
+    throw new Error("m8t diff cannot run without a devServer configured");
+  }
+  const baseURL = `http://localhost:${site.devServer.port}`;
+
   await site.out.ensureDir("diff");
   const out = site.out.cd("diff");
 
@@ -119,7 +124,7 @@ export const run = async (
 
         await using context = await browser.newContext({
           ...options,
-          baseURL: "http://localhost:3000",
+          baseURL,
           reducedMotion: "reduce",
         });
 
