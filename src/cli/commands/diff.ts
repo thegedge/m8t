@@ -114,7 +114,7 @@ export const run = async (
           return;
         }
 
-        const context = await browser.newContext({
+        await using context = await browser.newContext({
           ...options,
           baseURL: "http://localhost:3000",
           reducedMotion: "reduce",
