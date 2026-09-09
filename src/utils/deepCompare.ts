@@ -1,4 +1,4 @@
-import { scalarCompare } from "./scalarCompare.js";
+import { scalarCompare, TypeOrders } from "./scalarCompare.js";
 
 /**
  * Check if two values are equal.
@@ -43,26 +43,31 @@ import { scalarCompare } from "./scalarCompare.js";
  * @returns a negative number if `a < b`, a positive number if `a > b`, and 0 if `a = b`.
  */
 export const deepCompare = (a: unknown, b: unknown): number => {
+  return deepCompareWithCycleDetection(a, b);
+};
+
+const deepCompareWithCycleDetection = (
+  a: unknown,
+  b: unknown,
+  visited = new WeakSet<any>(),
+): number => {
   if (a === b) {
     return 0;
   }
 
   const typeA = Array.isArray(a) ? "array" : typeof a;
   const typeB = Array.isArray(b) ? "array" : typeof b;
-
-  const orderA = TypeOrders[typeA];
-  const orderB = TypeOrders[typeB];
-
-  if (orderA !== orderB) {
-    if (orderA < TypeOrders.array && orderB < TypeOrders.array) {
-      return scalarCompare(a, b);
-    }
-
-    return orderA - orderB;
+  if (typeA !== typeB) {
+    return TypeOrders[typeA] - TypeOrders[typeB];
   }
 
   switch (typeA) {
     case "array": {
+      if (visited.has(a)) {
+        return -1;
+      }
+      visited.add(a);
+
       const aArray = a as unknown[];
       const bArray = b as unknown[];
       const lengthA = aArray.length;
@@ -72,7 +77,7 @@ export const deepCompare = (a: unknown, b: unknown): number => {
       }
 
       for (let index = 0; index < lengthA; index++) {
-        const comparison = deepCompare(aArray[index], bArray[index]);
+        const comparison = deepCompareWithCycleDetection(aArray[index], bArray[index], visited);
         if (comparison !== 0) {
           return comparison;
         }
@@ -81,6 +86,11 @@ export const deepCompare = (a: unknown, b: unknown): number => {
       return 0;
     }
     case "object": {
+      if (visited.has(a)) {
+        return -1;
+      }
+      visited.add(a);
+
       const aObject = a as Record<string | symbol, unknown>;
       const bObject = b as Record<string | symbol, unknown>;
       const keysA = sortedKeys(aObject);
@@ -92,11 +102,13 @@ export const deepCompare = (a: unknown, b: unknown): number => {
       }
 
       for (const key of keysA) {
-        const comparison = deepCompare(aObject[key], bObject[key]);
+        const comparison = deepCompareWithCycleDetection(aObject[key], bObject[key], visited);
         if (comparison !== 0) {
           return comparison;
         }
       }
+
+      return 0;
     }
     default:
       return scalarCompare(a, b);
@@ -105,17 +117,4 @@ export const deepCompare = (a: unknown, b: unknown): number => {
 
 const sortedKeys = (obj: Record<string | symbol, unknown>): (string | symbol)[] => {
   return Reflect.ownKeys(obj).sort((a, b) => a.toString().localeCompare(b.toString()));
-};
-
-const TypeOrders = {
-  string: 100,
-  number: 200,
-  bigint: 300,
-  symbol: 400,
-  boolean: 500,
-  null: 500,
-  undefined: 600,
-  array: 700,
-  object: 800,
-  function: 900,
 };
