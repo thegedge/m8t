@@ -1,7 +1,6 @@
 import debug from "debug";
 
 import type { PipelineStage } from "../index.js";
-import { counterPromise } from "../utils/counterPromise.js";
 import { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
 import { partition } from "../utils/partition.js";
 import type { Datum } from "./Datum.js";
@@ -32,11 +31,9 @@ export const reprocess = Symbol("reprocess");
 export class Pipeline {
   readonly #performanceTracker = new NonAsyncTimeMeasurement();
   readonly #stages: readonly PipelineStage[];
-  readonly #working: ReturnType<typeof counterPromise>;
 
   constructor(options: { stages: readonly PipelineStage[] }) {
     this.#stages = options.stages;
-    this.#working = counterPromise();
   }
 
   /**
@@ -72,8 +69,6 @@ export class Pipeline {
     if (data.length === 0) {
       return [];
     }
-
-    this.#working.increment();
 
     if (context.signal?.aborted) {
       throw new Error("work stopped");
@@ -131,7 +126,6 @@ export class Pipeline {
         context,
       });
     } finally {
-      this.#working.decrement();
       context.signal?.removeEventListener("abort", stop);
     }
   }
