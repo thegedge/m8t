@@ -153,6 +153,10 @@ export class Site {
     const staticRoot = path.resolve(siteRoot, options.static || "static");
     const outRoot = path.resolve(siteRoot, options.out || "out");
 
+    if (!outRoot.startsWith(siteRoot)) {
+      throw new Error("output dir must be a subdirectory of the site root");
+    }
+
     let fileMatcherOptions: FileMatcherOptions = {
       base: siteRoot,
       globs: [CPU_PROFILE_FILENAME, "out/", "diff/", ".git/"],
