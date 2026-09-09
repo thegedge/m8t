@@ -1,6 +1,10 @@
 import fs from "fs";
 import pathModule from "path";
 
+// TODO allow there to be a "root" filesystem. Every `cd` will retain that root value
+//      and all operations with absolute paths will be considered relative to that root,
+//      not the operating system's actual root mount.
+
 /**
  * A filesystem abstraction used by m8t.
  *
@@ -15,11 +19,7 @@ export class Filesystem {
    * Construct a new filesystem rooted at the given path.
    */
   constructor(path: string) {
-    this.rootPath = ensureEndSlash(
-      pathModule.isAbsolute(path)
-        ? path
-        : pathModule.normalize(pathModule.join(process.cwd(), path)),
-    );
+    this.rootPath = ensureEndSlash(pathModule.resolve(process.cwd(), path));
   }
 
   /**
@@ -28,11 +28,11 @@ export class Filesystem {
    * @returns a new filesystem rooted at the given directory.
    */
   cd(root: string) {
-    const dir = pathModule.isAbsolute(root) ? root : pathModule.join(this.rootPath, root);
-    if (!this.isDirectory(dir)) {
-      throw new Error(`can't descend into a non-directory ${dir}`);
+    const resolvedRoot = pathModule.resolve(this.rootPath, root);
+    if (!this.isDirectory(resolvedRoot)) {
+      throw new Error(`can't descend into a non-directory ${resolvedRoot}`);
     }
-    return new Filesystem(dir);
+    return new Filesystem(resolvedRoot);
   }
 
   /**
@@ -41,7 +41,8 @@ export class Filesystem {
    * @returns `true` if the given path is a directory, `false` otherwise
    */
   isDirectory(dir: string) {
-    return fs.statSync(dir).isDirectory();
+    const resolvedDir = pathModule.resolve(this.rootPath, dir);
+    return fs.statSync(resolvedDir).isDirectory();
   }
 
   /**
