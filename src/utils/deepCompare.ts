@@ -46,6 +46,9 @@ export const deepCompare = (a: unknown, b: unknown): number => {
   return deepCompareWithCycleDetection(a, b);
 };
 
+type SomeKey = string | symbol;
+type SomeObject = Record<SomeKey, unknown>;
+
 const deepCompareWithCycleDetection = (
   a: unknown,
   b: unknown,
@@ -62,59 +65,68 @@ const deepCompareWithCycleDetection = (
   }
 
   switch (typeA) {
-    case "array": {
-      if (visited.has(a)) {
-        return -1;
-      }
-      visited.add(a);
-
-      const aArray = a as unknown[];
-      const bArray = b as unknown[];
-      const lengthA = aArray.length;
-      const lengthB = bArray.length;
-      if (lengthA !== lengthB) {
-        return lengthA - lengthB;
-      }
-
-      for (let index = 0; index < lengthA; index++) {
-        const comparison = deepCompareWithCycleDetection(aArray[index], bArray[index], visited);
-        if (comparison !== 0) {
-          return comparison;
-        }
-      }
-
-      return 0;
-    }
-    case "object": {
-      if (visited.has(a)) {
-        return -1;
-      }
-      visited.add(a);
-
-      const aObject = a as Record<string | symbol, unknown>;
-      const bObject = b as Record<string | symbol, unknown>;
-      const keysA = sortedKeys(aObject);
-      const keysB = sortedKeys(bObject);
-      const lengthA = keysA.length;
-      const lengthB = keysB.length;
-      if (lengthA !== lengthB) {
-        return lengthA - lengthB;
-      }
-
-      for (const key of keysA) {
-        const comparison = deepCompareWithCycleDetection(aObject[key], bObject[key], visited);
-        if (comparison !== 0) {
-          return comparison;
-        }
-      }
-
-      return 0;
-    }
+    case "array":
+      return arrayCompare(a as unknown[], b as unknown[], visited);
+    case "object":
+      return objectCompare(a as SomeObject, b as SomeObject, visited);
     default:
       return scalarCompare(a, b);
   }
 };
 
-const sortedKeys = (obj: Record<string | symbol, unknown>): (string | symbol)[] => {
-  return Reflect.ownKeys(obj).sort((a, b) => a.toString().localeCompare(b.toString()));
+const arrayCompare = (a: unknown[], b: unknown[], visited: WeakSet<any>) => {
+  if (visited.has(a)) {
+    return -1;
+  }
+  visited.add(a);
+
+  const lengthA = a.length;
+  const lengthB = b.length;
+  if (lengthA !== lengthB) {
+    return lengthA - lengthB;
+  }
+
+  for (let index = 0; index < lengthA; index++) {
+    const comparison = deepCompareWithCycleDetection(a[index], b[index], visited);
+    if (comparison !== 0) {
+      return comparison;
+    }
+  }
+
+  return 0;
 };
+
+const objectCompare = (a: SomeObject, b: SomeObject, visited: WeakSet<any>) => {
+  if (visited.has(a)) {
+    return -1;
+  }
+  visited.add(a);
+
+  const keysA = Reflect.ownKeys(a);
+  const keysB = Reflect.ownKeys(b);
+  const lengthA = keysA.length;
+  const lengthB = keysB.length;
+  if (lengthA !== lengthB) {
+    return lengthA - lengthB;
+  }
+
+  const sortedKeysA = keysA.sort(keyCompare);
+  const sortedKeysB = keysB.sort(keyCompare);
+
+  for (let index = 0; index < sortedKeysA.length; ++index) {
+    const keyA = sortedKeysA[index];
+    const keyB = sortedKeysB[index];
+    if (keyA != keyB) {
+      return String(keyA) < String(keyB) ? -1 : 1;
+    }
+
+    const comparison = deepCompareWithCycleDetection(a[keyA], b[keyB], visited);
+    if (comparison !== 0) {
+      return comparison;
+    }
+  }
+
+  return 0;
+};
+
+const keyCompare = (a: SomeKey, b: SomeKey) => a.toString().localeCompare(b.toString());

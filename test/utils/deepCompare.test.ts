@@ -16,8 +16,9 @@ describe("deepCompare", () => {
     ],
     [[1, 2, 3], { a: 1 }],
     [{ a: 0 }, { a: 1 }],
-    [{ a: 1 }, { a: 0, b: 2 }],
-    [{ a: 2 }, (v: unknown) => v],
+    [{ b: 0 }, { t: 1 }],
+    [{ c: 1 }, { a: 0, b: 2 }],
+    [{ d: 2 }, (v: unknown) => v],
   ]) {
     const presentA = inspect(a);
     const presentB = inspect(b);
