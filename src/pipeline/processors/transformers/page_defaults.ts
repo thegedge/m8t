@@ -2,8 +2,9 @@ import { parameterize as slugify, titleize, underscore } from "inflected";
 import mime from "mime-types";
 import path from "node:path";
 
-import type { MaybeArray, SingleProcessor } from "../../../index.js";
+import type { MaybeArray } from "../../../types.js";
 import type { Datum } from "../../Datum.js";
+import type { SingleProcessor } from "../../index.js";
 import type { DefaultContext } from "../../utils.js";
 
 const DATE_REGEX = /^(\d{4})[^a-zA-Z0-9](\d{2})[^a-zA-Z0-9](\d{2}).(.+)$/;

@@ -1,13 +1,14 @@
 import { camelize } from "inflected";
 import path from "node:path";
 
-import { LayoutTransformer, TypescriptLoader, type ManyProcessor } from "../../index.js";
 import { dedent } from "../../utils/dedent.js";
 import { union } from "../../utils/union.js";
 import { uniq } from "../../utils/uniq.js";
 import { Datum, symProcessedBy } from "../Datum.js";
+import type { ManyProcessor } from "../index.js";
 import type { DefaultContext } from "../utils.js";
-import { symLayoutFilename } from "./transformers/layout.js";
+import { TypescriptLoader } from "./loaders/typescript.js";
+import { LayoutTransformer, symLayoutFilename } from "./transformers/layout.js";
 
 const DEFAULT_IGNORED_KEYS = ["components", "content", "htmlValidateRules", "layout", "mimeType"];
 

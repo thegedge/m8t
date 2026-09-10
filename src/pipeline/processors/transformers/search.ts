@@ -1,9 +1,9 @@
 import debug from "debug";
 import pMap from "p-map";
 
-import type { ManyProcessor } from "../../../index.js";
 import { Search } from "../../../Search.js";
 import { type Datum, type DatumShape } from "../../Datum.js";
+import type { ManyProcessor } from "../../index.js";
 import type { DefaultContext } from "../../utils.js";
 
 const log = debug("m8t:search");

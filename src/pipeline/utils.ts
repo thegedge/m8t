@@ -1,11 +1,11 @@
 import debug from "debug";
 import pMap from "p-map";
 
-import type { MaybeArray } from "../index.js";
 import type { Site } from "../Site.js";
+import type { MaybeArray } from "../types.js";
 import type { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
-import { symProcessedBy, symProcessingTimeMs, type DatumShape } from "./Datum.js";
-import { Datum, type Pipeline, type SingleProcessor } from "./index.js";
+import { Datum, symProcessedBy, symProcessingTimeMs, type DatumShape } from "./Datum.js";
+import { type Pipeline, type SingleProcessor } from "./index.js";
 
 /** Logging function for pipeline processing */
 const log = debug("m8t:processing");

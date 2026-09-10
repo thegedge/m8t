@@ -1,7 +1,9 @@
 import path from "node:path";
 
-import { Pipeline, Site, type PipelineStage, type SingleProcessor } from "../../../index.js";
+import type { Site } from "../../../Site.js";
 import { Datum, symProcessedBy } from "../../Datum.js";
+import type { PipelineStage, SingleProcessor } from "../../index.js";
+import { Pipeline } from "../../Pipeline.js";
 import type { DefaultContext } from "../../utils.js";
 import { noIndex } from "./search.js";
 

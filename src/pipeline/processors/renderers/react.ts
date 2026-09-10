@@ -1,6 +1,9 @@
-import type { MaybeArray, SingleProcessor } from "../../../index.js";
-import { isValidElement, renderElementToHTML } from "../../../jsx.js";
+import { isValidElement } from "react";
+
+import { renderElementToHTML } from "../../../jsx.js";
+import type { MaybeArray } from "../../../types.js";
 import type { Datum } from "../../Datum.js";
+import type { SingleProcessor } from "../../index.js";
 import type { DefaultContext } from "../../utils.js";
 
 /**

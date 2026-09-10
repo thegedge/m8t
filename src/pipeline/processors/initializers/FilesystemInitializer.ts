@@ -7,8 +7,8 @@ import { Filesystem } from "../../../Filesystem.js";
 import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Site } from "../../../Site.js";
 import { partition } from "../../../utils/partition.js";
-import { symProcessedBy } from "../../Datum.js";
-import type { Datum, ManyProcessor, SingleProcessor } from "../../index.js";
+import { symProcessedBy, Datum } from "../../Datum.js";
+import type { ManyProcessor, SingleProcessor } from "../../index.js";
 import { processOne, type DefaultContext } from "../../utils.js";
 
 export type FilesystemLoader = SingleProcessor<Datum>;

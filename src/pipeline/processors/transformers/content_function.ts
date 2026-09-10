@@ -1,9 +1,10 @@
 import { isGeneratorFunction } from "node:util/types";
 
-import type { MaybeArray, SingleProcessor } from "../../../index.js";
-// oxlint-disable no-unused-vars -- only here for jsdocs
-import type { reprocess } from "../../../index.js";
+import type { MaybeArray } from "../../../types.js";
 import { Datum, type DatumShape } from "../../Datum.js";
+import type { SingleProcessor } from "../../index.js";
+// oxlint-disable no-unused-vars -- only here for jsdocs
+import type { reprocess } from "../../Pipeline.js";
 import type { DefaultContext } from "../../utils.js";
 
 /**

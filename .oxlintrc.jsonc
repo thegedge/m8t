@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "oxc", "typescript", "unicorn"],
+  "categories": {
+    "correctness": "error",
+  },
+  "rules": {
+    // TODO uncomment when available in oxlint
+    // "import/enforce-node-protocol-usage": "error",
+    "import/extensions": "error",
+    "import/first": "error",
+    "import/newline-after-import": "error",
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+  },
+  "env": {
+    "builtin": true,
+  },
+}
