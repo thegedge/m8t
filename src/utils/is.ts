@@ -5,19 +5,32 @@
  * ```ts
  * isPlainObject({ a: 1, b: 2 }) // => true
  * isPlainObject(Object.create(null)) // => true
+ * isPlainObject(new MyClass()) // => false
  * isPlainObject(new Date()) // => false
- * isPlainObject(new Error()) // => false
- * isPlainObject(new Set()) // => false
- * isPlainObject(new Map()) // => false
  * isPlainObject(null) // => false
  * isPlainObject(true) // => false
  * isPlainObject("test") // => false
+ * isPlainObject(runInNewContext("(() => ({ a: 12345 }))()")) // => true
+ * ```
  */
 export const isPlainObject = (value: unknown): value is Record<string, unknown> => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    Object.prototype.toString.call(value) === "[object Object]" // deal with cross-realm objects
-  );
+  if (typeof value !== "object") {
+    return false;
+  }
+
+  if (value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  if (Object.prototype.toString.call(value) !== "[object Object]") {
+    // Deal with cross-realm objects by stringifying the prototype
+    return false;
+  }
+
+  const constructor = value.constructor;
+  if (constructor && constructor.name !== "Object") {
+    return false;
+  }
+
+  return true;
 };
