@@ -15,23 +15,17 @@ const clearLine = () => {
   process.stdout.write("\r" + " ".repeat(80) + "\r");
 };
 
-const showReadyMessage = (startTime: number, url: string, isInitialLoad = false) => {
+const showReadyMessage = (startTime: number, url: string) => {
   const elapsed = Math.round(performance.now() - startTime);
 
   clearLine();
 
-  if (isInitialLoad) {
-    printLogoAndTitleWithLines(process.stdout, [
-      "",
-      `Server listening on ${styleText("bold", link(url, url))}`,
-      "",
-      styleText("green", `✓ Server loaded in: ${styleText("bold", `${elapsed}ms`)}`),
-    ]);
-  } else {
-    process.stdout.write(
-      styleText("green", `\r✓ Reloaded in ${styleText("bold", `${elapsed}ms`)}`),
-    );
-  }
+  printLogoAndTitleWithLines(process.stdout, [
+    "",
+    `Server listening on ${styleText("bold", link(url, url))}`,
+    "",
+    styleText("green", `✓ Server loaded in: ${styleText("bold", `${elapsed}ms`)}`),
+  ]);
 };
 
 export const run = async (
@@ -77,7 +71,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
 
   currentServer.on("message", (message) => {
     if (message === "ready") {
-      showReadyMessage(reloadStartTime, url, true);
+      showReadyMessage(reloadStartTime, url);
     }
   });
 
