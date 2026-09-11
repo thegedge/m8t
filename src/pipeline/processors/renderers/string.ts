@@ -6,9 +6,7 @@ import type { DefaultContext } from "../../utils.js";
 /**
  * A renderer that stringifies the content.
  *
- * Does not process data if two conditions are met:
- * 1. The content is not already a string.
- * 2. The mime type is not already set.
+ * Does not process data if content is already a string, and the mime type is set.
  */
 export class StringRenderer implements SingleProcessor {
   async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {
