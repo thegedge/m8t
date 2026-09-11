@@ -1,4 +1,4 @@
-import type { Site } from "../../Site.js";
+import type { Site } from "../../site/Site.js";
 import type { RouteFunction } from "../createRoutingServer.js";
 import type { Redirects } from "../Redirects.js";
 

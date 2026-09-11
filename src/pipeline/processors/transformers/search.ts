@@ -1,7 +1,7 @@
 import debug from "debug";
 import pMap from "p-map";
 
-import { Search } from "../../../Search.js";
+import { Search } from "../../../site/Search.js";
 import { type Datum, type DatumShape } from "../../Datum.js";
 import type { ManyProcessor } from "../../index.js";
 import type { DefaultContext } from "../../utils.js";

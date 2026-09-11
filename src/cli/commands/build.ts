@@ -2,7 +2,7 @@ import debug from "debug";
 import path from "node:path";
 import pMap from "p-map";
 
-import { Site } from "../../Site.js";
+import { Site } from "../../site/Site.js";
 
 const log = debug("m8t:build");
 const CONCURRENCY = 8;

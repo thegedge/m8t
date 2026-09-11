@@ -1,6 +1,6 @@
 import { styleText } from "node:util";
 
-import type { Site } from "../../Site.js";
+import type { Site } from "../../site/Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 export const run = async (

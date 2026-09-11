@@ -3,9 +3,9 @@ import fs from "fs";
 import pMap from "p-map";
 import path from "path";
 
-import { Filesystem } from "../../../Filesystem.js";
 import type { Transpiler } from "../../../loader/ModuleLoader.js";
-import type { Site } from "../../../Site.js";
+import type { Site } from "../../../site/Site.js";
+import { Filesystem } from "../../../utils/Filesystem.js";
 import { isNoEntryError } from "../../../utils/is.js";
 import { partition } from "../../../utils/partition.js";
 import { symProcessedBy, Datum } from "../../Datum.js";

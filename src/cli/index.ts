@@ -44,7 +44,7 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
   }
 
   // Imported here so the compile cache is in place
-  const { Site } = await import("../Site.js");
+  const { Site } = await import("../site/Site.js");
 
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
   const site = await Site.forRoot(root);

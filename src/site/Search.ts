@@ -1,6 +1,6 @@
-import type { Datum, DatumShape } from "./pipeline/Datum.js";
-import { deepCompare } from "./utils/deepCompare.js";
-import { scalarCompare } from "./utils/scalarCompare.js";
+import type { Datum, DatumShape } from "../pipeline/Datum.js";
+import { deepCompare } from "../utils/deepCompare.js";
+import { scalarCompare } from "../utils/scalarCompare.js";
 
 /**
  * A search query.

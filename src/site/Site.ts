@@ -3,12 +3,12 @@ import { Session } from "node:inspector/promises";
 import path from "node:path";
 import pMap from "p-map";
 
-import { Filesystem } from "./Filesystem.js";
-import { ModuleLoader } from "./loader/ModuleLoader.js";
-import { symProcessedBy } from "./pipeline/Datum.js";
-import { Datum, Pipeline, type PipelineStage } from "./pipeline/index.js";
-import { FileMatcher, type FileMatcherOptions } from "./utils/FileMatcher.js";
-import { keyBy } from "./utils/keyBy.js";
+import { ModuleLoader } from "../loader/ModuleLoader.js";
+import { symProcessedBy } from "../pipeline/Datum.js";
+import { Datum, Pipeline, type PipelineStage } from "../pipeline/index.js";
+import { FileMatcher, type FileMatcherOptions } from "../utils/FileMatcher.js";
+import { Filesystem } from "../utils/Filesystem.js";
+import { keyBy } from "../utils/keyBy.js";
 
 export type DevServerOptions = {
   port: number;

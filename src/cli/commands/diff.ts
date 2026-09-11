@@ -15,7 +15,7 @@ import { utils } from "playwright-core/lib/coreBundle";
 
 import type { DefaultDatumShape } from "../../index.js";
 import type { Datum } from "../../pipeline/Datum.js";
-import type { Site } from "../../Site.js";
+import type { Site } from "../../site/Site.js";
 import { sortBy } from "../../utils/sortBy.js";
 
 // TODO Check for a running server instead of processing everything and then failing.

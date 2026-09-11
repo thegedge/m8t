@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 import type { Transpiler } from "../../../loader/ModuleLoader.js";
-import type { Site } from "../../../Site.js";
+import type { Site } from "../../../site/Site.js";
 import type { Datum } from "../../Datum.js";
 import type { SingleProcessor } from "../../index.js";
 import type { DefaultContext } from "../../utils.js";

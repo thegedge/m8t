@@ -6,7 +6,7 @@ import path from "node:path";
 import { styleText } from "node:util";
 import pDebounce from "p-debounce";
 
-import type { Site } from "../../Site.js";
+import type { Site } from "../../site/Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 const log = debug("m8t:serve");

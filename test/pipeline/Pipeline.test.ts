@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 
 import { Datum } from "../../src/pipeline/Datum.js";
 import { Pipeline } from "../../src/pipeline/Pipeline.js";
-import type { Site } from "../../src/Site.js";
+import type { Site } from "../../src/site/Site.js";
 
 const site = {} as unknown as Site;
 

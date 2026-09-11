@@ -8,11 +8,11 @@
  */
 export * from "./jsx.js";
 export * from "./pipeline/index.js";
-export { Site } from "./Site.js";
+export { Site } from "./site/Site.js";
 
 export type * from "./types.js";
-export type * from "./Filesystem.js";
-export type * from "./Search.js";
-export type * from "./Site.js";
+export type * from "./utils/Filesystem.js";
+export type * from "./site/Search.js";
+export type * from "./site/Site.js";
 export type * from "./loader/ModuleLoader.js";
 export type * from "./utils/FileMatcher.js";

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 
-import { Site } from "../Site.js";
+import { Site } from "../site/Site.js";
 import { createRoutingServer } from "./createRoutingServer.js";
 import { Redirects } from "./Redirects.js";
 import { debugPageGet } from "./routes/__debug/GET-[url].js";

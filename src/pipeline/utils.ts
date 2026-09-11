@@ -1,7 +1,7 @@
 import debug from "debug";
 import pMap from "p-map";
 
-import type { Site } from "../Site.js";
+import type { Site } from "../site/Site.js";
 import type { MaybeArray } from "../types.js";
 import type { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
 import { Datum, symProcessedBy, symProcessingTimeMs, type DatumShape } from "./Datum.js";

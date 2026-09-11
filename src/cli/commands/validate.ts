@@ -2,7 +2,7 @@ import { link } from "ansi-escapes";
 import debug from "debug";
 import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
 
-import type { Site } from "../../Site.js";
+import type { Site } from "../../site/Site.js";
 
 const log = debug("m8t:validate");
 
