@@ -173,13 +173,13 @@ const jsonViewerForData = (obj: Record<string | symbol, unknown>, id: string | n
 const processorNameForDatum = (datum: DatumShape): string => {
   const processor = datum[symProcessedBy];
   if (processor) {
+    if (typeof processor === "string") {
+      return `&lt;${processor}&gt;`;
+    }
+
     const processorConstructorName = processor?.constructor?.name;
     if (processorConstructorName) {
       return processorConstructorName;
-    }
-
-    if (typeof processor === "string") {
-      return `&lt;${processor}&gt;`;
     }
 
     return `&lt;${truncate(JSON.stringify(processor))}&gt;`;
