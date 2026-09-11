@@ -58,8 +58,8 @@ const deepCompareWithCycleDetection = (
     return 0;
   }
 
-  const typeA = Array.isArray(a) ? "array" : typeof a;
-  const typeB = Array.isArray(b) ? "array" : typeof b;
+  const typeA = valueType(a);
+  const typeB = valueType(b);
   if (typeA !== typeB) {
     return TypeOrders[typeA] - TypeOrders[typeB];
   }
@@ -94,6 +94,20 @@ const arrayCompare = (a: unknown[], b: unknown[], visited: WeakSet<any>) => {
   }
 
   return 0;
+};
+
+const valueType = (v: unknown): keyof typeof TypeOrders => {
+  const t = typeof v;
+  switch (t) {
+    case "object":
+      if (v === null) {
+        return "null";
+      }
+
+      return Array.isArray(v) ? "array" : "object";
+    default:
+      return t;
+  }
 };
 
 const objectCompare = (a: SomeObject, b: SomeObject, visited: WeakSet<any>) => {
