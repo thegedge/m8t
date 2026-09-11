@@ -221,7 +221,7 @@ export class ModuleLoader {
       case "unlinked":
         const lastLink = this.#linkQueue.at(-1);
         if (lastLink) {
-          promise = lastLink.then(() => {
+          const run = () => {
             if (module.status !== "unlinked") {
               return;
             }
@@ -229,7 +229,11 @@ export class ModuleLoader {
             return module.link((specifier, referrer, extra) => {
               return this.#moduleFrom(specifier, referrer, extra.attributes);
             });
-          });
+          };
+
+          // We also run if the previous link fails, so that a link chain isn't completely
+          // poisoned by one bad load
+          promise = lastLink.then(run, run);
         } else {
           promise = module.link((specifier, referrer, extra) => {
             return this.#moduleFrom(specifier, referrer, extra.attributes);
