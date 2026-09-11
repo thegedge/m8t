@@ -6,6 +6,7 @@ import path from "path";
 import { Filesystem } from "../../../Filesystem.js";
 import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Site } from "../../../Site.js";
+import { isNoEntryError } from "../../../utils/is.js";
 import { partition } from "../../../utils/partition.js";
 import { symProcessedBy, Datum } from "../../Datum.js";
 import type { ManyProcessor, SingleProcessor } from "../../index.js";
@@ -54,24 +55,28 @@ export class FilesystemInitializer implements ManyProcessor {
       await pMap(
         data,
         async (datum) => {
-          try {
-            const pathname = datum.get("filename");
-            if (context.site.ignoredFilesMatcher.matches(pathname)) {
-              return [];
-            }
+          const pathname = datum.get("filename");
+          if (context.site.ignoredFilesMatcher.matches(pathname)) {
+            return [];
+          }
 
-            const stat = await fs.promises.stat(pathname);
-            if (stat.isDirectory()) {
-              const pipelineRoot = new Filesystem(pathname);
-              return await this.initDirectory(context, pipelineRoot, datum);
-            } else if (stat.isFile()) {
-              return await this.load(datum, context);
-            } else {
-              // Assume something further in the pipeline will handle it
+          let stat: fs.Stats;
+          try {
+            stat = await fs.promises.stat(pathname);
+          } catch (e) {
+            if (isNoEntryError(e)) {
               return datum;
             }
-          } catch {
-            // Assume "file not found" error
+            throw e;
+          }
+
+          if (stat.isDirectory()) {
+            const pipelineRoot = new Filesystem(pathname);
+            return await this.initDirectory(context, pipelineRoot, datum);
+          } else if (stat.isFile()) {
+            return await this.load(datum, context);
+          } else {
+            // Assume something further in the pipeline will handle it
             return datum;
           }
         },
@@ -89,19 +94,9 @@ export class FilesystemInitializer implements ManyProcessor {
     const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
     if (dataFile) {
       log("found data file: %s", dataFile.name);
-      try {
-        const dataFilePath = path.join(fileSystem.rootPath, dataFile.name);
-        const dataFileDatum = parentData.branch({ filename: dataFilePath, [symProcessedBy]: this });
-        const sharedData = await this.load(dataFileDatum, context);
-        if (sharedData) {
-          parentData = sharedData;
-        } else {
-          console.warn(`Could not load data file ${dataFilePath}. Ignoring...`);
-        }
-      } catch (error) {
-        console.warn(`Error loading _data from ${fileSystem.rootPath}. Ignoring...`);
-        console.warn(error);
-      }
+      const dataFilePath = path.join(fileSystem.rootPath, dataFile.name);
+      const dataFileDatum = parentData.branch({ filename: dataFilePath, [symProcessedBy]: this });
+      parentData = await this.load(dataFileDatum, context);
     }
 
     // Process files in current dir before descending
@@ -118,20 +113,14 @@ export class FilesystemInitializer implements ManyProcessor {
           return await this.initDirectory(context, fileSystem.cd(entry.name), parentData);
         }
 
-        try {
-          const filePath = path.join(fileSystem.rootPath, entry.name);
-          log("found page to process: %s", filePath);
-          return [
-            await this.load(
-              parentData.branch({ filename: filePath, [symProcessedBy]: this }),
-              context,
-            ),
-          ];
-        } catch (error) {
-          console.error(`Error loading ${entry.name} from ${fileSystem.rootPath}`);
-          console.error(error);
-          return [];
-        }
+        const filePath = path.join(fileSystem.rootPath, entry.name);
+        log("found page to process: %s", filePath);
+        return [
+          await this.load(
+            parentData.branch({ filename: filePath, [symProcessedBy]: this }),
+            context,
+          ),
+        ];
       },
       { concurrency: 4 },
     );

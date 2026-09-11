@@ -1,5 +1,5 @@
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { Datum, symProcessedBy } from "../../../../src/pipeline/Datum.js";
 import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/FilesystemInitializer.js";
@@ -75,38 +75,27 @@ describe("FilesystemInitializer", () => {
   });
 
   describe("error handling", () => {
-    test("skips only the entries that fail to load", async () => {
-      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    test("throws errors for entries that fail to load", async () => {
       await writeFixtures(context.root, {
         "a.json": JSON.stringify({ title: "a" }),
         "boom.json": "not json",
         "sub/c.json": JSON.stringify({ title: "c" }),
       });
 
-      const results = await processRoot();
-
-      const titles = results.map((datum) => datum.get("title"));
-      expect(titles).toEqual(["a", "c"]);
-      expect(spy).toHaveBeenCalled();
+      await expect(processRoot()).rejects.toThrow();
     });
 
-    test("continues with parent data when a _data file fails to load", async () => {
-      const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    test("throws errors when a _data file fails to load", async () => {
       await writeFixtures(context.root, {
         "_data.ts": JSON.stringify({ fromRoot: "root" }),
         "sub/_data.ts": "not json",
         "sub/c.json": JSON.stringify({ title: "c" }),
       });
 
-      const results = await processRoot();
-
-      expect(results).toHaveLength(1);
-      expect(results[0]?.get("title")).toBe("c");
-      expect(results[0]?.get("fromRoot")).toBe("root");
-      expect(spy).toHaveBeenCalled();
+      await expect(processRoot()).rejects.toThrow();
     });
 
-    test("returns the datum unchanged when the filename does not exist", async () => {
+    test("throws errors when the filename does not exist", async () => {
       const datum = new Datum({
         basePath: context.root,
         filename: path.join(context.root, "does-not-exist"),

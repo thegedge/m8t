@@ -1,3 +1,5 @@
+import { getSystemErrorName } from "node:util";
+
 /**
  * Check if a given object is a plain object (i.e., not a class instance).
  *
@@ -33,4 +35,16 @@ export const isPlainObject = (value: unknown): value is Record<string, unknown> 
   }
 
   return true;
+};
+
+/**
+ * Returns true if a given value is an error for ENOENT.
+ */
+export const isNoEntryError = (e: unknown): boolean => {
+  return (
+    e instanceof Error &&
+    "errno" in e &&
+    typeof e.errno == "number" &&
+    getSystemErrorName(e.errno) == "ENOENT"
+  );
 };
