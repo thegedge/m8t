@@ -1,8 +1,23 @@
 import type { Datum, DatumShape } from "./pipeline/Datum.js";
+import { deepCompare } from "./utils/deepCompare.js";
+import { scalarCompare } from "./utils/scalarCompare.js";
 
+/**
+ * A search query.
+ */
 export type Query = {
-  where: Record<string, unknown>;
-  sort?: readonly [string, "asc" | "desc"];
+  /**
+   * A mapping from key to the value to be searched.
+   *
+   * @example
+   * ```ts
+   * { type: "post" }
+   * ```
+   */
+  where?: Record<string, unknown>;
+
+  /** How to sort the results of the query. */
+  sort?: readonly [field: string, direction: "asc" | "desc"];
 };
 
 /**
@@ -35,28 +50,24 @@ export class Search implements Searcher {
    * @returns a list of the data matching the given query.
    */
   async pages(query: Query): Promise<DatumShape[]> {
-    const filtered = this.#data.filter((page) => {
-      for (const [key, value] of Object.entries(query.where)) {
-        if (page.get(key) != value) {
-          return false;
-        }
-      }
-      return true;
-    });
+    const entries = query.where ? Object.entries(query.where) : [];
+    const filtered =
+      entries.length == 0
+        ? [...this.#data]
+        : this.#data.filter((page) => {
+            return entries.every(
+              ([key, value]) => page.has(key) && deepCompare(value, page.get(key)) == 0,
+            );
+          });
 
     if (query.sort) {
       // TODO support multiple sort keys
       const [key, direction] = query.sort;
+      const COMPARE = direction == "asc" ? 1 : -1;
       filtered.sort((a, b) => {
         const aVal: any = a.get(key);
         const bVal: any = b.get(key);
-        if (aVal < bVal) {
-          return direction == "asc" ? -1 : 1;
-        } else if (aVal > bVal) {
-          return direction == "asc" ? 1 : -1;
-        } else {
-          return 0;
-        }
+        return COMPARE * scalarCompare(aVal, bVal);
       });
     }
 

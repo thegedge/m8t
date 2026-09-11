@@ -205,10 +205,10 @@ export class Pipeline {
 // @public
 export type PipelineStage = ManyProcessor | ManyProcessorFunction | SingleProcessor;
 
-// @public (undocumented)
+// @public
 export type Query = {
-    where: Record<string, unknown>;
-    sort?: readonly [string, "asc" | "desc"];
+    where?: Record<string, unknown>;
+    sort?: readonly [field: string, direction: "asc" | "desc"];
 };
 
 // @public

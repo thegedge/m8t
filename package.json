@@ -43,7 +43,7 @@
     "lint:format:fix": "oxfmt --write .",
     "lint:syntax": "oxlint",
     "lint:syntax:fix": "oxlint --fix .",
-    "lint:types": "api-extractor run --local --verbose",
+    "lint:types": "api-extractor run --local --verbose --print-api-report-diff",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
     "test": "vitest run",
