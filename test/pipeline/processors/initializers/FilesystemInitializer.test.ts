@@ -1,9 +1,9 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { Datum, symProcessedBy } from "../../src/pipeline/Datum.js";
-import { FilesystemInitializer } from "../../src/pipeline/processors/initializers/FilesystemInitializer.js";
-import { makeContext, StubLoader, writeFixtures, type TestContext } from "../helpers.js";
+import { Datum, symProcessedBy } from "../../../../src/pipeline/Datum.js";
+import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/FilesystemInitializer.js";
+import { makeContext, StubLoader, writeFixtures, type TestContext } from "../../../helpers.js";
 
 describe("FilesystemInitializer", () => {
   let loader: StubLoader;
