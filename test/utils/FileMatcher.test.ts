@@ -74,24 +74,6 @@ describe("FileMatcher", () => {
         expect(fileMatcher).not.toMatchPath("homer_bushes.gif");
       });
 
-      test.skip("matches dot files when given the dot option", async () => {
-        // `dot: true` option needs to be implemented"
-
-        const fileMatcher = await FileMatcher.fromOptions({
-          globs: ["**/*.txt", "!test/file.js"],
-          dot: true,
-        });
-        expect(fileMatcher).toMatchPath(".file.txt");
-        expect(fileMatcher).toMatchPath("test/file.txt");
-        expect(fileMatcher).toMatchPath(".thing/test/file.txt");
-        expect(fileMatcher).toMatchPath("thing/.test/file.txt");
-        expect(fileMatcher).toMatchPath(".thing/.test/file.txt");
-        expect(fileMatcher).toMatchPath(".test/file.js");
-        expect(fileMatcher).toMatchPath("test/.file.js");
-        expect(fileMatcher).toMatchPath(".test/.file.js");
-        expect(fileMatcher).not.toMatchPath("test/file.js");
-      });
-
       test("excludes matches with an anchored ignore pattern", async () => {
         const fileMatcher = await FileMatcher.fromOptions({
           globs: ["*.csv", "!/*.csv"],

@@ -91,7 +91,6 @@ export class FileMatcher {
 export type FileMatcherOptions = {
     files: readonly (string | Readable)[];
     globs: readonly string[];
-    dot: boolean;
     base: string;
 };
 
@@ -154,7 +153,6 @@ export type Matcher = {
     isIgnorePattern: boolean;
     onlyDirectories: boolean;
     matchAnySegment: boolean;
-    matchDotFiles: boolean;
 };
 
 // @public

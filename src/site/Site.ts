@@ -161,7 +161,6 @@ export class Site {
       base: siteRoot,
       globs: [CPU_PROFILE_FILENAME, "out/", "diff/", ".git/"],
       files: [".gitignore", ".git/info/exclude"],
-      dot: false,
     };
 
     if (Array.isArray(options.ignore)) {
@@ -217,8 +216,9 @@ export class Site {
   /** An optional dev server configuration */
   readonly devServer: DevServerOptions | null;
 
-  private data_: Promise<readonly Datum[]> | null = null;
-  private dataByUrl_: Promise<Readonly<Record<string, Datum>>> | null = null;
+  #dataPromise: Promise<readonly Datum[]> | null = null;
+  #dataWithUrlsPromise: Promise<readonly Datum[]> | null = null;
+  #dataByUrlPromise: Promise<Readonly<Record<string, Datum>>> | null = null;
 
   private constructor(options: ResolvedSiteOptions) {
     this.root = new Filesystem(options.root);
@@ -254,8 +254,10 @@ export class Site {
    * @returns a list of all the `url` properties found in the processed data.
    */
   get urls(): Promise<readonly string[]> {
-    this.dataByUrl_ ??= this.data.then((data) => keyBy(data, (d) => d.maybeGetString("url") || ""));
-    return this.dataByUrl_.then((dataByUrl) => Object.keys(dataByUrl).sort());
+    this.#dataByUrlPromise ??= this.#dataWithUrls.then((data) =>
+      keyBy(data, (d) => d.maybeGetString("url") || ""),
+    );
+    return this.#dataByUrlPromise.then((dataByUrl) => Object.keys(dataByUrl).sort());
   }
 
   /**
@@ -264,8 +266,10 @@ export class Site {
    * @returns the datum with the given url, or `undefined` if no datum is found with the given url.
    */
   async dataByUrl(url: string): Promise<Datum | undefined> {
-    this.dataByUrl_ ??= this.data.then((data) => keyBy(data, (d) => d.maybeGetString("url") || ""));
-    const dataByUrl = await this.dataByUrl_;
+    this.#dataByUrlPromise ??= this.#dataWithUrls.then((data) =>
+      keyBy(data, (d) => d.maybeGetString("url") || ""),
+    );
+    const dataByUrl = await this.#dataByUrlPromise;
     return dataByUrl[url];
   }
 
@@ -282,11 +286,21 @@ export class Site {
    * Note that this will start processing data if it hasn't already began processing.
    */
   get data(): Promise<readonly Datum[]> {
-    this.data_ ??= this.process();
-    return this.data_;
+    this.#dataPromise ??= this.#process();
+    return this.#dataPromise;
   }
 
-  private async process() {
+  /**
+   * Get all processed data that has a "url" field
+   *
+   * Note that this will start processing data if it hasn't already began processing.
+   */
+  get #dataWithUrls(): Promise<readonly Datum[]> {
+    this.#dataWithUrlsPromise ??= this.data.then((data) => data.filter((d) => d.has("url")));
+    return this.#dataWithUrlsPromise;
+  }
+
+  async #process() {
     let session: Session | undefined = undefined;
     if (process.env.PROFILE) {
       session = new Session();

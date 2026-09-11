@@ -18,9 +18,6 @@ export type Matcher = {
 
   /** Whether the pattern matches any segment of the path */
   matchAnySegment: boolean;
-
-  /** Whether the pattern matches dot files */
-  matchDotFiles: boolean;
 };
 
 export type FileMatcherOptions = {
@@ -37,11 +34,6 @@ export type FileMatcherOptions = {
    * The globs to match. These always take precedence over the files.
    */
   globs: readonly string[];
-
-  /**
-   * If `true`, the matcher will match hidden files and directories (i.e., those that start with a dot).
-   */
-  dot: boolean;
 
   /**
    * The absolute path of the base directory to match paths against.
@@ -141,7 +133,6 @@ export class FileMatcher {
           onlyDirectories: include.endsWith("/"),
           matchAnySegment,
           isIgnorePattern: ignore,
-          matchDotFiles: options.dot ?? false,
         };
       }),
     });
@@ -219,17 +210,7 @@ export class FileMatcher {
     });
 
     return this.#matchers.reduce(
-      (
-        fileMatches,
-        {
-          pattern,
-          matchAnySegment,
-          onlyDirectories,
-          isIgnorePattern,
-          // TODO implement this
-          // matchDotFiles
-        },
-      ) => {
+      (fileMatches, { pattern, matchAnySegment, onlyDirectories, isIgnorePattern }) => {
         if (isIgnorePattern !== fileMatches) {
           // No need to check this pattern if either
           //   - previously did not match and this is an ignore pattern, or
