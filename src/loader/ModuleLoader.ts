@@ -155,7 +155,7 @@ export class ModuleLoader {
     }
 
     const source = await this.#loadSource(filename);
-    if (!source) {
+    if (source === undefined) {
       return await this.#nativeModule(url, attributes);
     }
 
