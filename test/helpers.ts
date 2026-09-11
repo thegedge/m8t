@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -36,9 +37,9 @@ export type TestContext = DefaultContext & {
  *
  * Empty pipeline,
  */
-export const makeContext = async (options: SiteOptions): Promise<TestContext> => {
+export const makeContext = async (options?: SiteOptions): Promise<TestContext> => {
   const root = await fixturesRoot("m8t-test-");
-  const site = await Site.fromOptions(root, options);
+  const site = await Site.fromOptions(root, { pipelines: {}, ...options });
   return {
     performanceTracker: new NonAsyncTimeMeasurement(),
     pipeline: new Pipeline({ stages: Object.values(site.pipelines)[0] }),
@@ -74,4 +75,17 @@ export const writeFixtures = async (root: string, files: Record<string, string>)
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, contents);
   }
+};
+
+/**
+ * Create a datum for test.
+ *
+ * Automatically inserts required fields, but they can be overridden by the given data.
+ */
+export const testData = (data: Record<string, unknown>) => {
+  return new Datum({
+    basePath: "root",
+    filename: `${randomUUIDv7()}.txt`,
+    ...data,
+  });
 };

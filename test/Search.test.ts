@@ -1,16 +1,9 @@
 import { describe, expect, test } from "vitest";
 
-import { Datum } from "../src/pipeline/Datum.js";
 import { Search } from "../src/Search.js";
+import { testData } from "./helpers.js";
 
 describe("Search", () => {
-  const testData = (data: Record<string, unknown>) =>
-    new Datum({
-      basePath: "root",
-      filename: "abc.txt",
-      ...data,
-    });
-
   const searcher = new Search([
     testData({ spam: "example", eggs: 0 }),
     testData({ spam: "", eggs: 1 }),

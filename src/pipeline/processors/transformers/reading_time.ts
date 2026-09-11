@@ -1,3 +1,5 @@
+import { isValidElement, type ReactElement } from "react";
+
 import type { MaybeArray, SingleProcessor } from "../../../index.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
@@ -21,29 +23,36 @@ export class ReadingTimeTransformer implements SingleProcessor {
   }
 
   async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {
-    return datum.with({
-      readingTimeMins: readingTime(datum, datum.get("content"), this.wordsPerMinute),
-    });
+    const readingTimeMins = readingTime(datum, datum.get("content"), this.wordsPerMinute);
+    if (readingTimeMins === undefined) {
+      return datum;
+    }
+    return datum.with({ readingTimeMins });
   }
 }
 
-type ReadingTimeObject =
-  | string
-  | null
-  | undefined
-  | {
-      props?: {
-        children?: MaybeArray<ReadingTimeObject>;
-      };
-    };
+type ReadingTimeObject = string | ReactElement;
 
 const readingTime = (
   datum: Datum,
   content: unknown,
   wordsPerMinute: number,
 ): number | undefined => {
-  if (typeof content != "string" && typeof content != "object") {
-    return undefined;
+  switch (typeof content) {
+    case "string":
+      break;
+    case "object":
+      if (content === null) {
+        return undefined;
+      }
+
+      if (!isValidElement(content)) {
+        return undefined;
+      }
+
+      break;
+    default:
+      return undefined;
   }
 
   const lang = datum.maybeGetString("lang") || "en";
@@ -53,7 +62,9 @@ const readingTime = (
     if (typeof obj == "string") {
       const segments = Array.from(segmenter.segment(obj));
       return segments.reduce((sum, segment) => sum + (segment.isWordLike ? 1 : 0), 0);
-    } else if (obj?.props?.children) {
+    }
+
+    if (typeof obj.props == "object" && obj.props && "children" in obj.props) {
       if (Array.isArray(obj.props.children)) {
         return obj.props.children.reduce((sum, child) => sum + wordCount(child), 0);
       } else if (typeof obj.props.children == "string") {
@@ -63,6 +74,5 @@ const readingTime = (
 
     return 0;
   };
-
   return wordCount(content) / wordsPerMinute;
 };
