@@ -69,6 +69,8 @@ const readingTime = (
         return obj.props.children.reduce((sum, child) => sum + wordCount(child), 0);
       } else if (typeof obj.props.children == "string") {
         return wordCount(obj.props.children);
+      } else if (isValidElement(obj.props.children)) {
+        return wordCount(obj.props.children);
       }
     }
 

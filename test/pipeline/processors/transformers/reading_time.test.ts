@@ -24,7 +24,9 @@ describe("ReadingTimeTransformer", () => {
       "div",
       {},
       "this is another sentence",
-      React.createElement("span", {}, "that has"),
+      React.createElement("span", {
+        children: React.createElement("em", undefined, "that has"),
+      }),
       "eight words",
     );
     expect(await wpm(element)).toBeCloseTo(4);
