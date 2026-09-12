@@ -92,17 +92,13 @@ export class Filesystem {
   /**
    * Read contents of a given file.
    *
+   * @returns the string contents of the file if utf8 encoding specified, otherwise a
+   *          {@link buffer#Buffer} containing the contents.
    * @see `fs.promises.readFile`
-   * @returns the string contents of the file if utf8 encoding specified, otherwise a {@link buffer#Buffer} containing the contents
    */
   async readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;
-  async readFile(path: string, encoding: BufferEncoding): Promise<string | Buffer | null> {
-    try {
-      return await fs.promises.readFile(this.absolute(path), encoding);
-    } catch (e) {
-      console.warn(`Failed to read file ${path}: ${e}`);
-      return null;
-    }
+  async readFile(path: string, encoding: BufferEncoding): Promise<string | Buffer> {
+    return await fs.promises.readFile(this.absolute(path), encoding);
   }
 
   /**
