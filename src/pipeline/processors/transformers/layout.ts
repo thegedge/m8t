@@ -2,7 +2,7 @@ import path from "node:path";
 
 import type { Site } from "../../../site/Site.js";
 import { Datum, symProcessedBy } from "../../Datum.js";
-import type { PipelineStage, SingleProcessor } from "../../index.js";
+import type { NonEmptyPipeline, PipelineStage, SingleProcessor } from "../../index.js";
 import { Pipeline } from "../../Pipeline.js";
 import type { DefaultContext } from "../../utils.js";
 import { noIndex } from "./search.js";
@@ -49,7 +49,7 @@ export class LayoutTransformer implements SingleProcessor {
    * @param layoutDir - The directory containing the layouts, relative to the site root.
    * @param pipeline - The pipeline to use to repeatedly process data until there's no longer a layout
    */
-  constructor(layoutDir: string, pipeline: readonly PipelineStage[]) {
+  constructor(layoutDir: string, pipeline: Readonly<NonEmptyPipeline>) {
     this.layoutDir = layoutDir;
     this.#stages = pipeline;
     this.#pipeline = new Pipeline({ stages: pipeline });

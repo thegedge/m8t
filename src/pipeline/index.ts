@@ -64,3 +64,8 @@ export type ManyProcessorFunction<
  * A pipeline stage that takes an array of data, transforms it in some way, and then produces data for the next stage.
  */
 export type PipelineStage = ManyProcessor | ManyProcessorFunction | SingleProcessor;
+
+/**
+ * A pipeline with at least one stage.
+ */
+export type NonEmptyPipeline = readonly [PipelineStage, ...PipelineStage[]];

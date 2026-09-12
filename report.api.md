@@ -122,7 +122,7 @@ export class FilesystemInitializer implements ManyProcessor {
 
 // @public
 export class LayoutTransformer implements SingleProcessor {
-    constructor(layoutDir: string, pipeline: readonly PipelineStage[]);
+    constructor(layoutDir: string, pipeline: Readonly<NonEmptyPipeline>);
     readonly layoutDir: string;
     // (undocumented)
     processOne(datum: Datum, context: DefaultContext): Promise<Datum>;
@@ -177,6 +177,9 @@ export type ModuleLoaderOptions = {
     transpilers?: Transpiler[];
     context?: Context;
 };
+
+// @public
+export type NonEmptyPipeline = readonly [PipelineStage, ...PipelineStage[]];
 
 // @public
 export class PageDefaultsTransformer implements SingleProcessor {
