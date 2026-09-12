@@ -147,14 +147,6 @@ export type ManyProcessorFunction<DataT = Datum<DefaultDatumShape>, ResultT = Da
     transpilersFor?(site: Site): Transpiler;
 };
 
-// @public (undocumented)
-export type Matcher = {
-    pattern: string;
-    isIgnorePattern: boolean;
-    onlyDirectories: boolean;
-    matchAnySegment: boolean;
-};
-
 // @public
 export type MaybeArray<T> = T | T[];
 

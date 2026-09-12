@@ -39,7 +39,7 @@ describe("FilesystemInitializer", () => {
       });
     });
 
-    test("merges parent _data values into children", async () => {
+    test.only("merges parent _data values into children", async () => {
       const results = await processRoot();
 
       const byTitle = new Map(results.map((datum) => [datum.get("title"), datum]));

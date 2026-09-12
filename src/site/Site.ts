@@ -47,7 +47,10 @@ export type SiteOptions = {
   /**
    * Files to ignore.
    *
-   * These ignores are used to filter out files from the site, both when building and when watching for changes.
+   * These ignores are used to filter out files from the site, both when building and when watching
+   * for changes. Follows the gitignore spec for matching.
+   *
+   * @see https://git-scm.com/docs/gitignore
    */
   ignore?:
     | {

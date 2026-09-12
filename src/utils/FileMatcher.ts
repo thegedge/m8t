@@ -1,24 +1,8 @@
-import { statSync } from "node:fs";
+import ignore from "ignore";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import { getSystemErrorName } from "node:util";
-
-import { memoize } from "./memoize.js";
-
-export type Matcher = {
-  /** The pattern to match against */
-  pattern: string;
-
-  /** Whether the pattern is an ignore pattern */
-  isIgnorePattern: boolean;
-
-  /** Whether the pattern is a directory pattern */
-  onlyDirectories: boolean;
-
-  /** Whether the pattern matches any segment of the path */
-  matchAnySegment: boolean;
-};
 
 export type FileMatcherOptions = {
   /**
@@ -110,50 +94,18 @@ export class FileMatcher {
 
     return new FileMatcher({
       base,
-      matchers: filteredLines.map((include) => {
-        // Only match on any segment of the path if there is either
-        //   - no directory separator (i.e., the index of the separator is -1); or
-        //   - the directory separator is the last character of the path.
-        //
-        // Otherwise, a directory separator in the middle and need to match against the base directory.
-        const separatorIndex = include.indexOf("/");
-        const matchAnySegment = separatorIndex == -1 || separatorIndex === include.length - 1;
-
-        const ignore = include.startsWith("!");
-        let pattern = ignore ? include.slice(1) : include;
-        if (pattern.startsWith("/")) {
-          // We do the `|| "*"` to handle the case where the pattern is just a directory separator,
-          // which can be interpreted as matching the root or anything under it, just like `/stuff/`
-          // would be interpreted as matching anything under the directory named "stuff".
-          pattern = pattern.slice(1) || "*";
-        }
-
-        return {
-          pattern: pattern.endsWith("/") ? pattern.slice(0, -1) : pattern,
-          onlyDirectories: include.endsWith("/"),
-          matchAnySegment,
-          isIgnorePattern: ignore,
-        };
-      }),
+      lines: filteredLines,
     });
   }
 
-  readonly #matchers: readonly Matcher[];
+  readonly #matcher: ReturnType<typeof ignore>;
+  readonly #lines: readonly string[];
   readonly #base: string;
-  readonly #defaultReturn: boolean;
 
-  private constructor(options: { base: string; matchers: readonly Matcher[] }) {
+  private constructor(options: { base: string; lines: readonly string[] }) {
     this.#base = options.base.endsWith("/") ? options.base.slice(0, -1) : options.base;
-    this.#matchers = options.matchers;
-
-    // This bit isn't super obvious at first glance:
-    //   - If there are no matchers at all, we'll match everything.
-    //   - OPtherwise, match everything if there are only ignoring matchers. In other words, if there is some non-ignoring
-    //     matcher we want to start with a non-match.
-    this.#defaultReturn =
-      this.#matchers.length == 0
-        ? true
-        : this.#matchers.every(({ isIgnorePattern }) => isIgnorePattern);
+    this.#lines = options.lines;
+    this.#matcher = ignore().add(options.lines);
   }
 
   /**
@@ -166,7 +118,7 @@ export class FileMatcher {
   public withBase(base: string): FileMatcher {
     return new FileMatcher({
       base,
-      matchers: this.#matchers,
+      lines: this.#lines,
     });
   }
 
@@ -178,62 +130,22 @@ export class FileMatcher {
   public matches(filepath: string): boolean {
     let pathToCheck = path.isAbsolute(filepath) ? path.relative(this.#base, filepath) : filepath;
 
-    // Path is outside of base, never match
     if (pathToCheck.startsWith("..")) {
+      // Path is outside of base, never match
       return false;
     }
 
-    // If there are no matchers, then we always match (as long as the above check passes)
-    if (this.#matchers.length == 0) {
-      return true;
-    }
-
     if (pathToCheck.startsWith("./")) {
+      // `ignore` doesn't like `./`
       pathToCheck = pathToCheck.slice(2);
     }
 
-    if (pathToCheck.endsWith("/")) {
-      pathToCheck = pathToCheck.slice(0, -1);
+    if (pathToCheck == "") {
+      // Root path never matches
+      return false;
     }
 
-    const segments = pathToCheck.split("/");
-    const pathIsDirectory = memoize(() => {
-      try {
-        return statSync(path.join(this.#base, pathToCheck)).isDirectory();
-      } catch (error) {
-        if (isNoEntryError(error)) {
-          // If does not exist, assume it's a file
-          return false;
-        }
-        throw error;
-      }
-    });
-
-    return this.#matchers.reduce(
-      (fileMatches, { pattern, matchAnySegment, onlyDirectories, isIgnorePattern }) => {
-        if (isIgnorePattern !== fileMatches) {
-          // No need to check this pattern if either
-          //   - previously did not match and this is an ignore pattern, or
-          //   - previously did match and this is an include pattern.
-          return fileMatches;
-        }
-
-        let matchResult: boolean;
-        if (matchAnySegment) {
-          matchResult = segments.some((segment, index) => {
-            if (onlyDirectories && index == segments.length - 1) {
-              return path.matchesGlob(segment, pattern) && pathIsDirectory();
-            }
-
-            return path.matchesGlob(segment, pattern);
-          });
-        } else {
-          matchResult = path.matchesGlob(pathToCheck, pattern);
-        }
-        return isIgnorePattern ? !matchResult : matchResult;
-      },
-      this.#defaultReturn,
-    );
+    return this.#matcher.ignores(pathToCheck);
   }
 }
 

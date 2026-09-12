@@ -23,6 +23,9 @@ importers:
       html-validate:
         specifier: ^11.12.0
         version: 11.12.0(@vitest/expect@4.1.11)(vitest@4.1.11(@types/node@26.4.1)(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0)))
+      ignore:
+        specifier: ^7.0.9
+        version: 7.0.9
       inflected:
         specifier: ^2.1.0
         version: 2.1.0
@@ -1105,6 +1108,10 @@ packages:
         optional: true
       vitest:
         optional: true
+
+  ignore@7.0.9:
+    resolution: {integrity: sha512-brTTsvFRt5C1gGHtPst/281UjPD5t9fBqbgoMPlVWy11ZLTPfu7HxK4ZYqO9H7o/yC9rSTCI85EaQ4OoY12qYw==}
+    engines: {node: '>= 4'}
 
   import-lazy@4.0.0:
     resolution: {integrity: sha512-rKtvo6a868b5Hu3heneU+L4yEQ4jYKLtjpnPeUdK7h0yzXGmyBTypknlkCvHFBqfX9YlorEiMM6Dnq/5atfHkw==}
@@ -2503,6 +2510,8 @@ snapshots:
     optionalDependencies:
       '@vitest/expect': 4.1.11
       vitest: 4.1.11(@types/node@26.4.1)(vite@8.2.2(@types/node@26.4.1)(esbuild@0.28.2)(jiti@2.7.0))
+
+  ignore@7.0.9: {}
 
   import-lazy@4.0.0: {}
 
