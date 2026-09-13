@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
@@ -6,7 +5,7 @@ import { Datum } from "../../../../src/pipeline/Datum.js";
 import { MdxLoader } from "../../../../src/pipeline/processors/loaders/mdx.js";
 import { dedent } from "../../../../src/utils/dedent.js";
 import { unthunk } from "../../../../src/utils/unthunk.js";
-import { makeContext, writeFixtures, type TestContext } from "../../../helpers.js";
+import { linkNodeModules, makeContext, writeFixtures, type TestContext } from "../../../helpers.js";
 
 describe("MdxLoader", () => {
   let mdxRoot: string;
@@ -20,14 +19,7 @@ describe("MdxLoader", () => {
 
   const writeMdxFixtures = async (files: Record<string, string>) => {
     await writeFixtures(mdxRoot, files);
-
-    const node_modules = path.join(mdxRoot, "node_modules");
-    await fs.mkdir(node_modules, { recursive: true });
-    await fs.cp(
-      path.join(__dirname, "../../../../node_modules/react/"),
-      path.join(node_modules, "react"),
-      { recursive: true },
-    );
+    await linkNodeModules(mdxRoot, "react");
   };
 
   const datumFor = (relativePath: string): Datum =>

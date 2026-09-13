@@ -2,6 +2,7 @@ import { randomUUIDv7 } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import pMap from "p-map";
 
 import { Datum, Pipeline, Site, type SiteOptions } from "../src/index.js";
 import type { FilesystemLoader } from "../src/pipeline/processors/initializers/FilesystemInitializer.js";
@@ -75,6 +76,26 @@ export const writeFixtures = async (root: string, files: Record<string, string>)
     await fs.mkdir(path.dirname(absolutePath), { recursive: true });
     await fs.writeFile(absolutePath, contents);
   }
+};
+
+/**
+ * Link a node module from the main project into a different root.
+ *
+ * Useful
+ */
+export const linkNodeModules = async (root: string, ...modules: string[]) => {
+  const node_modules = path.join(root, "node_modules");
+  await fs.mkdir(node_modules, { recursive: true });
+
+  await pMap(
+    modules,
+    async (mod) => {
+      await fs.cp(path.join(__dirname, `../node_modules/${mod}/`), path.join(node_modules, mod), {
+        recursive: true,
+      });
+    },
+    { concurrency: 4 },
+  );
 };
 
 /**

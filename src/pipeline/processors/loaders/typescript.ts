@@ -10,7 +10,7 @@ import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
 const loadedFor = Symbol.for("loadedFor");
-const JS_OR_TS_FILE_REGEX = /\.[mc]?[jt]sx?$/;
+const JS_OR_TS_FILE_REGEX = /\.m?[jt]sx?$/;
 
 /**
  * A loader that imports TypeScript files as data.
@@ -56,9 +56,11 @@ export class TypescriptLoader implements SingleProcessor {
     let loader: Loader;
     switch (path.extname(filename)) {
       case ".tsx":
+      case ".mtsx":
         loader = "tsx";
         break;
       case ".jsx":
+      case ".mjsx":
         loader = "jsx";
         break;
       case ".ts":
