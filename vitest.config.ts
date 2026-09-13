@@ -5,5 +5,8 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, "dist/**"],
     execArgv: ["--experimental-vm-modules"],
     setupFiles: ["test/matchers.ts"],
+
+    // page_defaults.test.ts has some longer ones
+    taskTitleValueFormatTruncate: 60,
   },
 });

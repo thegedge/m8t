@@ -7,7 +7,7 @@ import type { Datum } from "../../Datum.js";
 import type { SingleProcessor } from "../../index.js";
 import type { DefaultContext } from "../../utils.js";
 
-const DATE_REGEX = /^(\d{4})[^a-zA-Z0-9](\d{2})[^a-zA-Z0-9](\d{2}).(.+)$/;
+const DATE_REGEX = /^(\d{4}-\d{2}-\d{2})[-_](.+)$/;
 
 /**
  * A transformer that defaults various common properties on a datum.
@@ -82,14 +82,13 @@ const DATE_REGEX = /^(\d{4})[^a-zA-Z0-9](\d{2})[^a-zA-Z0-9](\d{2}).(.+)$/;
  * //   slug: "index",
  * // }
  * ```
- *
- * @see
  */
 export class PageDefaultsTransformer implements SingleProcessor {
   async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {
     const currentUrl = datum.maybeGetString("url");
     if (
-      !currentUrl?.startsWith(".") &&
+      currentUrl &&
+      currentUrl.startsWith(".") &&
       datum.maybeGetString("outputPath") &&
       datum.maybeGetString("title") &&
       datum.maybeGetString("slug") &&
@@ -108,12 +107,14 @@ export class PageDefaultsTransformer implements SingleProcessor {
     let name: string;
 
     // Maybe parse out the date from the prefix of the filename
-    let date: Date | null = null;
+    let date = datum.get("date");
+    let nameWithoutDate: string = parsed.name;
     const dateMatch = DATE_REGEX.exec(parsed.name);
     if (dateMatch) {
-      const [_, year, month, day, rest] = dateMatch;
-      date = new Date(Number(year), Number(month) - 1, Number(day));
-      name = `${year}-${month}-${day}-${rest}`;
+      const [_, dateString, rest] = dateMatch;
+      date ??= new Date(dateString);
+      name = `${dateString}-${rest}`;
+      nameWithoutDate = rest;
     } else {
       switch (parsed.ext) {
         case ".mdx":
@@ -162,10 +163,10 @@ export class PageDefaultsTransformer implements SingleProcessor {
     }
 
     const mimeType: string | undefined =
-      datum.maybeGetString("mimeType") || mime.lookup(url) || undefined;
+      datum.maybeGetString("mimeType") || mime.lookup(outputPath) || undefined;
 
     const dataTitle = datum.maybeGetString("title");
-    const title = dataTitle ?? titleize(underscore(parsed.name));
+    const title = dataTitle ?? titleize(underscore(nameWithoutDate));
 
     let slug = datum.maybeGetString("slug");
     if (!slug) {
