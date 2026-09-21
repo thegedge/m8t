@@ -152,47 +152,15 @@ export class Datum<Shape extends DatumShape = DatumShape> {
     return key in this.#data;
   }
 
-  get lineage(): readonly Shape[] {
+  get lineage(): readonly Readonly<Shape>[] {
     return this.#lineage;
   }
 
-  toProxy(): Shape {
-    // oxlint-disable no-this-alias -- TODO: verify this is necessary
-    const self = this;
-
-    // We do it this way to allow potentially loading data that will be merged in later.
-    return new Proxy(this, {
-      isExtensible(_target) {
-        return false;
-      },
-
-      getOwnPropertyDescriptor(_target, key) {
-        return Object.getOwnPropertyDescriptor(self.#data, key);
-      },
-
-      getPrototypeOf(_target) {
-        return Datum.prototype;
-      },
-
-      ownKeys(_target) {
-        return Object.keys(self.#data);
-      },
-
-      has(_target, key) {
-        return key in self.#data;
-      },
-
-      get(_target, key) {
-        return self.#data[key];
-      },
-    }) as unknown as Shape;
-  }
-
-  toRecord(): Shape {
+  toRecord(): Readonly<Shape> {
     return this.#data;
   }
 
-  toJSON(): Record<string, unknown> {
+  toJSON(): Readonly<Record<string, unknown>> {
     return this.#data;
   }
 

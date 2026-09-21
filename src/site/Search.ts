@@ -71,7 +71,7 @@ export class Search implements Searcher {
       });
     }
 
-    return filtered.map((datum) => datum.toProxy());
+    return filtered.map((datum) => datum.toRecord());
   }
 
   /**
