@@ -51,10 +51,14 @@ export const processManyWithSingle = async <
   context: ContextT,
   processor: SingleProcessor<Datum<ShapeT>, ResultT, ContextT>,
 ): Promise<readonly Datum<ShapeT>[]> => {
-  const results = await pMap(data, async (datum) => {
-    const result = await processOne(datum, context, processor);
-    return result ?? datum;
-  });
+  const results = await pMap(
+    data,
+    async (datum) => {
+      const result = await processOne(datum, context, processor);
+      return result ?? datum;
+    },
+    { concurrency: 4 },
+  );
 
   // TODO how to avoid this cast?
   return results.flat() as unknown as readonly Datum<ShapeT>[];
