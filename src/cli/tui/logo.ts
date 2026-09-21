@@ -1,4 +1,5 @@
 import type { WriteStream } from "node:tty";
+import { stripVTControlCharacters } from "node:util";
 
 // TODO this is pretty nasty, make it better
 
@@ -44,7 +45,10 @@ export const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
 
   let logo: string[];
   let logoWidth: number;
-  const maxLineLength = lines.reduce((max, line) => Math.max(max, stripAnsi(line).length), 0);
+  const maxLineLength = lines.reduce(
+    (max, line) => Math.max(max, stripVTControlCharacters(line).length),
+    0,
+  );
   if (stream.columns > LOGO_WIDTH + LOGO_LINE_GAP.length + maxLineLength) {
     logo = LOGO_LINES;
     logoWidth = LOGO_WIDTH;
@@ -75,9 +79,6 @@ export const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
     stream.write("\n");
   }
 };
-
-// oxlint-disable no-control-regex -- oxlint suggests using a unicode escape instead...
-const stripAnsi = (str: string) => str.replaceAll(/[e\u001B]\[(?:(8;;.+?\u0007)|(.*?m))/g, "");
 
 const C = bgRgb(249, 140, 0)(" ");
 const S = " ";
