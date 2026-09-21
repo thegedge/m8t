@@ -49,11 +49,11 @@ export class Pipeline {
     context: Partial<DefaultContext> & Pick<Required<DefaultContext>, "site">,
   ): Promise<readonly Datum[]> {
     return await this.add_(data, {
+      ...context,
       performanceTracker: this.#performanceTracker,
       pipeline: this,
       signal: context.signal ?? new AbortController().signal,
       until: this.#stages.length,
-      ...context,
     });
   }
 
