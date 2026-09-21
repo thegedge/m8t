@@ -12,6 +12,18 @@ import { LayoutTransformer, symLayoutFilename } from "./transformers/layout.js";
 
 const DEFAULT_IGNORED_KEYS = ["components", "content", "htmlValidateRules", "layout", "mimeType"];
 
+/** Options for constructing a {@link TypesProcessor} */
+export type TypesProcessorOptions = {
+  /** The output path where the types declaration file will be written */
+  typesOutputFile: string;
+
+  /** The data keys to omit from the types declaration file */
+  ignoredKeys?: readonly string[];
+
+  /** The data keys that should be typed as literals (i.e., as narrow as possible) */
+  literalKeys?: readonly string[];
+};
+
 /**
  * A m8t pipeline stage that generates a TypeScript type declaration file for the data.
  *
@@ -25,19 +37,10 @@ export class TypesProcessor implements ManyProcessor {
   readonly #ignoredKeys: readonly string[];
   readonly #literalKeys: readonly string[];
 
-  constructor(options: {
-    /** The output path where the types declaration file will be written */
-    typesOutputFile: string;
-
-    /** The data keys to omit from the types declaration file */
-    ignoredKeys?: readonly string[];
-
-    /** The data keys that should be typed as literals (i.e., as narrow as possible) */
-    literalKeys?: readonly string[];
-  }) {
-    this.#typesFile = options.typesOutputFile;
+  constructor(options: TypesProcessorOptions) {
     this.#ignoredKeys = union(DEFAULT_IGNORED_KEYS, options.ignoredKeys ?? []);
     this.#literalKeys = options.literalKeys ?? [];
+    this.#typesFile = options.typesOutputFile;
   }
 
   async processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]> {
@@ -106,7 +109,7 @@ export class TypesProcessor implements ManyProcessor {
         });
 
         let typeString = javascriptValueToTypescriptType(datum.toRecord(), {
-          indent: "  ",
+          indent: "",
           literalKeys: this.#literalKeys,
           ignoredKeys: union(Array.from(baseKeys), this.#ignoredKeys),
         });
@@ -139,7 +142,7 @@ export class TypesProcessor implements ManyProcessor {
           // Slice/trim below is removing the curly braces + indent added by `javascriptValueToTypescriptType`
           typeString = dedent`
             export interface DataProps ${extendsString}{
-              ${typeString.slice(3, -1).trim()}
+              ${typeString.trim().slice(1, -1).trim()}
             }
           `;
         }
@@ -158,7 +161,7 @@ export class TypesProcessor implements ManyProcessor {
       .map(([typeName, mapping]) => {
         const keyTypes = mapping
           .entries()
-          .map(([key, types]) => `${key}: ${Array.from(types).join(" | ")}`);
+          .map(([key, types]) => `${maybeQuote(key)}: ${Array.from(types).join(" | ")}`);
         return dedent`
           export interface ${typeName} {
             ${keyTypes.toArray().join(";\n  ")};
@@ -272,7 +275,7 @@ const javascriptValueToTypescriptType = (
     case "object": {
       if (Array.isArray(value)) {
         if (value.length === 0) {
-          return `${indent}unknown[]`;
+          return `unknown[]`;
         }
 
         // TODO if `literal` is true, we may want to do `[t1, t2, t3]`
@@ -280,18 +283,18 @@ const javascriptValueToTypescriptType = (
         const types = value.map((v) => javascriptValueToTypescriptType(v, newOptions)?.trim());
         const distinctTypes = uniq(types.filter(Boolean));
         if (distinctTypes.length === 0) {
-          return `${indent}unknown[]`;
+          return `unknown[]`;
         }
 
         if (distinctTypes.length === 1) {
-          return `${indent}${distinctTypes[0]}[]`;
+          return `${distinctTypes[0]}[]`;
         }
 
-        return `${indent}(${distinctTypes.join(" | ")})[]`;
+        return `(${distinctTypes.join(" | ")})[]`;
       } else if (value instanceof Date) {
-        return `${indent}Date`;
+        return `Date`;
       } else if (value !== null && Object.getPrototypeOf(value) == Datum.prototype) {
-        return `${indent}any`;
+        return `any`;
       }
 
       const lines = Object.entries(value)
@@ -308,50 +311,48 @@ const javascriptValueToTypescriptType = (
             return "";
           }
 
-          // TODO why did I do this?
-          // if (value && typeof value === "object" && Object.keys(value).includes("Consumer")) {
-          //   return `${indent}  ${key}: ${valueString};`;
-          // }
-
-          const quotedKey = key.match(/[^a-zA-Z0-9_]/g) ? `"${key}"` : key;
-          return `${indent}  ${quotedKey}: ${valueString};`;
+          return `${indent}${maybeQuote(key)}: ${valueString};`;
         })
         .filter(Boolean); // Filter out empty lines
 
       // It's an object, but no idea what kind, assume a POJO
       if (lines.length === 0) {
-        return "Record<string, unknown>";
+        return `Record<string, unknown>`;
       }
 
       // Single-property objects we'll turn into one-liners
       if (lines.length === 1) {
-        return `${indent}{ ${lines[0]} }`;
+        return `{ ${lines[0]} }`;
       }
 
-      return `${indent}{\n${lines.join("\n")}\n${indent}}`;
+      return `{\n${lines.join("\n")}\n}`;
     }
     case "function":
-      return `${indent}(...args: any[]) => any`;
+      return `(...args: any[]) => any`;
     case "string":
       if (literal) {
-        return `${indent}"${value}"`;
+        return `"${value}"`;
       } else {
-        return `${indent}string`;
+        return `string`;
       }
     case "bigint":
     case "boolean":
       if (literal) {
-        return `${indent}${value}`;
+        return `${value}`;
       } else {
-        return `${indent}${typeof value}`;
+        return `${typeof value}`;
       }
     case "number":
       if (literal && Number.isInteger(value)) {
-        return `${indent}${value}`;
+        return `${value}`;
       } else {
-        return `${indent}number`;
+        return `number`;
       }
     case "symbol":
-      return `${indent}symbol`;
+      return `symbol`;
   }
+};
+
+const maybeQuote = (key: string) => {
+  return key.match(/[^a-zA-Z0-9_]/g) ? `"${key}"` : key;
 };

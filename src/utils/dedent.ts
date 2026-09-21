@@ -61,17 +61,28 @@ export const dedent = (strings: TemplateStringsArray, ...values: unknown[]) => {
     }, Number.POSITIVE_INFINITY);
 
   // Now that we've computed the least leading whitespace, we can combine all of the strings and values
-  let regex: RegExp | null = null;
+  let trimIndentRegex: RegExp | null = null;
   if (Number.isFinite(leastLeadingWhitespace)) {
-    regex = new RegExp(`^[^\\S\\n]{${leastLeadingWhitespace}}`, "gm");
+    trimIndentRegex = new RegExp(`^[^\\S\\n]{${leastLeadingWhitespace}}`, "gm");
   }
 
   return trimmedLeadingTrailingNewlines.reduce((result, string, i) => {
-    result += regex ? string.replaceAll(regex, "") : string;
+    const indentRemoved = trimIndentRegex ? string.replaceAll(trimIndentRegex, "") : string;
+    result += indentRemoved;
+
     if (i < values.length) {
-      // TODO what if we could figure out how much indentation in front of this string and automatically
-      //   add that indentation to any newlines contained within the string?
-      result += String(values[i]);
+      // If the string ended with a newline + indentation, we'll add that indentation
+      // to the interpolated string too
+      let indent = "";
+      const lastNewline = indentRemoved.lastIndexOf("\n");
+      if (lastNewline > 0) {
+        const lastLine = indentRemoved.slice(lastNewline + 1);
+        if (lastLine.trim() == "") {
+          indent = lastLine;
+        }
+      }
+
+      result += String(values[i]).replaceAll("\n", `\n${indent}`);
     }
 
     return result;

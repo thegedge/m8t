@@ -1,0 +1,104 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TypesProcessor > can generate a literal type when given as a literal key 1`] = `
+"import "path";
+
+
+declare module "test-1.ts" {
+  export interface DataProps {
+    basePath: string;
+    data: string;
+    filename: string;
+    theme: "light";
+  }
+}
+
+declare module "test-2.ts" {
+  export interface DataProps {
+    basePath: string;
+    data: string;
+    filename: string;
+    theme: "dark";
+  }
+}"
+`;
+
+exports[`TypesProcessor > can generate types for all the things 1`] = `
+"import "path";
+
+
+declare module "another_thing.ts" {
+  export interface DataProps {
+    basePath: string;
+    bignum: bigint;
+    booly: boolean;
+    filename: string;
+    metadata: {
+      isObject: boolean;
+      key: string;
+    };
+    num: number;
+    numbers: number[];
+    "og:title": string;
+    theme: string;
+    truthyThings: (number | string | boolean)[];
+  }
+}"
+`;
+
+exports[`TypesProcessor > can generate types for multiple datum 1`] = `
+"import "path";
+
+
+declare module "test-1.ts" {
+  export interface DataProps {
+    basePath: string;
+    filename: string;
+    theme: string;
+  }
+}
+
+declare module "test-2.ts" {
+  export interface DataProps {
+    basePath: string;
+    filename: string;
+    theme: string;
+  }
+}"
+`;
+
+exports[`TypesProcessor > doesn't include field in type when ignored 1`] = `
+"import "path";
+
+
+declare module "test-1.ts" {
+  export interface DataProps {
+    basePath: string;
+    data: string;
+    filename: string;
+  }
+}
+
+declare module "test-2.ts" {
+  export interface DataProps {
+    basePath: string;
+    data: string;
+    filename: string;
+  }
+}"
+`;
+
+exports[`TypesProcessor > quotes keys that need them 1`] = `
+"import "path";
+
+export interface RootData {
+  basePath: string;
+    filename: string;
+    "needs:quotes": boolean;
+}
+declare module "some_thing.ts" {
+  export interface DataProps extends RootData {
+    "also-needs-quotes": boolean;
+  }
+}"
+`;

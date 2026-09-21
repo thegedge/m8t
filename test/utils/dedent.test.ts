@@ -57,13 +57,29 @@ Hello, world!
     expect(result).toBe(`  Hello, world!\n${value}\n  test`);
   });
 
-  test("should ignore newlines in interpolated values when computing indents", () => {
-    const value = "\n\nline1 line2 line3\t\t\n";
+  test("should strip leading whitespace and indent every line in the interpolated value when preceded by more indentation", () => {
+    const obj = `{\n  nested: true,\n  test: "yes",\n}`;
+    const value = dedent`
+      key: 1,
+      obj: ${obj},
+      another: "test",
+    `;
     const result = dedent`
-        Hello, world!
-      ${value}
-        test
-      `;
-    expect(result).toBe(`  Hello, world!\n${value}\n  test`);
+      const value = {
+        ${value}
+      }
+    `;
+    expect(result).toBe(
+      `
+const value = {
+  key: 1,
+  obj: {
+    nested: true,
+    test: "yes",
+  },
+  another: "test",
+}
+     `.trim(),
+    );
   });
 });

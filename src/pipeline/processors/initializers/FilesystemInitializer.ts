@@ -82,7 +82,9 @@ export class FilesystemInitializer implements ManyProcessor {
         },
         { concurrency: 4 },
       )
-    ).flat();
+    )
+      .flat()
+      .filter(Boolean);
   }
 
   private async initDirectory(
@@ -135,6 +137,7 @@ export class FilesystemInitializer implements ManyProcessor {
       }
     }
 
-    throw new Error(`Could not load file for datum: ${datum.get("filename")}`);
+    // throw new Error(`Could not load file for datum: ${datum.get("filename")}`);
+    return datum;
   }
 }

@@ -21,7 +21,7 @@ export { LayoutTransformer } from "./processors/transformers/layout.js";
 export { PageDefaultsTransformer } from "./processors/transformers/page_defaults.js";
 export { ReadingTimeTransformer } from "./processors/transformers/reading_time.js";
 export { SearchTransformer } from "./processors/transformers/search.js";
-export { TypesProcessor } from "./processors/types.js";
+export { TypesProcessor, type TypesProcessorOptions } from "./processors/types.js";
 export type { DefaultContext } from "./utils.js";
 
 /**

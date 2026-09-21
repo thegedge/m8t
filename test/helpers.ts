@@ -4,7 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import pMap from "p-map";
 
-import { Datum, Pipeline, Site, type SiteOptions } from "../src/index.js";
+import { Datum, Pipeline, Site, TypescriptLoader, type SiteOptions } from "../src/index.js";
+import { symProcessedBy, type DatumShape } from "../src/pipeline/Datum.js";
 import type { FilesystemLoader } from "../src/pipeline/processors/initializers/FilesystemInitializer.js";
 import type { DefaultContext } from "../src/pipeline/utils.js";
 import { NonAsyncTimeMeasurement } from "../src/utils/NonAsyncTimeMeasurement.js";
@@ -30,23 +31,59 @@ export type TestContext = DefaultContext & {
   /** The root path where tests can write output, fixtures, etc */
   root: string;
 
+  /** Create a datum for this context with the given lineage */
+  datum(...lineage: Partial<DatumShape>[]): Datum;
+
+  /** Create a datum for this context with the given filename and lineage */
+  datum(filename: string, ...lineage: Partial<DatumShape>[]): Datum;
+
+  /** Free up resources allocated to this context */
   [Symbol.asyncDispose]: () => Promise<void>;
 };
 
 /**
  * Make a test context.
- *
- * Empty pipeline,
  */
 export const makeContext = async (options?: SiteOptions): Promise<TestContext> => {
   const root = await fixturesRoot("m8t-test-");
   const site = await Site.fromOptions(root, { pipelines: {}, ...options });
+  let filenameIndex = 0;
   return {
     performanceTracker: new NonAsyncTimeMeasurement(),
     pipeline: new Pipeline({ stages: Object.values(site.pipelines)[0] }),
     root,
     site,
     signal: new AbortController().signal,
+
+    datum: (filenameOrDatum, ...lineage) => {
+      const processor = new TypescriptLoader();
+
+      let initial: Datum;
+      if (typeof filenameOrDatum == "string") {
+        initial = new Datum({
+          [symProcessedBy]: processor,
+          basePath: root,
+          filename: path.resolve(root, filenameOrDatum),
+        });
+      } else {
+        initial = new Datum({
+          [symProcessedBy]: processor,
+          basePath: root,
+          ...filenameOrDatum,
+          filename: path.resolve(root, filenameOrDatum["filename"] || `test-${++filenameIndex}.ts`),
+        });
+      }
+
+      return lineage.reduce(
+        (previous, d) =>
+          previous.with({
+            [symProcessedBy]: processor,
+            ...d,
+            filename: path.resolve(root, d["filename"] || `test-${++filenameIndex}.ts`),
+          }),
+        initial,
+      );
+    },
 
     [Symbol.asyncDispose]: async () => {
       await fs.rm(root, { recursive: true, force: true });

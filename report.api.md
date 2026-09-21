@@ -319,14 +319,17 @@ export class TypescriptLoader implements SingleProcessor {
 
 // @public
 export class TypesProcessor implements ManyProcessor {
-    constructor(options: {
-        typesOutputFile: string;
-        ignoredKeys?: readonly string[];
-        literalKeys?: readonly string[];
-    });
+    constructor(options: TypesProcessorOptions);
     // (undocumented)
     processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]>;
 }
+
+// @public
+export type TypesProcessorOptions = {
+    typesOutputFile: string;
+    ignoredKeys?: readonly string[];
+    literalKeys?: readonly string[];
+};
 
 // Warnings were encountered during analysis:
 //
