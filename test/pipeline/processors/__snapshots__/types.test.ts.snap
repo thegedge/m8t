@@ -88,6 +88,26 @@ declare module "test-2.ts" {
 }"
 `;
 
+exports[`TypesProcessor > properly deals with cycles 1`] = `
+"import "path";
+
+
+declare module "cyclic.ts" {
+  export interface DataProps {
+    a: {
+      a: number;
+      b: any;
+    };
+    b: {
+      a: number;
+      b: any;
+    };
+    basePath: string;
+    filename: string;
+  }
+}"
+`;
+
 exports[`TypesProcessor > quotes keys that need them 1`] = `
 "import "path";
 

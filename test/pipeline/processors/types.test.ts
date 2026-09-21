@@ -85,6 +85,22 @@ describe("TypesProcessor", () => {
     expect(types).toMatchSnapshot();
   });
 
+  test("properly deals with cycles", async () => {
+    const thing: any = { a: 1, b: null };
+    thing.b = thing;
+
+    const types = await process(
+      {},
+      context.datum({
+        filename: "./cyclic.ts",
+        a: thing,
+        b: thing,
+      }),
+    );
+
+    expect(types).toMatchSnapshot();
+  });
+
   const process = async (options: Partial<TypesProcessorOptions>, ...data: Datum[]) => {
     const typesOutputFile = path.join(context.root, "types.d.ts");
     const processor = new TypesProcessor({

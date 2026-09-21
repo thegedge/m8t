@@ -228,7 +228,7 @@ const javascriptValueToTypescriptType = (
      *
      * @defaultValue new Set()
      */
-    seen?: Set<unknown>;
+    seen?: Set<object>;
 
     /**
      * The keys that should be typed as literals.
@@ -251,7 +251,7 @@ const javascriptValueToTypescriptType = (
 
   const {
     indent = "",
-    seen = new Set(),
+    seen = new Set<object>(),
     literal = false,
     literalKeys = [],
     ignoredKeys = [],
@@ -261,71 +261,70 @@ const javascriptValueToTypescriptType = (
     return "any";
   }
 
-  if (typeof value === "object") {
-    if (seen.has(value)) {
-      // TODO we could have a mapping and have it point to the result, we'd just need to avoid
-      //      infinite recursion in the case of a cyclic structure.
-      return "any";
-    } else {
-      seen.add(value);
-    }
-  }
-
   switch (typeof value) {
     case "object": {
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
-          return `unknown[]`;
-        }
-
-        // TODO if `literal` is true, we may want to do `[t1, t2, t3]`
-        const newOptions = { indent: indent + "  ", literalKeys, ignoredKeys, seen };
-        const types = value.map((v) => javascriptValueToTypescriptType(v, newOptions)?.trim());
-        const distinctTypes = uniq(types.filter(Boolean));
-        if (distinctTypes.length === 0) {
-          return `unknown[]`;
-        }
-
-        if (distinctTypes.length === 1) {
-          return `${distinctTypes[0]}[]`;
-        }
-
-        return `(${distinctTypes.join(" | ")})[]`;
-      } else if (value instanceof Date) {
-        return `Date`;
-      } else if (value !== null && Object.getPrototypeOf(value) == Datum.prototype) {
-        return `any`;
+      if (seen.has(value)) {
+        return "any";
       }
 
-      const lines = Object.entries(value)
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([key, value]) => {
-          if (ignoredKeys.includes(key)) {
-            return "";
+      seen.add(value);
+      try {
+        if (Array.isArray(value)) {
+          if (value.length === 0) {
+            return `unknown[]`;
           }
 
-          const literal = literalKeys.includes(key);
-          const newOptions = { indent: indent + "  ", literalKeys, ignoredKeys, seen, literal };
-          const valueString = javascriptValueToTypescriptType(value, newOptions)?.trim();
-          if (!valueString) {
-            return "";
+          // TODO if `literal` is true, we may want to do `[t1, t2, t3]`
+          const newOptions = { indent: indent + "  ", literalKeys, ignoredKeys, seen };
+          const types = value.map((v) => javascriptValueToTypescriptType(v, newOptions)?.trim());
+          const distinctTypes = uniq(types.filter(Boolean));
+          if (distinctTypes.length === 0) {
+            return `unknown[]`;
           }
 
-          return `${indent}${maybeQuote(key)}: ${valueString};`;
-        })
-        .filter(Boolean); // Filter out empty lines
+          if (distinctTypes.length === 1) {
+            return `${distinctTypes[0]}[]`;
+          }
 
-      // It's an object, but no idea what kind, assume a POJO
-      if (lines.length === 0) {
-        return `Record<string, unknown>`;
+          return `(${distinctTypes.join(" | ")})[]`;
+        } else if (value instanceof Date) {
+          return `Date`;
+        } else if (value !== null && Object.getPrototypeOf(value) == Datum.prototype) {
+          return `any`;
+        }
+
+        const lines = Object.entries(value)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([key, value]) => {
+            if (ignoredKeys.includes(key)) {
+              return "";
+            }
+
+            const literal = literalKeys.includes(key);
+            const newOptions = { indent: indent + "  ", literalKeys, ignoredKeys, seen, literal };
+            const valueString = javascriptValueToTypescriptType(value, newOptions)?.trim();
+            if (!valueString) {
+              return "";
+            }
+
+            return `${indent}${maybeQuote(key)}: ${valueString};`;
+          })
+          .filter(Boolean); // Filter out empty lines
+
+        // It's an object, but no idea what kind, assume a POJO
+        if (lines.length === 0) {
+          return `Record<string, unknown>`;
+        }
+
+        // Single-property objects we'll turn into one-liners
+        if (lines.length === 1) {
+          return `{ ${lines[0]} }`;
+        }
+
+        return `{\n${lines.join("\n")}\n}`;
+      } finally {
+        seen.delete(value);
       }
-
-      // Single-property objects we'll turn into one-liners
-      if (lines.length === 1) {
-        return `{ ${lines[0]} }`;
-      }
-
-      return `{\n${lines.join("\n")}\n}`;
     }
     case "function":
       return `(...args: any[]) => any`;
