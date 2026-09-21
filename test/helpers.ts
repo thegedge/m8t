@@ -59,18 +59,21 @@ export const makeContext = async (options?: SiteOptions): Promise<TestContext> =
       const processor = new TypescriptLoader();
 
       let initial: Datum;
+      let filename: string;
       if (typeof filenameOrDatum == "string") {
+        filename = path.resolve(root, filenameOrDatum);
         initial = new Datum({
           [symProcessedBy]: processor,
           basePath: root,
-          filename: path.resolve(root, filenameOrDatum),
+          filename,
         });
       } else {
+        filename = path.resolve(root, filenameOrDatum["filename"] || `test-${++filenameIndex}.ts`);
         initial = new Datum({
           [symProcessedBy]: processor,
           basePath: root,
           ...filenameOrDatum,
-          filename: path.resolve(root, filenameOrDatum["filename"] || `test-${++filenameIndex}.ts`),
+          filename,
         });
       }
 
@@ -79,7 +82,7 @@ export const makeContext = async (options?: SiteOptions): Promise<TestContext> =
           previous.with({
             [symProcessedBy]: processor,
             ...d,
-            filename: path.resolve(root, d["filename"] || `test-${++filenameIndex}.ts`),
+            filename: path.resolve(root, d["filename"] || filename),
           }),
         initial,
       );

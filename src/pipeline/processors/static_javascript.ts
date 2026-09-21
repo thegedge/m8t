@@ -2,6 +2,7 @@ import * as esbuild from "esbuild";
 import path from "node:path";
 
 import type { ManyProcessor } from "../../index.js";
+import { partition } from "../../utils/partition.js";
 import { Datum } from "../Datum.js";
 import type { DefaultContext } from "../utils.js";
 
@@ -26,27 +27,31 @@ export class StaticJavascriptProcessor implements ManyProcessor {
   }
 
   async processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]> {
-    let basePath = "";
-    const entryPoints: string[] = [];
-    for (const datum of data) {
+    const [jsData, nonJsData] = partition(data, (datum) => {
       const filename = datum.get("filename");
-      if (!JAVASCRIPT_FILE_REGEX.test(filename)) {
-        continue;
-      }
+      return JAVASCRIPT_FILE_REGEX.test(filename);
+    });
 
+    let basePath = "";
+    const entryPoints = jsData.map((datum) => {
+      const filename = datum.get("filename");
       basePath ||= datum.get("basePath");
-      entryPoints.push(filename);
-    }
+      return filename;
+    });
 
     if (!basePath) {
-      throw new Error("Could not find any base path in data");
+      if (jsData.length > 0) {
+        throw new Error("Could not find any base path in data");
+      }
+
+      return nonJsData;
     }
 
     const outPath = path.join(context.site.out.rootPath, "build");
     const buildResult = await this.build(context, basePath, entryPoints);
-    return buildResult
-      .values()
-      .map((outputFile) => {
+    return [
+      ...nonJsData,
+      ...buildResult.values().map((outputFile) => {
         const baseOutputPath = path.join(
           this.#publicPath,
           path.relative(outPath, toJSFile(outputFile.path)),
@@ -61,8 +66,8 @@ export class StaticJavascriptProcessor implements ManyProcessor {
           mimeType: "text/javascript",
           content: outputFile.text,
         });
-      })
-      .toArray();
+      }),
+    ];
   }
 
   private async build({ site }: DefaultContext, basePath: string, entryPoints: string[]) {
@@ -70,7 +75,7 @@ export class StaticJavascriptProcessor implements ManyProcessor {
     const outdir = path.join(site.out.rootPath, "build");
     const result = await esbuild.build({
       entryPoints,
-      absWorkingDir: outdir,
+      absWorkingDir: basePath,
       outbase: basePath,
       outdir,
       publicPath: this.#publicPath,
