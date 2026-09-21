@@ -100,6 +100,7 @@ export class Filesystem {
     clear(): Promise<void>;
     copyFileFrom(filesystem: Filesystem, path: string): Promise<void>;
     ensureDir(path?: string): Promise<void>;
+    exists(path?: string): Promise<false | fs.Stats>;
     isDirectory(dir: string): boolean;
     ls(recursive?: boolean): Promise<fs.Dirent<string>[]>;
     readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;

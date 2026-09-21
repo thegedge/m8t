@@ -45,22 +45,24 @@ export const run = async (
     { concurrency: CONCURRENCY, signal },
   );
 
-  log(`copying static files to ${out.rootPath}`);
-  const staticFiles = await site.static.ls(true);
-  await pMap(
-    staticFiles,
-    async (file) => {
-      if (signal.aborted || !file.isFile()) {
-        return;
-      }
+  if (await site.static.exists()) {
+    log(`copying static files to ${out.rootPath}`);
+    const staticFiles = await site.static.ls(true);
+    await pMap(
+      staticFiles,
+      async (file) => {
+        if (signal.aborted || !file.isFile()) {
+          return;
+        }
 
-      await out.copyFileFrom(
-        site.static,
-        path.join(path.relative(site.static.rootPath, file.parentPath), file.name),
-      );
-    },
-    { concurrency: CONCURRENCY, signal },
-  );
+        await out.copyFileFrom(
+          site.static,
+          path.join(path.relative(site.static.rootPath, file.parentPath), file.name),
+        );
+      },
+      { concurrency: CONCURRENCY, signal },
+    );
+  }
 
   return 0;
 };

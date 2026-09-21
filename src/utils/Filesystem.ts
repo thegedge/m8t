@@ -1,5 +1,8 @@
 import fs from "fs";
+import { stat } from "fs/promises";
 import pathModule from "path";
+
+import { isNoEntryError } from "./is.js";
 
 // TODO allow there to be a "root" filesystem. Every `cd` will retain that root value
 //      and all operations with absolute paths will be considered relative to that root,
@@ -20,6 +23,23 @@ export class Filesystem {
    */
   constructor(path: string) {
     this.rootPath = ensureEndSlash(pathModule.resolve(process.cwd(), path));
+  }
+
+  /**
+   * Whether or not a given entry exists under this root.
+   *
+   * If no path given, checks whether or not the root iteslf exists.
+   */
+  async exists(path?: string) {
+    const pathToCheck = path === undefined ? this.rootPath : pathModule.join(this.rootPath, path);
+    try {
+      return await stat(pathToCheck);
+    } catch (e) {
+      if (isNoEntryError(e)) {
+        return false;
+      }
+      throw e;
+    }
   }
 
   /**
