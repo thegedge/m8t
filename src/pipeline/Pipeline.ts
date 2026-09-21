@@ -74,18 +74,15 @@ export class Pipeline {
       throw new Error("work stopped");
     }
 
-    const { reject: rejectWork, promise: workStopped } = Promise.withResolvers<never>();
-    const stop = () => {
-      rejectWork(new Error("work stopped"));
-    };
-    context.signal?.addEventListener("abort", stop);
-
     const stage = this.#stages[stageIndex];
     if (!stage) {
       log("pipeline stage %s is undefined, not processing data", stageIndex + 1);
       return data;
     }
 
+    const { reject: rejectWork, promise: workStopped } = Promise.withResolvers<never>();
+    const stop = () => rejectWork(new Error("work stopped"));
+    context.signal?.addEventListener("abort", stop);
     try {
       log("pipeline stage %s (%s)", stageIndex + 1, stage.constructor.name);
 
