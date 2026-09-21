@@ -92,7 +92,11 @@ export class FilesystemInitializer implements ManyProcessor {
     fileSystem: Filesystem,
     parentData: Datum,
   ): Promise<readonly Datum[]> {
-    const listing = await fileSystem.ls();
+    const listing = (await fileSystem.ls()).filter((e) => {
+      const fullPath = path.join(e.parentPath, e.name);
+      return !context.site.ignoredFilesMatcher.matches(fullPath);
+    });
+
     const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
     if (dataFile) {
       log("found data file: %s", dataFile.name);

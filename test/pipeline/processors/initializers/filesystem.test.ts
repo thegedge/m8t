@@ -18,7 +18,12 @@ describe("FilesystemInitializer", () => {
   beforeEach(async () => {
     loader = new StubLoader();
     initializer = new FilesystemInitializer({ loaders: [loader] });
-    context = await makeContext({ pipelines: {} });
+    context = await makeContext({
+      pipelines: {},
+      ignore: {
+        globs: ["/ignored/"],
+      },
+    });
   });
 
   afterEach(async () => {
@@ -35,11 +40,13 @@ describe("FilesystemInitializer", () => {
         "sub/_data.ts": JSON.stringify({ fromSub: "sub", shadowed: "sub" }),
         "sub/c.json": JSON.stringify({ title: "c" }),
         "sub/deep/d.json": JSON.stringify({ title: "d" }),
+        "ignored/shallow.json": JSON.stringify({ title: "ignored-d" }),
+        "ignored/deep/d.json": JSON.stringify({ title: "ignored-deep-d" }),
         "z.json": JSON.stringify({ title: "z" }),
       });
     });
 
-    test.only("merges parent _data values into children", async () => {
+    test("merges parent _data values into children", async () => {
       const results = await processRoot();
 
       const byTitle = new Map(results.map((datum) => [datum.get("title"), datum]));
