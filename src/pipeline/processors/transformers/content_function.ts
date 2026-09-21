@@ -14,7 +14,7 @@ import type { DefaultContext } from "../../utils.js";
  * used to inform various bits of the result (for example, using the `date` property to show a date
  * on a blog post).
  *
- * If the content function returns a generator, it will be iterated over and each result will be
+ * If the content function is a generator function, it will be iterated over and each result will be
  * processed by this transformer. Since we can't map a single URL to all of the results produced
  * by the generator, it is expected that the yielded values are objects with a `url` property.
  *
@@ -40,18 +40,6 @@ export class ContentFunctionTransformer implements SingleProcessor {
           case "object":
             if (!result) {
               throw new Error(`unexpected nil result from content function in ${filename}`);
-            }
-
-            if (!("content" in result)) {
-              throw new Error(
-                `expected content in result, but found object with keys ${Object.keys(result).join(", ")}`,
-              );
-            }
-
-            if (!("url" in result) || typeof result.url != "string") {
-              throw new Error(
-                `expected url in result, but found object with keys ${Object.keys(result).join(", ")}`,
-              );
             }
 
             newData.push(datum.branch(result as unknown as DatumShape));
