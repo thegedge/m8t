@@ -2,7 +2,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { Datum, symProcessedBy } from "../../../../src/pipeline/Datum.js";
-import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/FilesystemInitializer.js";
+import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/filesystem.js";
 import { makeContext, StubLoader, writeFixtures, type TestContext } from "../../../helpers.js";
 
 describe("FilesystemInitializer", () => {

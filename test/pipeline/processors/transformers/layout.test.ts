@@ -1,7 +1,7 @@
 import path from "node:path";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/FilesystemInitializer.js";
+import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/filesystem.js";
 import { TypescriptLoader } from "../../../../src/pipeline/processors/loaders/typescript.js";
 import { LayoutTransformer } from "../../../../src/pipeline/processors/transformers/layout.js";
 import { dedent } from "../../../../src/utils/dedent.js";

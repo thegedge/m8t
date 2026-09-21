@@ -6,7 +6,7 @@ import pMap from "p-map";
 
 import { Datum, Pipeline, Site, TypescriptLoader, type SiteOptions } from "../src/index.js";
 import { symProcessedBy, type DatumShape } from "../src/pipeline/Datum.js";
-import type { FilesystemLoader } from "../src/pipeline/processors/initializers/FilesystemInitializer.js";
+import type { FilesystemLoader } from "../src/pipeline/processors/initializers/filesystem.js";
 import type { DefaultContext } from "../src/pipeline/utils.js";
 import { NonAsyncTimeMeasurement } from "../src/utils/NonAsyncTimeMeasurement.js";
 

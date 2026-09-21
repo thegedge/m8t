@@ -8,7 +8,7 @@ export { Pipeline, reprocess } from "./Pipeline.js";
 export {
   FilesystemInitializer,
   type FilesystemLoader as Loader,
-} from "./processors/initializers/FilesystemInitializer.js";
+} from "./processors/initializers/filesystem.js";
 export { MdxLoader, type MdxOptions } from "./processors/loaders/mdx.js";
 export { ReadFileLoader } from "./processors/loaders/read_file.js";
 export { TypescriptLoader } from "./processors/loaders/typescript.js";
