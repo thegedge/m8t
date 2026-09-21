@@ -18,9 +18,10 @@ export const run = async (
 
   // TODO verify that all pages have distinct urls and output paths
 
+  let failed = false;
   for (const url of await site.urls) {
     if (signal.aborted) {
-      return 0;
+      return 123;
     }
 
     log("validating %s", url);
@@ -45,6 +46,8 @@ export const run = async (
 
     const { valid, results } = await validator.validateString(content, filename, { rules });
     if (!valid) {
+      failed = true;
+
       console.log(`--> ${filename}:`);
       dumpMessages(results);
 
@@ -54,7 +57,7 @@ export const run = async (
     }
   }
 
-  return 0;
+  return failed ? 1 : 0;
 };
 
 const dumpMessages = (results: Result[]) => {
