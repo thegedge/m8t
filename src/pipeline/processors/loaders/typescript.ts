@@ -45,8 +45,8 @@ export class TypescriptLoader implements SingleProcessor {
       return undefined;
     }
 
-    const source = await readFile(filename, "utf8");
     if (process.features.typescript && (filename.endsWith(".ts") || filename.endsWith(".mts"))) {
+      const source = await readFile(filename, "utf8");
       return stripTypeScriptTypes(source, {
         mode: "strip",
         sourceUrl: String(pathToFileURL(filename)),
@@ -71,6 +71,7 @@ export class TypescriptLoader implements SingleProcessor {
         return undefined;
     }
 
+    const source = await readFile(filename, "utf8");
     const { code } = await transform(source, {
       loader,
       jsx: "automatic",
