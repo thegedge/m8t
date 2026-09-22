@@ -105,10 +105,15 @@ const hook = () => {
  * where an async task is sitting on a queue, waiting to be executed. In other words, it does not
  * include time spent doing another async task concurrently.
  *
- * @returns a pair, first item being the result of the function and second being the time it took
- *    to run the function, in nanoseconds
+ * @returns A pair, first item being the result of the function and second being the time it took
+ *    to run the function, in nanoseconds. The timing will be 0 if NODE_ENV=production.
  */
 export async function track<T>(f: () => Promise<T>): Promise<[result: T, timeNanos: bigint]> {
+  if (process.env.NODE_ENV == "production") {
+    // TODO eventually integrate this with site and site.mode a lot better
+    return [await f(), 0n];
+  }
+
   const h = hook();
   return await h(f);
 }
