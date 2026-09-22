@@ -26,8 +26,8 @@ export const run = async (): Promise<void> => {
   const shutdown = () => {
     exiting.abort();
     setTimeout(() => {
-      process.exit(0);
-    }, 1000);
+      process.exit(1);
+    }, 1000).unref();
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
