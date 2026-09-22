@@ -18,7 +18,7 @@ expect.extend({
     const rendered = await renderElementToHTML(received);
     return {
       pass: rendered === expected,
-      message: () => `${rendered} is${isNot ? "" : " not"} ${expected}`,
+      message: () => `${received} does${isNot ? "" : " not"} render to ${expected}`,
     };
   },
 
@@ -26,7 +26,18 @@ expect.extend({
     const { isNot } = this;
     return {
       pass: fileMatcher.matches(path),
-      message: () => `${path} should${isNot ? " not" : ""} match`,
+      message: () => `${path} does${isNot ? "" : " not"} match`,
+    };
+  },
+
+  toBeInRange<T extends number | bigint>(received: T, expected: T, range: T) {
+    const { isNot } = this;
+    return {
+      pass:
+        received < expected
+          ? (received as any) + range >= expected
+          : (received as any) - range <= expected,
+      message: () => `${received} is${isNot ? "" : " not"} within ${range} of ${expected}`,
     };
   },
 });

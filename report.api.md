@@ -55,7 +55,6 @@ export class Datum<Shape extends DefaultDatumShape = DefaultDatumShape> {
 
 // @public
 export type DefaultContext = {
-    performanceTracker: NonAsyncTimeMeasurement;
     pipeline: Pipeline;
     site: Site;
     signal: AbortSignal;
@@ -68,7 +67,7 @@ export type DefaultDatumShape = Readonly<{
     filename: string;
     url?: string;
     [symProcessedBy]?: unknown;
-    [symProcessingTimeMs]?: number;
+    [symProcessingTimeNs]?: bigint;
     [key: string | symbol]: unknown;
 }>;
 
@@ -329,9 +328,5 @@ export type TypesProcessorOptions = {
     ignoredKeys?: readonly string[];
     literalKeys?: readonly string[];
 };
-
-// Warnings were encountered during analysis:
-//
-// dist/src/pipeline/utils.d.ts:18:5 - (ae-forgotten-export) The symbol "NonAsyncTimeMeasurement" needs to be exported by the entry point index.d.ts
 
 ```

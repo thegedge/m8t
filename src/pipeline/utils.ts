@@ -3,8 +3,8 @@ import pMap from "p-map";
 
 import type { Site } from "../site/Site.js";
 import type { MaybeArray } from "../types.js";
-import type { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
-import { Datum, symProcessedBy, symProcessingTimeMs, type DatumShape } from "./Datum.js";
+import { track } from "../utils/track.js";
+import { Datum, symProcessedBy, symProcessingTimeNs, type DatumShape } from "./Datum.js";
 import { type Pipeline, type SingleProcessor } from "./index.js";
 
 /** Logging function for pipeline processing */
@@ -14,16 +14,6 @@ const log = debug("m8t:processing");
  * The context provided to a pipeline's stages.
  */
 export type DefaultContext = {
-  /**
-   * A performance tracking instance.
-   *
-   * Pipeline processing will compute the timings from a pipeline stage automatically, but this can allow a
-   * stage to perhaps compute more granular measurement.
-   *
-   * @internal
-   */
-  performanceTracker: NonAsyncTimeMeasurement;
-
   /**
    * The pipeline that is processing the incoming data.
    */
@@ -69,7 +59,7 @@ export const processManyWithSingle = async <
  *
  * The returned datum will also containing two special keys:
  *  - {@link symProcessedBy}: the processor that processed the datum; and
- *  - {@link symProcessingTimeMs}: the time it took to process the datum.
+ *  - {@link symProcessingTimeNs}: the time it took to process the datum.
  *
  * @param datum - The datum to process.
  * @param context - The context to use for the processing.
@@ -86,27 +76,26 @@ export const processOne = async <
   context: ContextT,
   processor: SingleProcessor<Datum<ShapeT>, MaybeArray<ResultT>, ContextT>,
 ): Promise<MaybeArray<ResultT> | null> => {
-  const tracker = context.performanceTracker.track();
-  const result = await datum.nullUnlessChanged(
-    async () => await processor.processOne(datum, context),
-  );
-  if (!result) {
-    return null;
-  }
+  const [result, timing] = await track(async () => {
+    return await datum.nullUnlessChanged(() => processor.processOne(datum, context));
+  });
 
   log(
     "processed page %s with %s in %sms",
     datum.get("filename"),
     processor.constructor.name,
-    tracker.cumulativeTime,
+    timing,
   );
+  if (!result) {
+    return null;
+  }
 
   if (Array.isArray(result)) {
     return result.map((newDatum) =>
       newDatum instanceof Datum
         ? newDatum.with_({
             [symProcessedBy]: processor,
-            [symProcessingTimeMs]: tracker.cumulativeTime,
+            [symProcessingTimeNs]: timing,
           })
         : newDatum,
     );
@@ -115,7 +104,7 @@ export const processOne = async <
   return result instanceof Datum
     ? result.with_({
         [symProcessedBy]: processor,
-        [symProcessingTimeMs]: tracker.cumulativeTime,
+        [symProcessingTimeNs]: timing,
       })
     : result;
 };

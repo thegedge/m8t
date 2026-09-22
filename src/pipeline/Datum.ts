@@ -3,8 +3,8 @@ import { merge } from "../utils/merge.js";
 /** Datum key for the processor that processed the datum */
 export const symProcessedBy = Symbol("processedBy");
 
-/** Datum key for the time it took to process the datum, in milliseconds */
-export const symProcessingTimeMs = Symbol("processingTime");
+/** Datum key for the time it took to process the datum, in nanoseconds */
+export const symProcessingTimeNs = Symbol("processingTime");
 
 export type DatumShape = Readonly<{
   /** The base path from which this file was loaded */
@@ -20,7 +20,7 @@ export type DatumShape = Readonly<{
   [symProcessedBy]?: unknown;
 
   /** The time it took to process this datum, in milliseconds */
-  [symProcessingTimeMs]?: number;
+  [symProcessingTimeNs]?: bigint;
 
   [key: string | symbol]: unknown;
 }>;

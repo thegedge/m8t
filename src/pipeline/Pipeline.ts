@@ -1,7 +1,6 @@
 import debug from "debug";
 
 import type { PipelineStage } from "../index.js";
-import { NonAsyncTimeMeasurement } from "../utils/NonAsyncTimeMeasurement.js";
 import { partition } from "../utils/partition.js";
 import type { Datum } from "./Datum.js";
 import { type DefaultContext, processManyWithSingle } from "./utils.js";
@@ -29,7 +28,6 @@ export const reprocess = Symbol("reprocess");
  * return data.
  */
 export class Pipeline {
-  readonly #performanceTracker = new NonAsyncTimeMeasurement();
   readonly #stages: readonly PipelineStage[];
 
   constructor(options: { stages: readonly PipelineStage[] }) {
@@ -50,7 +48,6 @@ export class Pipeline {
   ): Promise<readonly Datum[]> {
     return await this.add_(data, {
       ...context,
-      performanceTracker: this.#performanceTracker,
       pipeline: this,
       signal: context.signal ?? new AbortController().signal,
       until: this.#stages.length,

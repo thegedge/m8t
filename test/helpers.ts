@@ -8,7 +8,6 @@ import { Datum, Pipeline, Site, TypescriptLoader, type SiteOptions } from "../sr
 import { symProcessedBy, type DatumShape } from "../src/pipeline/Datum.js";
 import type { FilesystemLoader } from "../src/pipeline/processors/initializers/filesystem.js";
 import type { DefaultContext } from "../src/pipeline/utils.js";
-import { NonAsyncTimeMeasurement } from "../src/utils/NonAsyncTimeMeasurement.js";
 
 /**
  * A loader that parses each fixture file as JSON and merges it into the datum.
@@ -49,7 +48,6 @@ export const makeContext = async (options?: SiteOptions): Promise<TestContext> =
   const site = await Site.fromOptions(root, { pipelines: {}, ...options });
   let filenameIndex = 0;
   return {
-    performanceTracker: new NonAsyncTimeMeasurement(),
     pipeline: new Pipeline({ stages: Object.values(site.pipelines)[0] }),
     root,
     site,

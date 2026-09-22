@@ -1,6 +1,6 @@
 import {
   symProcessedBy,
-  symProcessingTimeMs,
+  symProcessingTimeNs,
   type Datum,
   type DatumShape,
 } from "../../../pipeline/Datum.js";
@@ -143,19 +143,27 @@ const htmlForDataAndLineage = (datum: Datum): string => {
             };
 
       const processorName = processorNameForDatum(lineageRecord);
-      const processingTimeMs = lineageRecord[symProcessingTimeMs] ?? 0;
+      const processingTimeNs = lineageRecord[symProcessingTimeNs] ?? 0n;
 
       const entries = [...diff.additions, ...diff.updates];
       const entriesObject = Object.fromEntries(entries);
 
       return `
         <details open="open">
-          <summary>${processorName} in ${processingTimeMs.toFixed(2)}ms</summary>
+          <summary>${processorName} in ${summarizeTime(processingTimeNs)}</summary>
           ${jsonViewerForData(entriesObject, index)}
         </details>
       `;
     })
     .join("\n");
+};
+
+const summarizeTime = (nanos: bigint) => {
+  if (nanos < 1_000_000_000) {
+    return `${nanos / 1_000_000n}ms`;
+  }
+
+  return (Number(nanos / 1_000_000n) / 1000.0).toFixed(2);
 };
 
 const jsonViewerForData = (obj: Record<string | symbol, unknown>, id: string | number) => {
