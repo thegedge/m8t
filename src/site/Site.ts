@@ -226,6 +226,7 @@ export class Site {
   #dataPromise: Promise<readonly Datum[]> | null = null;
   #dataWithUrlsPromise: Promise<readonly Datum[]> | null = null;
   #dataByUrlPromise: Promise<Readonly<Record<string, Datum>>> | null = null;
+  #urlsPromise: Promise<string[]> | null = null;
 
   private constructor(options: ResolvedSiteOptions) {
     this.root = new Filesystem(options.root);
@@ -264,7 +265,8 @@ export class Site {
     this.#dataByUrlPromise ??= this.#dataWithUrls.then((data) =>
       keyBy(data, (d) => d.maybeGetString("url") || ""),
     );
-    return this.#dataByUrlPromise.then((dataByUrl) => Object.keys(dataByUrl).sort());
+    this.#urlsPromise ??= this.#dataByUrlPromise.then((dataByUrl) => Object.keys(dataByUrl).sort());
+    return this.#urlsPromise;
   }
 
   /**
