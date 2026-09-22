@@ -17,7 +17,7 @@ export const run = async (
   const out = site.out.cd("build");
 
   log(`clearing out directory ${out.rootPath}`);
-  await out.clear();
+  await Promise.any([site.urls, out.clear()]); // also get the urls promises booted up
 
   log(`building pages to ${out.rootPath}`);
   await pMap(
