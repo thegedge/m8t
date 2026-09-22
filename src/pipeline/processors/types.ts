@@ -22,6 +22,15 @@ export type TypesProcessorOptions = {
 
   /** The data keys that should be typed as literals (i.e., as narrow as possible) */
   literalKeys?: readonly string[];
+
+  /**
+   * The max depth for computing composite types.
+   *
+   * Anything below this depth will become `any`
+   *
+   * @defaultValue 5
+   */
+  maxDepth?: number;
 };
 
 /**
@@ -36,11 +45,13 @@ export class TypesProcessor implements ManyProcessor {
   readonly #typesFile: string;
   readonly #ignoredKeys: readonly string[];
   readonly #literalKeys: readonly string[];
+  readonly #maxDepth: number;
 
   constructor(options: TypesProcessorOptions) {
     this.#ignoredKeys = union(DEFAULT_IGNORED_KEYS, options.ignoredKeys ?? []);
     this.#literalKeys = options.literalKeys ?? [];
     this.#typesFile = options.typesOutputFile;
+    this.#maxDepth = options.maxDepth ?? 5;
   }
 
   async processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]> {
@@ -89,7 +100,7 @@ export class TypesProcessor implements ManyProcessor {
               }
 
               const type = javascriptValueToTypescriptType(ancestor[key], {
-                indent: "",
+                maxDepth: this.#maxDepth,
                 literal: this.#literalKeys.includes(key),
               });
               if (type) {
@@ -109,7 +120,7 @@ export class TypesProcessor implements ManyProcessor {
         });
 
         let typeString = javascriptValueToTypescriptType(datum.toRecord(), {
-          indent: "",
+          maxDepth: this.#maxDepth,
           literalKeys: this.#literalKeys,
           ignoredKeys: union(Array.from(baseKeys), this.#ignoredKeys),
         });
@@ -215,6 +226,13 @@ const javascriptValueToTypescriptType = (
     indent?: string;
 
     /**
+     * Max depth to descend into objects/arrays/composite types
+     *
+     * @defaultValue 5
+     */
+    maxDepth?: number;
+
+    /**
      * Whether the value should be typed as a literal.
      *
      * @defaultValue false
@@ -251,12 +269,13 @@ const javascriptValueToTypescriptType = (
 
   const {
     indent = "",
+    maxDepth = 5,
     seen = new Set<object>(),
     literal = false,
     literalKeys = [],
     ignoredKeys = [],
   } = options ?? {};
-  if (indent.length > 50) {
+  if (maxDepth == 0) {
     // Avoid too much recursion
     return "any";
   }
@@ -275,7 +294,13 @@ const javascriptValueToTypescriptType = (
           }
 
           // TODO if `literal` is true, we may want to do `[t1, t2, t3]`
-          const newOptions = { indent: indent + "  ", literalKeys, ignoredKeys, seen };
+          const newOptions = {
+            indent: indent + "  ",
+            maxDepth: maxDepth - 1,
+            literalKeys,
+            ignoredKeys,
+            seen,
+          };
           const types = value.map((v) => javascriptValueToTypescriptType(v, newOptions)?.trim());
           const distinctTypes = uniq(types.filter(Boolean));
           if (distinctTypes.length === 0) {
@@ -301,7 +326,14 @@ const javascriptValueToTypescriptType = (
             }
 
             const literal = literalKeys.includes(key);
-            const newOptions = { indent: indent + "  ", literalKeys, ignoredKeys, seen, literal };
+            const newOptions = {
+              indent: indent + "  ",
+              maxDepth: maxDepth - 1,
+              literalKeys,
+              ignoredKeys,
+              seen,
+              literal,
+            };
             const valueString = javascriptValueToTypescriptType(value, newOptions)?.trim();
             if (!valueString) {
               return "";

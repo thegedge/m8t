@@ -101,6 +101,20 @@ describe("TypesProcessor", () => {
     expect(types).toMatchSnapshot();
   });
 
+  test("truncates nested objects beyond max depth as any", async () => {
+    const thing = { a: { b: { c: { d: { e: "fghijklmnopqrstuvwxyz" } } } } };
+
+    const types = await process(
+      { maxDepth: 3 },
+      context.datum({
+        filename: "./deep.ts",
+        thing,
+      }),
+    );
+
+    expect(types).toMatchSnapshot();
+  });
+
   const process = async (options: Partial<TypesProcessorOptions>, ...data: Datum[]) => {
     const typesOutputFile = path.join(context.root, "types.d.ts");
     const processor = new TypesProcessor({

@@ -327,6 +327,7 @@ export type TypesProcessorOptions = {
     typesOutputFile: string;
     ignoredKeys?: readonly string[];
     literalKeys?: readonly string[];
+    maxDepth?: number;
 };
 
 ```

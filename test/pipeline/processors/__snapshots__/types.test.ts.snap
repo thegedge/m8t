@@ -122,3 +122,16 @@ declare module "some_thing.ts" {
   }
 }"
 `;
+
+exports[`TypesProcessor > truncates nested objects beyond max depth as any 1`] = `
+"import "path";
+
+
+declare module "deep.ts" {
+  export interface DataProps {
+    basePath: string;
+    filename: string;
+    thing: {   a: {     b: any; }; };
+  }
+}"
+`;
