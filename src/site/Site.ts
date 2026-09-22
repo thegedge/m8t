@@ -180,7 +180,11 @@ export class Site {
       root: siteRoot,
       static: staticRoot,
       out: outRoot,
-      mode: options.mode || (process.env.PUBLISH ? "production" : "development"),
+      mode:
+        options.mode ||
+        (process.env.PUBLISH && "production") ||
+        (process.env.NODE_ENV == "production" && "production") ||
+        "development",
       additionalWatchDirs: options.additionalWatchDirs ?? [],
       ignore: await FileMatcher.fromOptions(fileMatcherOptions),
       pipelines: options.pipelines,
