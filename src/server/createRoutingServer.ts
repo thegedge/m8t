@@ -37,10 +37,14 @@ export interface Routes<T> {
  * The catchall segment is used when no other route matches the request, if it exists. It is
  * hierarchical in the sense that the nearest catchall route is used, even if it isn't in the
  * current nested route map.
+ *
+ * @param timeout - The number of milliseconds to wait for a route to settle before responding
+ * with a timeout error (defaults to 10 seconds).
  */
 export const createRoutingServer = <T extends Record<string, unknown>>(
   routes: Routes<T>,
   extraData: T,
+  { timeout = 10_000 }: { timeout?: number } = {},
 ) => {
   return createServer({}, async (request, response) => {
     const url = new URL(request.url ?? "", `https://${request.headers.host}`);
@@ -120,17 +124,11 @@ export const createRoutingServer = <T extends Record<string, unknown>>(
       return;
     }
 
-    const timeout = setTimeout(() => {
-      if (!response.writableEnded) {
-        if (!response.headersSent) {
-          response.writeHead(500, { "Content-Type": "text/plain" });
-        }
-        response.end("Request timed out");
+    response.setTimeout(timeout, () => {
+      if (!response.headersSent) {
+        response.writeHead(500, { "Content-Type": "text/plain" });
       }
-    }, 10_000); // TODO configurable timeout
-
-    response.on("close", () => {
-      clearTimeout(timeout);
+      response.end("Request timed out");
     });
 
     try {
@@ -139,7 +137,7 @@ export const createRoutingServer = <T extends Record<string, unknown>>(
       console.error(error);
       if (!response.writableEnded) {
         if (!response.headersSent) {
-          response.writeHead(404, { "Content-Type": "text/plain" });
+          response.writeHead(500, { "Content-Type": "text/plain" });
         }
         response.end(`Internal Server Error\n\n${error.stack}`);
       }
