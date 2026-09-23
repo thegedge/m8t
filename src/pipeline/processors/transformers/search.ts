@@ -47,7 +47,7 @@ export class SearchTransformer implements ManyProcessor {
         datum
           .with(searchResult)
           // unset search, so we don't run it again
-          .delete_("search")
+          .delete("search")
       );
     });
   }

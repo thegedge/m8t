@@ -29,7 +29,6 @@ export class Datum<Shape extends DefaultDatumShape = DefaultDatumShape> {
     constructor(data: Shape, lineage?: Shape[]);
     branch(additionalData?: Partial<Shape>): Datum;
     delete(key: keyof Shape): this;
-    delete_(key: keyof Shape): this;
     // (undocumented)
     get<K extends keyof Shape>(key: K): Shape[K];
     // (undocumented)
@@ -37,12 +36,11 @@ export class Datum<Shape extends DefaultDatumShape = DefaultDatumShape> {
     // (undocumented)
     get lineage(): readonly Readonly<Shape>[];
     // (undocumented)
-    maybeGetString<K extends keyof Shape>(key: K): string | undefined;
+    maybeGetString(key: string | symbol): string | undefined;
     nullUnlessChanged<ResultT>(f: () => Promise<ResultT>): Promise<ResultT | null>;
     set(additionalData: Shape): this;
-    set_(additionalData: Shape): this;
     // (undocumented)
-    stringOrThrow(key: string): string;
+    stringOrThrow(key: string | symbol): string;
     // (undocumented)
     toJSON(): Readonly<Record<string, unknown>>;
     // (undocumented)
@@ -50,6 +48,7 @@ export class Datum<Shape extends DefaultDatumShape = DefaultDatumShape> {
     // (undocumented)
     toString(): string;
     with(additionalData: Partial<Shape>): this;
+    // @internal
     with_(additionalData: Partial<Shape>): this;
 }
 

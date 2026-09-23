@@ -84,7 +84,7 @@ export class LayoutTransformer implements SingleProcessor {
                */
               [noIndex]: true,
             })
-            .delete_(
+            .delete(
               // If we don't do this, the final layout will repeat, until we run out of iterations.
               // If the layout itself has a layout, it will get merged in through processing,
               // assuming the user properly set up the pipeline.

@@ -25,6 +25,20 @@ export type DatumShape = Readonly<{
   [key: string | symbol]: unknown;
 }>;
 
+declare global {
+  interface JSON {
+    rawJSON(value: string): { rawJSON: string };
+  }
+
+  interface BigInt {
+    toJSON(): unknown;
+  }
+}
+
+BigInt.prototype.toJSON = function (this: bigint) {
+  return JSON.rawJSON(String(this));
+};
+
 /**
  * A bag of properties that has been processed by a pipeline.
  *
@@ -86,6 +100,8 @@ export class Datum<Shape extends DatumShape = DatumShape> {
 
   /**
    * Merge the given data into the existing data, without forming a new lineage.
+   *
+   * @internal
    */
   with_(additionalData: Partial<Shape>): this {
     this.#epoch++;
@@ -99,16 +115,7 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   set(additionalData: Shape): this {
     this.#epoch++;
     this.#lineage.push(Object.freeze(this.#data));
-    this.#data = additionalData;
-    return this;
-  }
-
-  /**
-   * Set the data to the given data, without forming a new lineage.
-   */
-  set_(additionalData: Shape): this {
-    this.#epoch++;
-    this.#data = { ...this.#data, ...additionalData };
+    this.#data = { ...additionalData };
     return this;
   }
 
@@ -118,16 +125,10 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   delete(key: keyof Shape): this {
     this.#epoch++;
     this.#lineage.push(Object.freeze(this.#data));
-    this.#data = { ...this.#data, [key]: undefined };
-    return this;
-  }
 
-  /**
-   * Delete a given key from the datum, without forming a new lineage.
-   */
-  delete_(key: keyof Shape): this {
-    this.#epoch++;
-    this.#data = { ...this.#data, [key]: undefined };
+    const { [key]: _, ...rest } = this.#data;
+    this.#data = rest as Shape;
+
     return this;
   }
 
@@ -135,15 +136,15 @@ export class Datum<Shape extends DatumShape = DatumShape> {
     return this.#data[key];
   }
 
-  maybeGetString<K extends keyof Shape>(key: K): string | undefined {
+  maybeGetString(key: string | symbol): string | undefined {
     const data = this.#data[key];
     return typeof data === "string" ? data : undefined;
   }
 
-  stringOrThrow(key: string): string {
+  stringOrThrow(key: string | symbol): string {
     const value = this.#data[key];
     if (typeof value !== "string") {
-      throw new Error(`expected string, got ${typeof value} for ${key}`);
+      throw new Error(`expected string, got ${typeof value} for ${String(key)}`);
     }
     return value;
   }
@@ -153,11 +154,11 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   }
 
   get lineage(): readonly Readonly<Shape>[] {
-    return this.#lineage;
+    return [...this.#lineage];
   }
 
   toRecord(): Readonly<Shape> {
-    return this.#data;
+    return { ...this.#data };
   }
 
   toJSON(): Readonly<Record<string, unknown>> {
