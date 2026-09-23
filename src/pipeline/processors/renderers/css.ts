@@ -11,7 +11,7 @@ import { type DefaultContext } from "../../utils.js";
 export class CssRenderer implements SingleProcessor {
   #processor: postcss.Processor;
 
-  constructor(postcssPlugins?: postcss.Plugin[]) {
+  constructor(postcssPlugins?: postcss.AcceptedPlugin[]) {
     this.#processor = postcss(postcssPlugins);
   }
 

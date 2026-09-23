@@ -19,7 +19,7 @@ export class ContentFunctionTransformer implements SingleProcessor {
 
 // @public
 export class CssRenderer implements SingleProcessor {
-    constructor(postcssPlugins?: postcss.Plugin[]);
+    constructor(postcssPlugins?: postcss.AcceptedPlugin[]);
     // (undocumented)
     processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>>;
 }
