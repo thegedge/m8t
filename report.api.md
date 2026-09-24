@@ -6,10 +6,11 @@
 
 import { CompileOptions } from '@mdx-js/mdx';
 import { Context } from 'node:vm';
-import fs from 'fs';
+import { Dirent } from 'node:fs';
 import postcss from 'postcss';
 import { ReactNode } from 'react';
 import type { Readable } from 'node:stream';
+import { Stats } from 'node:fs';
 
 // @public
 export class ContentFunctionTransformer implements SingleProcessor {
@@ -94,13 +95,13 @@ export type FileMatcherOptions = {
 export class Filesystem {
     constructor(path: string);
     absolute(...paths: string[]): string;
-    cd(root: string): Filesystem;
+    cd(root: string): Promise<Filesystem>;
     clear(): Promise<void>;
     copyFileFrom(filesystem: Filesystem, path: string): Promise<void>;
     ensureDir(path?: string): Promise<void>;
-    exists(path?: string): Promise<false | fs.Stats>;
-    isDirectory(dir: string): boolean;
-    ls(recursive?: boolean): Promise<fs.Dirent<string>[]>;
+    exists(path?: string): Promise<false | Stats>;
+    isDirectory(dir: string): Promise<boolean>;
+    ls(recursive?: boolean): Promise<Dirent<string>[]>;
     readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;
     readonly rootPath: string;
     writeFile(path: string, contents: string): Promise<void>;

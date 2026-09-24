@@ -33,7 +33,7 @@ export const run = async (
   const baseURL = `http://localhost:${site.devServer.port}`;
 
   await site.out.ensureDir("diff");
-  const out = site.out.cd("diff");
+  const out = await site.out.cd("diff");
 
   const [chromeBrowser, firefoxBrowser, webkitBrowser] = await Promise.all([
     chromium.launch(),

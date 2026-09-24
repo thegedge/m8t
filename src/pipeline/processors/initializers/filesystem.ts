@@ -116,7 +116,8 @@ export class FilesystemInitializer implements ManyProcessor {
         }
 
         if (entry.isDirectory()) {
-          return await this.initDirectory(context, fileSystem.cd(entry.name), parentData);
+          const dir = await fileSystem.cd(entry.name);
+          return await this.initDirectory(context, dir, parentData);
         }
 
         const filePath = path.join(fileSystem.rootPath, entry.name);

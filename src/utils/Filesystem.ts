@@ -1,5 +1,4 @@
-import fs from "fs";
-import { stat } from "fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "fs/promises";
 import pathModule from "path";
 
 import { isNoEntryError } from "./is.js";
@@ -47,9 +46,9 @@ export class Filesystem {
    *
    * @returns a new filesystem rooted at the given directory.
    */
-  cd(root: string) {
+  async cd(root: string) {
     const resolvedRoot = pathModule.resolve(this.rootPath, root);
-    if (!this.isDirectory(resolvedRoot)) {
+    if (!(await this.isDirectory(resolvedRoot))) {
       throw new Error(`can't descend into a non-directory ${resolvedRoot}`);
     }
     return new Filesystem(resolvedRoot);
@@ -60,9 +59,9 @@ export class Filesystem {
    *
    * @returns `true` if the given path is a directory, `false` otherwise
    */
-  isDirectory(dir: string) {
+  async isDirectory(dir: string) {
     const resolvedDir = pathModule.resolve(this.rootPath, dir);
-    return fs.statSync(resolvedDir).isDirectory();
+    return (await stat(resolvedDir)).isDirectory();
   }
 
   /**
@@ -72,7 +71,7 @@ export class Filesystem {
    * @returns a list of the found files
    */
   async ls(recursive = false) {
-    return await fs.promises.readdir(this.rootPath, {
+    return await readdir(this.rootPath, {
       withFileTypes: true,
       encoding: "utf-8",
       recursive,
@@ -83,7 +82,7 @@ export class Filesystem {
    * Remove all files under this filesystem.
    */
   async clear() {
-    await fs.promises.rm(this.rootPath, { recursive: true, force: true });
+    await rm(this.rootPath, { recursive: true, force: true });
     await this.ensureDir();
   }
 
@@ -95,7 +94,7 @@ export class Filesystem {
    */
   async copyFileFrom(filesystem: Filesystem, path: string) {
     await this.ensureDir(pathModule.dirname(path));
-    await fs.promises.copyFile(filesystem.absolute(path), this.absolute(path));
+    await copyFile(filesystem.absolute(path), this.absolute(path));
   }
 
   /**
@@ -106,7 +105,7 @@ export class Filesystem {
    * @param path - the path to ensure (optional)
    */
   async ensureDir(path?: string) {
-    await fs.promises.mkdir(path ? this.absolute(path) : this.rootPath, { recursive: true });
+    await mkdir(path ? this.absolute(path) : this.rootPath, { recursive: true });
   }
 
   /**
@@ -114,11 +113,11 @@ export class Filesystem {
    *
    * @returns the string contents of the file if utf8 encoding specified, otherwise a
    *          {@link buffer#Buffer} containing the contents.
-   * @see `fs.promises.readFile`
+   * @see `readFile`
    */
   async readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;
   async readFile(path: string, encoding: BufferEncoding): Promise<string | Buffer> {
-    return await fs.promises.readFile(this.absolute(path), encoding);
+    return await readFile(this.absolute(path), encoding);
   }
 
   /**
@@ -128,7 +127,7 @@ export class Filesystem {
    */
   async writeFile(path: string, contents: string) {
     await this.ensureDir(pathModule.dirname(path));
-    await fs.promises.writeFile(this.absolute(path), contents);
+    await writeFile(this.absolute(path), contents);
   }
 
   /**

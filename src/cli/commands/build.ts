@@ -14,7 +14,7 @@ export const run = async (
 ): Promise<number> => {
   await site.out.ensureDir("build");
 
-  const out = site.out.cd("build");
+  const out = await site.out.cd("build");
 
   log(`clearing out directory ${out.rootPath}`);
   await Promise.any([site.urls, out.clear()]); // also get the urls promises booted up
