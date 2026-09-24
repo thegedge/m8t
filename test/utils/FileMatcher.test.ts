@@ -94,6 +94,18 @@ describe("FileMatcher", () => {
         expect(fileMatcher).not.toMatchPath("test/file.js");
       });
 
+      test("does not match paths outside of the base", async () => {
+        const fileMatcher = await FileMatcher.fromOptions({
+          globs: ["*file.js"],
+        });
+
+        expect(fileMatcher).toMatchPath("file.js");
+        expect(fileMatcher).toMatchPath("..file.js");
+        expect(fileMatcher).toMatchPath("test/file.js");
+        expect(fileMatcher).not.toMatchPath("../file.js");
+        expect(fileMatcher).not.toMatchPath("./some/dir/../../../../file.js");
+      });
+
       test("always matches when given no patterns, unless outside of base path", async () => {
         const fileMatcher = await FileMatcher.fromOptions({
           globs: ["# This is a comment", "*.txt"],
@@ -165,6 +177,30 @@ describe("FileMatcher", () => {
         expect(fileMatcher).toMatchPath("utils/");
         expect(fileMatcher).not.toMatchPath("nested/blah/test.csv");
       });
+
+      test("matches a path and all its descendants for a glob ending in /", async () => {
+        const fileMatcher = await FileMatcher.fromOptions({
+          globs: ["blah/"],
+        });
+
+        expect(fileMatcher).not.toMatchPath("file.csv");
+        expect(fileMatcher).not.toMatchPath("blah.csv");
+        expect(fileMatcher).toMatchPath("blah/");
+        expect(fileMatcher).toMatchPath("blah/stuff.csv");
+        expect(fileMatcher).toMatchPath("blah/more/stuff.csv");
+        expect(fileMatcher).toMatchPath("blah/more/stuff.csv");
+      });
+
+      test("matches directories under a given base for a glob ending in /", async () => {
+        const fileMatcher = await FileMatcher.fromOptions({
+          globs: ["blah/"],
+          base: "/root",
+        });
+
+        expect(fileMatcher).toMatchPath("blah/");
+        expect(fileMatcher).toMatchPath("/root/testing/blah/");
+        expect(fileMatcher).toMatchPath("/root/blah/test.txt");
+      });
     });
 
     describe("with only files", () => {
@@ -224,18 +260,6 @@ describe("FileMatcher", () => {
         expect(fileMatcher).not.toMatchPath("/Users/jane/file.txt");
         expect(fileMatcher).toMatchPath("/Users/john/file.txt");
       });
-    });
-
-    test("matches a path and all its descendants for a glob ending in /", async () => {
-      const fileMatcher = await FileMatcher.fromOptions({
-        globs: ["blah/"],
-      });
-
-      expect(fileMatcher).not.toMatchPath("file.csv");
-      expect(fileMatcher).not.toMatchPath("blah.csv");
-      expect(fileMatcher).toMatchPath("blah/");
-      expect(fileMatcher).toMatchPath("blah/stuff.csv");
-      expect(fileMatcher).toMatchPath("blah/more/stuff.csv");
     });
   });
 });

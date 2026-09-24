@@ -128,19 +128,17 @@ export class FileMatcher {
    * @see {@link FileMatcher} for details on the matching logic.
    */
   public matches(filepath: string): boolean {
-    let pathToCheck = path.isAbsolute(filepath) ? path.relative(this.#base, filepath) : filepath;
+    const relativePath = path.isAbsolute(filepath)
+      ? path.relative(this.#base, filepath)
+      : path.relative(this.#base, path.resolve(this.#base, filepath));
 
-    if (pathToCheck.startsWith("..")) {
-      // Path is outside of base, never match
+    if (relativePath.startsWith("../")) {
+      // Never match anything outside of the base path
       return false;
     }
 
-    if (pathToCheck.startsWith("./")) {
-      // `ignore` doesn't like `./`
-      pathToCheck = pathToCheck.slice(2);
-    }
-
-    if (pathToCheck == "") {
+    const pathToCheck = filepath.endsWith("/") ? `${relativePath}/` : relativePath;
+    if (pathToCheck == "" || pathToCheck == "/") {
       // Root path never matches
       return false;
     }
