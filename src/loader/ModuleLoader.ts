@@ -273,7 +273,7 @@ export class ModuleLoader {
         promise = Promise.reject();
         break;
       case "linked":
-        promise = module.evaluate({ breakOnSigint: true });
+        promise = module.evaluate();
         break;
       case "evaluating": {
         const maybePromise = this.#evaluations.get(module);
