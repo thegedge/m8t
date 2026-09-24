@@ -82,4 +82,27 @@ const value = {
      `.trim(),
     );
   });
+
+  test("applies indentation to all lines in the interpolated value when only whitespace before", () => {
+    const val = "l1\nl2";
+
+    const result = dedent`
+        ${val}
+      x
+    `;
+
+    expect(result).toBe("  l1\n  l2\nx");
+  });
+
+  test("does not apply indentation to empty lines in the interpolated value", () => {
+    const val = "  a\n\n  b";
+
+    const result = dedent`
+      ---
+        ${val}
+      ---
+    `;
+
+    expect(result).toBe("---\n    a\n\n    b\n---");
+  });
 });

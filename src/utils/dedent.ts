@@ -75,14 +75,12 @@ export const dedent = (strings: TemplateStringsArray, ...values: unknown[]) => {
       // to the interpolated string too
       let indent = "";
       const lastNewline = indentRemoved.lastIndexOf("\n");
-      if (lastNewline > 0) {
-        const lastLine = indentRemoved.slice(lastNewline + 1);
-        if (lastLine.trim() == "") {
-          indent = lastLine;
-        }
+      const lastLine = indentRemoved.slice(1 + (lastNewline < 0 ? -1 : lastNewline));
+      if (lastLine.trim() == "") {
+        indent = lastLine;
       }
 
-      result += String(values[i]).replaceAll("\n", `\n${indent}`);
+      result += String(values[i]).replaceAll(/\n([^\n])/gm, `\n${indent}$1`);
     }
 
     return result;
