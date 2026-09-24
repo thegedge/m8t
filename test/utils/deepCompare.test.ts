@@ -55,4 +55,11 @@ describe("deepCompare", () => {
     expect(deepCompare(a, b)).toBe(-1);
     expect(deepCompare(a, a)).toBe(0);
   });
+
+  test("considers distinct symbol keys the same", () => {
+    const a: any = { [Symbol("a")]: 1 };
+    const b: any = { [Symbol("a")]: 2 };
+    expect(deepCompare(a, b)).toBe(-1);
+    expect(deepCompare(a, a)).toBe(0);
+  });
 });

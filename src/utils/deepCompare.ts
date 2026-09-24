@@ -130,8 +130,9 @@ const objectCompare = (a: SomeObject, b: SomeObject, visited: WeakSet<any>) => {
   for (let index = 0; index < sortedKeysA.length; ++index) {
     const keyA = sortedKeysA[index];
     const keyB = sortedKeysB[index];
-    if (keyA != keyB) {
-      return String(keyA) < String(keyB) ? -1 : 1;
+    const keyCmp = keyCompare(keyA, keyB);
+    if (keyCmp !== 0) {
+      return keyCmp;
     }
 
     const comparison = deepCompareWithCycleDetection(a[keyA], b[keyB], visited);
