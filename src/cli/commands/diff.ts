@@ -198,7 +198,7 @@ export const run = async (
 const fileExists = async (path: string) => {
   return await fs
     .stat(path)
-    .then((s) => s.isFile)
+    .then((s) => s.isFile())
     .catch(() => false);
 };
 
