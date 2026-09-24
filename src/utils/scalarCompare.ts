@@ -21,51 +21,47 @@ export const scalarCompare = (a: unknown, b: unknown): number => {
     return 0;
   }
 
-  if (a == undefined) {
-    return -1;
-  }
+  const typeA = a === null ? "null" : typeof a;
+  const typeB = b === null ? "null" : typeof b;
 
-  if (b == undefined) {
-    return 1;
-  }
+  if (typeA == typeB) {
+    switch (typeA) {
+      case "number":
+      case "bigint":
+        const isNanA = Number.isNaN(a);
+        const isNanB = Number.isNaN(b);
+        if (isNanA && isNanB) {
+          return 0;
+        } else if (isNanA) {
+          return -1;
+        } else if (isNanB) {
+          return 1;
+        }
 
-  if (isNumerical(a) && isNumerical(b)) {
-    const isNanA = Number.isNaN(a);
-    const isNanB = Number.isNaN(b);
-    if (isNanA && isNanB) {
-      return 0;
-    } else if (isNanA) {
-      return -1;
-    } else if (isNanB) {
-      return 1;
-    } else {
-      return a < b ? -1 : 1;
+        // @ts-ignore -- a and b are either both number or bigint, given the above if
+        return a < b ? -1 : 1;
+      case "string":
+      case "boolean":
+        // @ts-ignore -- a and b are both same type, comparable with <
+        return a < b ? -1 : 1;
+      case "symbol":
+        // @ts-ignore -- a and b are both same type, comparable with <
+        return String(a) < String(b) ? -1 : 1;
     }
   }
 
-  const typeA = typeof a;
-  const typeB = typeof b;
-  if (typeA != typeB) {
-    return TypeOrders[typeA] - TypeOrders[typeB];
-  }
-
-  return a < b ? -1 : 1;
-};
-
-const isNumerical = (value: unknown): value is number | bigint => {
-  const t = typeof value;
-  return t == "number" || t == "bigint";
+  return TypeOrders[typeA] - TypeOrders[typeB];
 };
 
 export const TypeOrders = {
-  string: 100,
-  number: 200,
-  bigint: 300,
-  symbol: 400,
-  boolean: 500,
-  null: 500,
-  undefined: 600,
-  array: 700,
-  object: 800,
-  function: 900,
+  undefined: 100,
+  null: 200,
+  symbol: 300,
+  string: 400,
+  bigint: 500,
+  number: 600,
+  boolean: 700,
+  array: 800,
+  object: 900,
+  function: 950,
 };
