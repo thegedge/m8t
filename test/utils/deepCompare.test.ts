@@ -21,6 +21,8 @@ describe("deepCompare", () => {
     [{ b: 0 }, { t: 1 }],
     [{ c: 1 }, { a: 0, b: 2 }],
     [{ d: 2 }, (v: unknown) => v],
+    [new Date(1), new Date(2)],
+    [new Map([["a", 1]]), new Map([["a", 2]])],
   ]) {
     const presentA = inspect(a);
     const presentB = inspect(b);

@@ -121,6 +121,38 @@ const objectCompare = (a: SomeObject, b: SomeObject, visited: WeakSet<any>) => {
   visited.add(a);
 
   try {
+    const protoA = Object.getPrototypeOf(a);
+    const protoB = Object.getPrototypeOf(b);
+    if (protoA !== protoB) {
+      return String(protoA) < String(protoB) ? -1 : 1;
+    }
+
+    if (Symbol.toPrimitive in a && Symbol.toPrimitive in b) {
+      return scalarCompare(+a, +b);
+    }
+
+    if (Symbol.iterator in a && Symbol.iterator in b) {
+      const iterA: Iterator<unknown> = (a[Symbol.iterator] as any)();
+      const iterB: Iterator<unknown> = (b[Symbol.iterator] as any)();
+      for (let done = false; !done;) {
+        const { value: valueA, done: doneA } = iterA.next();
+        const { value: valueB, done: doneB } = iterB.next();
+
+        if (doneA != doneB) {
+          return doneA ? -1 : 1;
+        }
+
+        const valueCmp = deepCompareWithCycleDetection(valueA, valueB);
+        if (valueCmp !== 0) {
+          return valueCmp;
+        }
+
+        done = !!doneA;
+      }
+
+      return 0;
+    }
+
     const keysA = Reflect.ownKeys(a);
     const keysB = Reflect.ownKeys(b);
     const lengthA = keysA.length;
