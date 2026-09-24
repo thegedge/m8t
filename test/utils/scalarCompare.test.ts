@@ -18,6 +18,7 @@ describe("scalarCompare", () => {
     [undefined, false],
     [false, true],
     [null, ""],
+    [new Date(123), new Date(1389012)],
     ["", Number.POSITIVE_INFINITY],
   ]) {
     const presentA = inspect(a);

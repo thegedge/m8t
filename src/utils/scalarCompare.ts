@@ -47,6 +47,14 @@ export const scalarCompare = (a: unknown, b: unknown): number => {
       case "symbol":
         // @ts-ignore -- a and b are both same type, comparable with <
         return String(a) < String(b) ? -1 : 1;
+      case "object":
+        if (!a || !b) {
+          return TypeOrders[typeA] - TypeOrders[typeB];
+        }
+
+        if (Symbol.toPrimitive in (a as object) && Symbol.toPrimitive in (b as object)) {
+          return scalarCompare(+a, +b);
+        }
     }
   }
 
