@@ -75,22 +75,26 @@ const deepCompareWithCycleDetection = (
 };
 
 const arrayCompare = (a: unknown[], b: unknown[], visited: WeakSet<any>) => {
-  if (visited.has(a)) {
-    return -1;
-  }
-  visited.add(a);
-
   const lengthA = a.length;
   const lengthB = b.length;
   if (lengthA !== lengthB) {
     return lengthA - lengthB;
   }
 
-  for (let index = 0; index < lengthA; index++) {
-    const comparison = deepCompareWithCycleDetection(a[index], b[index], visited);
-    if (comparison !== 0) {
-      return comparison;
+  if (visited.has(a)) {
+    return -1;
+  }
+  visited.add(a);
+
+  try {
+    for (let index = 0; index < lengthA; index++) {
+      const comparison = deepCompareWithCycleDetection(a[index], b[index], visited);
+      if (comparison !== 0) {
+        return comparison;
+      }
     }
+  } finally {
+    visited.delete(a);
   }
 
   return 0;
@@ -116,29 +120,33 @@ const objectCompare = (a: SomeObject, b: SomeObject, visited: WeakSet<any>) => {
   }
   visited.add(a);
 
-  const keysA = Reflect.ownKeys(a);
-  const keysB = Reflect.ownKeys(b);
-  const lengthA = keysA.length;
-  const lengthB = keysB.length;
-  if (lengthA !== lengthB) {
-    return lengthA - lengthB;
-  }
-
-  const sortedKeysA = keysA.sort(keyCompare);
-  const sortedKeysB = keysB.sort(keyCompare);
-
-  for (let index = 0; index < sortedKeysA.length; ++index) {
-    const keyA = sortedKeysA[index];
-    const keyB = sortedKeysB[index];
-    const keyCmp = keyCompare(keyA, keyB);
-    if (keyCmp !== 0) {
-      return keyCmp;
+  try {
+    const keysA = Reflect.ownKeys(a);
+    const keysB = Reflect.ownKeys(b);
+    const lengthA = keysA.length;
+    const lengthB = keysB.length;
+    if (lengthA !== lengthB) {
+      return lengthA - lengthB;
     }
 
-    const comparison = deepCompareWithCycleDetection(a[keyA], b[keyB], visited);
-    if (comparison !== 0) {
-      return comparison;
+    const sortedKeysA = keysA.sort(keyCompare);
+    const sortedKeysB = keysB.sort(keyCompare);
+
+    for (let index = 0; index < sortedKeysA.length; ++index) {
+      const keyA = sortedKeysA[index];
+      const keyB = sortedKeysB[index];
+      const keyCmp = keyCompare(keyA, keyB);
+      if (keyCmp !== 0) {
+        return keyCmp;
+      }
+
+      const comparison = deepCompareWithCycleDetection(a[keyA], b[keyB], visited);
+      if (comparison !== 0) {
+        return comparison;
+      }
     }
+  } finally {
+    visited.delete(a);
   }
 
   return 0;

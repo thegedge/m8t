@@ -39,8 +39,8 @@ describe("deepCompare", () => {
   }
 
   test("doesn't loop infinitely for array cycles", () => {
-    const a: any[] = [1, 2, 3];
-    const b: any[] = [4, 5, 6];
+    const a: unknown[] = [1, 2, 3];
+    const b: unknown[] = [4, 5, 6];
     a.unshift(a);
     b.unshift(b);
     expect(deepCompare(a, b)).toBe(-1);
@@ -56,9 +56,27 @@ describe("deepCompare", () => {
     expect(deepCompare(a, a)).toBe(0);
   });
 
+  test("correctly compares the same array reference", () => {
+    // This test and the one below exist to handle cases where an implementations "visited" set
+    // isn't properly handled (typically missing a "pop")
+    const arr = [1, 2];
+    const a = { a: arr, b: arr };
+    const b = { a: [1, 2], b: [0, 0] };
+    expect(deepCompare(a, b)).toBe(1);
+    expect(deepCompare(a, a)).toBe(0);
+  });
+
+  test("correctly compares the same object reference", () => {
+    const o = { a: 1 };
+    const a = { a: o, b: o };
+    const b = { a: { a: 1 }, b: { a: 0 } };
+    expect(deepCompare(a, b)).toBe(1);
+    expect(deepCompare(a, a)).toBe(0);
+  });
+
   test("considers distinct symbol keys the same", () => {
-    const a: any = { [Symbol("a")]: 1 };
-    const b: any = { [Symbol("a")]: 2 };
+    const a = { [Symbol("a")]: 1 };
+    const b = { [Symbol("a")]: 2 };
     expect(deepCompare(a, b)).toBe(-1);
     expect(deepCompare(a, a)).toBe(0);
   });
