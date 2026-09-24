@@ -1,5 +1,8 @@
 import { isPlainObject } from "./is.js";
 
+export type MergeObject = Record<string | symbol, unknown>;
+export type MergeArgument = MergeObject | null | undefined;
+
 /**
  * Deep merge multiple objects.
  *
@@ -11,34 +14,33 @@ import { isPlainObject } from "./is.js";
  *
  * @example
  * ```ts
- * const a = { a: 1, b: ["testing", "stuff"] };
- * const b = { a: 3, b: ["more", "stuff"], c: "blah" };
- * const merged = merge(a, b);
- * console.log(merged); // => { a: 3, b: ["testing", "stuff", "more", "stuff"], c: "blah" }
+ * merge({ a: 1, b: ["testing", "stuff"] }, null) //=> null
+ * ```
+ *
+ * @example
+ * ```ts
+ * merge(
+ *   { a: 1, b: ["testing", "stuff"] },
+ *   { a: 3, b: ["more", "stuff"], c: true };
+ * )
+ * //=> { a: 3, b: ["testing", "stuff", "more", "stuff"], c: true }
  * ```
  *
  * @returns a new object with the merged contents of the two objects.
  */
-export function merge<T extends Record<string, unknown> | null | undefined>(
-  base: T,
-  ...objects: T[]
-): T {
-  // TODO try to type this so that the return type is the merging of the two
-
+export function merge(base: MergeObject, ...objects: MergeArgument[]): MergeObject {
   if (objects.length == 0) {
-    // We do a spread of the keys to ensure we return a shallow copy.
     return { ...base };
   }
 
   if (objects.length > 1) {
-    const [a, ...rest] = objects;
-    return merge(merge(base, a), ...rest);
+    return objects.reduce<MergeObject>((acc, value) => merge(acc, value), base);
   }
 
   const a = base;
   const b = objects[0];
 
-  if (a === (b as any)) {
+  if (a === b) {
     return a;
   }
 
@@ -46,27 +48,17 @@ export function merge<T extends Record<string, unknown> | null | undefined>(
     return a ?? b;
   }
 
-  // TODO this stuff is annoying to type, but give it a try someday
-  const merged: any = { ...a, ...b };
-  const keys = [
-    ...Object.getOwnPropertyNames(merged),
-    ...Object.getOwnPropertySymbols(merged),
-  ] as unknown as (keyof T)[];
+  const merged: MergeObject = { ...a, ...b };
+  const stringKeys = Object.getOwnPropertyNames(merged);
+  const symbolKeys = Object.getOwnPropertySymbols(merged);
 
-  for (const key of keys) {
-    const aValue: unknown = (a as NonNullable<T>)[key];
-    const bValue: unknown = (b as NonNullable<T>)[key];
-    const mergedKey = key as keyof NonNullable<T>;
+  for (const key of [...stringKeys, ...symbolKeys]) {
+    const aValue: unknown = a[key];
+    const bValue: unknown = b[key];
     if (isPlainObject(aValue) && isPlainObject(bValue)) {
-      merged[mergedKey] = merge(aValue, bValue);
+      merged[key] = merge(aValue, bValue);
     } else if (Array.isArray(aValue) && Array.isArray(bValue)) {
-      merged[mergedKey] = (
-        aValue === bValue ? aValue : [...aValue, ...bValue]
-      ) as (typeof merged)[typeof mergedKey];
-    } else if (mergedKey in b) {
-      merged[mergedKey] = bValue as (typeof merged)[typeof mergedKey];
-    } else {
-      merged[mergedKey] = aValue as (typeof merged)[typeof mergedKey];
+      merged[key] = [...aValue, ...bValue];
     }
   }
 

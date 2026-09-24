@@ -14,6 +14,7 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "target": "ESNext",
+    "lib": ["ESNext"],
 
     "declaration": true,
     "isolatedDeclarations": false,
