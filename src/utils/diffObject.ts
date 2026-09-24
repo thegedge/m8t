@@ -1,12 +1,12 @@
 import { deepCompare } from "./deepCompare.js";
 import { union } from "./union.js";
 
-type ChangedArray<T extends Record<string | symbol, unknown>> = [keyof T, unknown][];
-
-export type Changes<T extends Record<string | symbol, unknown>> = {
-  additions: ChangedArray<T>;
+export type DiffObject = Record<string | symbol, unknown>;
+export type ChangedArray<T extends DiffObject = DiffObject> = [keyof T, T[keyof T]][];
+export type Changes<T extends DiffObject = DiffObject, U extends DiffObject = DiffObject> = {
+  additions: ChangedArray<U>;
   removals: ChangedArray<T>;
-  updates: ChangedArray<T>;
+  updates: ChangedArray<U>;
   unchanged: ChangedArray<T>;
 };
 
@@ -42,33 +42,36 @@ export type Changes<T extends Record<string | symbol, unknown>> = {
  *
  * @returns an object containing the diff between the two objects.
  */
-export const diffObject = <T extends Record<string | symbol, unknown>>(
+export const diffObject = <T extends DiffObject = DiffObject, U extends DiffObject = DiffObject>(
   from: T,
-  to: T,
-): Changes<T> => {
-  const additions: ChangedArray<T> = [];
+  to: U,
+): Changes<T, U> => {
+  const additions: ChangedArray<U> = [];
   const removals: ChangedArray<T> = [];
-  const updates: ChangedArray<T> = [];
+  const updates: ChangedArray<U> = [];
   const unchanged: ChangedArray<T> = [];
 
   const allKeys = union(Reflect.ownKeys(to), Reflect.ownKeys(from));
   for (const key of allKeys) {
-    const keyInFrom = key in from;
-    const keyInTo = key in to;
+    const keyInFrom = Object.hasOwn(from, key);
+    const keyInTo = Object.hasOwn(to, key);
+
+    const fromKey: keyof T = key;
+    const toKey: keyof U = key;
 
     if (keyInFrom && keyInTo) {
-      const fromValue = from[key];
-      const toValue = to[key];
-      if (fromValue === toValue || deepCompare(fromValue, toValue) === 0) {
+      const fromValue = from[fromKey];
+      const toValue = to[toKey];
+      if (deepCompare(fromValue, toValue) === 0) {
         unchanged.push([key, fromValue]);
       } else {
         updates.push([key, toValue]);
       }
     } else if (keyInTo) {
-      const toValue = to[key];
+      const toValue = to[toKey];
       additions.push([key, toValue]);
     } else if (keyInFrom) {
-      const fromValue = from[key];
+      const fromValue = from[fromKey];
       removals.push([key, fromValue]);
     }
   }
