@@ -95,7 +95,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     reloadStartTime = performance.now();
 
     const server = currentServer;
-    if (server) {
+    if (server.exitCode === null && server.signalCode === null) {
       await new Promise<void>((resolve) => {
         server.on("exit", () => resolve());
         server.kill("SIGTERM"); // kill after setting up the listener to ensure it fires
@@ -107,8 +107,7 @@ const watchFiles = async (site: Site, exiting: AbortSignal): Promise<void> => {
     nextServer = newServer;
 
     newServer.on("error", (_message: unknown) => {
-      // suppress errors
-      // TODO is there something we can do here? show error? try again?
+      // TODO stop suppressing errors and show them
     });
 
     newServer.on("message", (message: unknown) => {
