@@ -2,9 +2,10 @@ import { readFile } from "node:fs/promises";
 import type { ImportPhase, ImportAttributes } from "node:module";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { Module, SourceTextModule, SyntheticModule, type Context } from "node:vm";
+import vm, { type Module, type SourceTextModule, type Context } from "node:vm";
 
 import type { MaybePromise } from "../types.js";
+import { memoize } from "../utils/memoize.js";
 import { canonicalModulePath } from "./canonicalModulePath.js";
 import { Resolver } from "./Resolver.js";
 
@@ -60,6 +61,10 @@ export class ModuleLoader {
    * @param options - various options to configure the loader
    */
   constructor(options?: ModuleLoaderOptions) {
+    if (!checkModuleSupportAvailable()) {
+      throw new Error("m8t requires node to be run with --experimental-vm-modules");
+    }
+
     this.#transpilers = [...(options?.transpilers ?? [])];
     this.#context = options?.context;
     this.#linkQueue = [];
@@ -159,7 +164,7 @@ export class ModuleLoader {
       return await this.#nativeModule(url, attributes);
     }
 
-    return new SourceTextModule(source, {
+    return new vm.SourceTextModule(source, {
       identifier: url,
       context: this.#context,
       importModuleDynamically: (specifier, referrer, attributes, phase) => {
@@ -184,7 +189,7 @@ export class ModuleLoader {
     const namespace: Record<string, unknown> = await import(url, { with: definedAttributes });
     const exportNames = Object.keys(namespace).filter((name) => name != "module.exports");
 
-    return new SyntheticModule(
+    return new vm.SyntheticModule(
       exportNames,
       function () {
         for (const exportName of exportNames) {
@@ -296,3 +301,7 @@ export class ModuleLoader {
     return promise;
   }
 }
+
+const checkModuleSupportAvailable = memoize(() => {
+  return typeof vm.SourceTextModule == "function" && typeof vm.SyntheticModule == "function";
+});
