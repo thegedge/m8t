@@ -8,10 +8,11 @@ const log = debug("m8t:build");
 const CONCURRENCY = 8;
 
 export const run = async (
-  site: Site,
+  root: string,
   _args: { _: [string] },
   signal: AbortSignal,
 ): Promise<number> => {
+  const site = await Site.forRoot(root);
   await site.out.ensureDir("build");
 
   const out = await site.out.cd("build");

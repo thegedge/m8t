@@ -2,15 +2,16 @@ import { link } from "ansi-escapes";
 import debug from "debug";
 import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
 
-import type { Site } from "../../site/Site.js";
+import { Site } from "../../site/Site.js";
 
 const log = debug("m8t:validate");
 
 export const run = async (
-  site: Site,
+  root: string,
   args: { _: string[]; "fail-fast": boolean },
   signal: AbortSignal,
 ): Promise<number> => {
+  const site = await Site.forRoot(root);
   const validator = new HtmlValidate({
     root: true,
     extends: ["html-validate:recommended", "html-validate:a11y"],

@@ -133,11 +133,17 @@ export class Site {
   static async forRoot(root: string): Promise<Site> {
     log("initializing site from %s", root);
 
-    const { default: siteOptions } = (await import(path.join(root, "site.ts"))) as {
-      default: SiteOptions;
-    };
-    if (typeof siteOptions !== "object" || siteOptions === null) {
-      throw new Error("site.ts must export site options");
+    let siteOptions: SiteOptions;
+    try {
+      ({ default: siteOptions } = await import(path.join(root, "site.ts")));
+      if (typeof siteOptions !== "object" || siteOptions === null) {
+        throw new Error("site.ts must export site options");
+      }
+    } catch (e) {
+      if (e instanceof Error && "code" in e && e.code == "ERR_MODULE_NOT_FOUND") {
+        throw new Error("could not find a site.ts file in the current directory");
+      }
+      throw e;
     }
 
     return await Site.fromOptions(root, siteOptions);

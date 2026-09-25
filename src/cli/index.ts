@@ -43,11 +43,7 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
     actualCommand = "help";
   }
 
-  // Imported here so the compile cache is in place
-  const { Site } = await import("../site/Site.js");
-
   const root = args.directory ? path.resolve(args.directory) : process.cwd();
-  const site = await Site.forRoot(root);
 
   const exiting = new AbortController();
   let { resolve: resolveTimedOut, promise: timedOut } = Promise.withResolvers<number>();
@@ -61,7 +57,7 @@ const main = async (command: string | undefined, args: Args): Promise<number> =>
   process.on("SIGTERM", shutdown);
 
   const commandModule = await COMMANDS[actualCommand]();
-  return await Promise.race([commandModule.run(site, args as any, exiting.signal), timedOut]);
+  return await Promise.race([commandModule.run(root, args as any, exiting.signal), timedOut]);
 };
 
 try {

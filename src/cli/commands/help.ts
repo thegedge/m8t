@@ -1,10 +1,9 @@
 import { styleText } from "node:util";
 
-import type { Site } from "../../site/Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 export const run = async (
-  _site: Site,
+  _root: string,
   _args: Record<string, unknown>,
   _signal: AbortSignal,
 ): Promise<number> => {

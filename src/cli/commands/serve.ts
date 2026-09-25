@@ -6,7 +6,7 @@ import path from "node:path";
 import { styleText } from "node:util";
 import pDebounce from "p-debounce";
 
-import type { Site } from "../../site/Site.js";
+import { Site } from "../../site/Site.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
 
 const log = debug("m8t:serve");
@@ -29,11 +29,12 @@ const showReadyMessage = (startTime: number, url: string) => {
 };
 
 export const run = async (
-  site: Site,
+  root: string,
   _args: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<number> => {
   const { resolve: finished, promise: finishedPromise } = Promise.withResolvers<number>();
+  const site = await Site.forRoot(root);
 
   signal.addEventListener("abort", () => {
     setTimeout(() => {

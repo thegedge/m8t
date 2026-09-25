@@ -15,7 +15,7 @@ import { utils } from "playwright-core/lib/coreBundle";
 
 import type { DefaultDatumShape } from "../../index.js";
 import type { Datum } from "../../pipeline/Datum.js";
-import type { Site } from "../../site/Site.js";
+import { Site } from "../../site/Site.js";
 import { sortBy } from "../../utils/sortBy.js";
 
 // TODO Check for a running server instead of processing everything and then failing.
@@ -23,10 +23,11 @@ import { sortBy } from "../../utils/sortBy.js";
 //      Also, make sure to retry on connection failure. Sometimes it slips.
 
 export const run = async (
-  site: Site,
+  root: string,
   _args: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<number> => {
+  const site = await Site.forRoot(root);
   if (!site.devServer) {
     throw new Error("m8t diff cannot run without a devServer configured");
   }
