@@ -90,18 +90,9 @@ export class ModuleLoader {
   /** Asks each provider, in order, for the source of a claimed file. */
   async #loadSource(filename: string): Promise<string | undefined> {
     for (const transpiler of this.#transpilers) {
-      try {
-        const source = await transpiler(filename);
-        if (source !== undefined) {
-          return source;
-        }
-      } catch {
-        // TODO
-        //   Suppressing for now, but then we're not surfacing useful context for the
-        //   user to fix any issues. Three options:
-        //     1. Separate into "can parse" and "transpile"
-        //     2. Require all transpilers to properly handle errors
-        //     3. Collect all errors, report after `load` completes
+      const source = await transpiler(filename);
+      if (source !== undefined) {
+        return source;
       }
     }
 

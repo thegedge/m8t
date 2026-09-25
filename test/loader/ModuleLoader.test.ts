@@ -135,4 +135,12 @@ describe("ModuleLoader", () => {
     expect(namespaceA).toHaveProperty("a", "has-esbuild-A");
     expect(namespaceB).toHaveProperty("b", "has-esbuild-B");
   });
+
+  test("properly captures errors thrown from a transpiler", async () => {
+    const loader = ModuleLoader.with(async (_filename) => {
+      throw new Error("this is my error");
+    });
+
+    await expect(() => loader.load("test.js")).rejects.toThrow("this is my error");
+  });
 });
