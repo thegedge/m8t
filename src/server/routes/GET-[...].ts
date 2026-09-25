@@ -25,7 +25,7 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
     }
 
     const content = data.stringOrThrow("content");
-    const mimeType = data.maybeGetString("mimeType") || mime.lookup(url) || "text/html";
+    const mimeType = data.maybeGetString("mimeType") || mime.lookup(url) || "text/plain";
 
     response.writeHead(200, { "content-type": mimeType });
     response.end(content);

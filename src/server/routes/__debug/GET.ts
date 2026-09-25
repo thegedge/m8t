@@ -9,6 +9,7 @@ export const debugGet: MateRoute = async ({ data: { site }, response }): Promise
     `
 <html>
   <head>
+    <meta charset="utf-8">
     <style>
       :host ul,
       :root ul {

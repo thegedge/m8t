@@ -25,6 +25,7 @@ export const debugPageGet: MateRoute = async ({
     `
 <html>
   <head>
+    <meta charset="utf-8">
     <style>
       :host ul,
       :root ul {
