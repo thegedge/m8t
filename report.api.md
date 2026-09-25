@@ -242,7 +242,7 @@ export interface Searcher {
 
 // @public
 export class SearchTransformer implements ManyProcessor {
-    constructor(data?: Datum[]);
+    constructor();
     // (undocumented)
     processMany(data: Datum[], _context: DefaultContext): Promise<Datum[]>;
 }
