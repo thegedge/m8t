@@ -32,7 +32,15 @@ export interface SingleProcessor<
   ResultT = MaybeArray<DataT>,
   ContextT extends DefaultContext = DefaultContext,
 > {
+  /** Return a list of transpilers for the module loading system */
   transpilersFor?(site: Site): Transpiler[];
+
+  /**
+   * Process a single datum at a time.
+   *
+   * One datum could produce more than one datum in the output. For example, a single TypeScript
+   * file could generate many pages in a site.
+   */
   processOne(data: DataT, context: ContextT): Promise<ResultT>;
 }
 
@@ -44,7 +52,16 @@ export interface ManyProcessor<
   ResultT = DataT,
   ContextT extends DefaultContext = DefaultContext,
 > {
+  /** Return a list of transpilers for the module loading system */
   transpilersFor?(site: Site): Transpiler[];
+
+  /**
+   * Process all datum at once.
+   *
+   * This is useful for aggregating data, typically augmenting the input data with some new datum,
+   * or passing the input through as-is. For example, one could create a processor that indexes
+   * the data for search, or produces page statistics.
+   */
   processMany(data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
 }
 
@@ -56,8 +73,11 @@ export type ManyProcessorFunction<
   ResultT = DataT,
   ContextT extends DefaultContext = DefaultContext,
 > = {
-  (data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
+  /** Return a list of transpilers for the module loading system */
   transpilersFor?(site: Site): Transpiler;
+
+  /** @see ManyProcessor#processMany */
+  (data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
 };
 
 /**

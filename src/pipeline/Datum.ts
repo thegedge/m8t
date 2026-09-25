@@ -42,9 +42,14 @@ BigInt.prototype.toJSON = function (this: bigint) {
 /**
  * A bag of properties that has been processed by a pipeline.
  *
- * The properties are stored in an object. When noted by the method, changes to the datum are pushed
- * into a list of previous states, known as the lineage. The lineage is frozen and cannot be
- * changed. If the method name ends with an underscore, lineage is left unchanged.
+ * When noted by the method, changes to the datum are pushed into a list of previous states, known
+ * as the lineage.
+ *
+ * In general, there's an implicit contract with a Datum where you should not deeply mutate any
+ * objects. One should try to maintain the immutability. The reason we've chosen to not do this
+ * ourselves is because it's a hard problem. We can't `structuredClone`, because there's no
+ * guarantee the data shape is cloneable. We can't write our own clone method, because there could
+ * be instances with private variables which cannot be copied.
  */
 export class Datum<Shape extends DatumShape = DatumShape> {
   #data: Shape;
@@ -79,7 +84,7 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   /**
    * Merge the given data into the existing data, forming a new lineage.
    *
-   * Returns a new Datum whose lineage will diverge from the datum from which it was branched.
+   * @returns a new {@link Datum} whose lineage will diverge from the datum from which it was branched.
    */
   branch(additionalData?: Partial<Shape>): Datum {
     return new Datum(merge(this.#data, additionalData) as unknown as Shape, [

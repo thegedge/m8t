@@ -133,16 +133,14 @@ export type Loader = SingleProcessor<Datum>;
 
 // @public
 export interface ManyProcessor<DataT = Datum<DefaultDatumShape>, ResultT = DataT, ContextT extends DefaultContext = DefaultContext> {
-    // (undocumented)
     processMany(data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
-    // (undocumented)
     transpilersFor?(site: Site): Transpiler[];
 }
 
 // @public
 export type ManyProcessorFunction<DataT = Datum<DefaultDatumShape>, ResultT = DataT, ContextT extends DefaultContext = DefaultContext> = {
-    (data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
     transpilersFor?(site: Site): Transpiler;
+    (data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
 };
 
 // @public
@@ -251,9 +249,7 @@ export class SearchTransformer implements ManyProcessor {
 
 // @public
 export interface SingleProcessor<DataT = Datum<DefaultDatumShape>, ResultT = MaybeArray<DataT>, ContextT extends DefaultContext = DefaultContext> {
-    // (undocumented)
     processOne(data: DataT, context: ContextT): Promise<ResultT>;
-    // (undocumented)
     transpilersFor?(site: Site): Transpiler[];
 }
 
