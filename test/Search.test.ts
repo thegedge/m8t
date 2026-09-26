@@ -4,13 +4,14 @@ import { Search } from "../src/site/Search.js";
 import { testData } from "./helpers.js";
 
 describe("Search", () => {
-  const searcher = new Search([
+  const data = [
     testData({ spam: "example", eggs: 0 }),
     testData({ spam: "", eggs: 1 }),
     testData({ spam: undefined, eggs: 2 }),
     testData({ spam: "example", eggs: 3 }),
     testData({ eggs: 4 }),
-  ]);
+  ];
+  const searcher = new Search(() => data.values());
 
   test("can find data for a given field in the data set", async () => {
     expect(await searcher.pages({ where: { spam: "example" } })).toEqual([

@@ -12,7 +12,7 @@ export { Site } from "./site/Site.js";
 
 export type * from "./types.js";
 export type * from "./utils/Filesystem.js";
-export type * from "./site/Search.js";
+export type { Searcher } from "./site/Search.js";
 export type * from "./site/Site.js";
 export type * from "./loader/ModuleLoader.js";
 export type * from "./utils/FileMatcher.js";

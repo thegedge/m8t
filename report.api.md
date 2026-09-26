@@ -195,12 +195,6 @@ export class Pipeline {
 export type PipelineStage = ManyProcessor | ManyProcessorFunction | SingleProcessor;
 
 // @public
-export type Query = {
-    where?: Record<string, unknown>;
-    sort?: readonly [field: string, direction: "asc" | "desc"];
-};
-
-// @public
 export class ReactRenderer implements SingleProcessor {
     // (undocumented)
     processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>>;
@@ -226,16 +220,9 @@ export const renderElementToHTML: (element: ReactNode) => Promise<string>;
 export const reprocess: unique symbol;
 
 // @public
-export class Search implements Searcher {
-    constructor(data: readonly Datum[]);
-    next(url: string, query: Query): Promise<DefaultDatumShape | null>;
-    pages(query: Query): Promise<DefaultDatumShape[]>;
-    previous(url: string, query: Query): Promise<DefaultDatumShape | null>;
-}
-
-// @public
 export interface Searcher {
     next(url: string, query: Query): Promise<DefaultDatumShape | null>;
+    // Warning: (ae-forgotten-export) The symbol "Query" needs to be exported by the entry point index.d.ts
     pages(query: Query): Promise<DefaultDatumShape[]>;
     previous(url: string, query: Query): Promise<DefaultDatumShape | null>;
 }

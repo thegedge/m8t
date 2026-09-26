@@ -23,18 +23,18 @@ export const noIndex = Symbol.for("m8t:search:noIndex");
  * early in the regular pipeline, but also in the "sub pipeline" for layouts.
  */
 export class SearchTransformer implements ManyProcessor {
-  readonly #data: Datum[];
+  readonly #data: Set<Datum>;
   readonly #search: Search;
 
   constructor() {
-    this.#data = [];
-    this.#search = new Search(this.#data);
+    this.#data = new Set();
+    this.#search = new Search(() => this.#data.values());
   }
 
   async processMany(data: Datum[], _context: DefaultContext): Promise<Datum[]> {
     for (const datum of data) {
-      if (!datum.get(noIndex) && !this.#data.includes(datum)) {
-        this.#data.push(datum);
+      if (!datum.get(noIndex) && !this.#data.has(datum)) {
+        this.#data.add(datum);
       }
     }
 
