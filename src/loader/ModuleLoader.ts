@@ -46,7 +46,7 @@ export class ModuleLoader {
 
   #moduleCache = new Map<string, Promise<Module>>();
   #evaluations = new WeakMap<Module, Promise<void>>();
-  #linkQueue: Promise<void>[]; // serialize linking across multiple load calls
+  #linkQueue: [Module, Promise<void>][]; // serialize linking across multiple load calls
   #resolver = new Resolver();
   #transpilers: Transpiler[];
   #context: Context | undefined;
@@ -211,39 +211,45 @@ export class ModuleLoader {
   /**
    * Link the given module.
    */
-  #link(module: Module): Promise<void> {
+  #link(mod: Module): Promise<void> {
     let promise: Promise<void>;
-    switch (module.status) {
+    switch (mod.status) {
       case "unlinked":
-        const lastLink = this.#linkQueue.at(-1);
-        if (lastLink) {
-          const run = () => {
-            if (module.status !== "unlinked") {
-              return;
-            }
+        const existing = this.#linkQueue.find((v) => v[0] === mod);
+        if (existing) {
+          promise = existing[1];
+        } else {
+          const lastLink = this.#linkQueue.at(-1);
+          if (lastLink) {
+            const run = () => {
+              if (mod.status !== "unlinked") {
+                return Promise.resolve();
+              }
 
-            return module.link((specifier, referrer, extra) => {
+              return mod.link((specifier, referrer, extra) => {
+                return this.#moduleFrom(specifier, referrer, extra.attributes);
+              });
+            };
+
+            // We also run if the previous link fails, so that a link chain isn't completely
+            // poisoned by one bad load
+            promise = lastLink[1].then(run, run);
+          } else {
+            promise = mod.link((specifier, referrer, extra) => {
               return this.#moduleFrom(specifier, referrer, extra.attributes);
             });
-          };
+          }
 
-          // We also run if the previous link fails, so that a link chain isn't completely
-          // poisoned by one bad load
-          promise = lastLink.then(run, run);
-        } else {
-          promise = module.link((specifier, referrer, extra) => {
-            return this.#moduleFrom(specifier, referrer, extra.attributes);
-          });
+          // Important to first push the promise. If it were already resolved, we'd shift something
+          // else off of the queue THEN push
+          this.#linkQueue.push([mod, promise]);
+          promise.finally(() => this.#linkQueue.shift());
         }
-
-        // Important to first push the promise. If it were already resolved, we'd shift something
-        // else off of the queue THEN push
-        this.#linkQueue.push(promise);
-        promise.finally(() => this.#linkQueue.shift());
 
         break;
       case "linking":
-        promise = this.#linkQueue.at(-1) ?? Promise.resolve();
+        const f = this.#linkQueue.find((v) => v[0] === mod) ?? [mod, Promise.resolve()];
+        promise = f[1];
         break;
       case "linked":
       case "evaluating":
@@ -251,7 +257,7 @@ export class ModuleLoader {
         promise = Promise.resolve();
         break;
       case "errored":
-        promise = Promise.reject(module.error);
+        promise = Promise.reject(mod.error);
         break;
     }
 
