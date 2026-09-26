@@ -43,6 +43,20 @@ describe("ModuleLoader", () => {
     expect(namespace).toHaveProperty("value", os.userInfo());
   });
 
+  test("does not have an unhandled error when loading a module with a non-existent import", async () => {
+    await writeFixtures(root, {
+      "broken.mjs": dedent`
+        import { what } from "not_a_thing";
+
+        console.log("oops");
+      `,
+    });
+
+    const brokenPath = path.join(root, "broken.mjs");
+
+    await expect(loader.load(brokenPath)).rejects.toThrow(/unable to resolve/);
+  });
+
   test("loads two modules that import each other without deadlocking or throwing", async () => {
     await writeFixtures(root, {
       "cycleA.mjs": dedent`

@@ -219,31 +219,27 @@ export class ModuleLoader {
         if (existing) {
           promise = existing[1];
         } else {
-          const lastLink = this.#linkQueue.at(-1);
-          if (lastLink) {
-            const run = () => {
-              if (mod.status !== "unlinked") {
-                return Promise.resolve();
-              }
+          const lastLink = this.#linkQueue.at(-1) ?? [null, Promise.resolve()];
+          const run = () => {
+            if (mod.status !== "unlinked") {
+              return;
+            }
 
-              return mod.link((specifier, referrer, extra) => {
-                return this.#moduleFrom(specifier, referrer, extra.attributes);
-              });
-            };
-
-            // We also run if the previous link fails, so that a link chain isn't completely
-            // poisoned by one bad load
-            promise = lastLink[1].then(run, run);
-          } else {
-            promise = mod.link((specifier, referrer, extra) => {
+            return mod.link((specifier, referrer, extra) => {
               return this.#moduleFrom(specifier, referrer, extra.attributes);
             });
-          }
+          };
 
-          // Important to first push the promise. If it were already resolved, we'd shift something
-          // else off of the queue THEN push
+          // We also run if the previous link fails, so that a link chain isn't completely
+          // poisoned by one bad load
+          promise = lastLink[1].then(run, run);
           this.#linkQueue.push([mod, promise]);
-          promise.finally(() => this.#linkQueue.shift());
+          promise
+            .catch(() => {
+              // We need to catch this one to avoid an unhandled rejection, but the error
+              // handling is dealt with by the `errored` state below, hence the no-op
+            })
+            .finally(() => this.#linkQueue.shift());
         }
 
         break;
