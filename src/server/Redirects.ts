@@ -30,7 +30,7 @@ export class Redirects {
       if (parts.length < 2) {
         continue;
       }
-      const from = new URLPattern({ pathname: parts[0].replaceAll(/\/\*\b/g, "/:splat(.*)") });
+      const from = new URLPattern({ pathname: parts[0].replaceAll(/\/\*$/g, "/:splat(.*)") });
       const to = parts[1];
       const status = parseInt(parts[2], 10);
 

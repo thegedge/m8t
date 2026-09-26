@@ -16,7 +16,8 @@ describe("Redirects", () => {
           /dev/:year-:month-:day-:slug     /all-my-dev
 
       # Splats too. And order matters!
-      /blog/*                          /blog/not-found.html              404
+      /blog/*                          /blog/not-found.html       404
+      /spam/*                   /eggs/:splat               301
 
       # nothing else
     `);
@@ -36,6 +37,12 @@ describe("Redirects", () => {
     ]);
     expect(redirects.match("/blog/2020/11/22/another-story")).toEqual([
       "/blog/2020-11-22-another-story",
+      301,
+    ]);
+
+    expect(redirects.match("/spam")).toBeUndefined();
+    expect(redirects.match("/spam/just/some/stuff.txt")).toEqual([
+      "/eggs/just/some/stuff.txt",
       301,
     ]);
 
