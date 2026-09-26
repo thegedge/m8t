@@ -32,9 +32,13 @@ export class Redirects {
       }
       const from = new URLPattern({ pathname: parts[0].replaceAll(/\/\*\b/g, "/:splat(.*)") });
       const to = parts[1];
-      const status = parseInt(parts[2] || "301", 10);
+      const status = parseInt(parts[2], 10);
 
-      redirects.push({ from, to, status });
+      redirects.push({
+        from,
+        to,
+        status: Number.isNaN(status) ? 301 : status,
+      });
     }
 
     return new Redirects(redirects);

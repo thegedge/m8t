@@ -43,4 +43,12 @@ describe("Redirects", () => {
     expect(redirects.match("/dev/2000-testing")).toBeUndefined();
     expect(redirects.match("/dev/2000-01-23-testing")).toEqual(["/all-my-dev", 301]);
   });
+
+  test("validates the status", () => {
+    const redirects = Redirects.fromString(dedent`
+      /about.html  /about  not_a_valid_status
+    `);
+
+    expect(redirects.match("/about.html")).toEqual(["/about", 301]);
+  });
 });
