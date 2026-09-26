@@ -48,12 +48,7 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
 
       stream.on("error", (error) => {
         console.error("read stream error", error);
-        if (!response.writableEnded) {
-          if (!response.headersSent) {
-            response.writeHead(500, { "Content-Type": "text/plain" });
-          }
-          response.end(JSON.stringify(error, null, 2));
-        }
+        response.destroy(error);
       });
 
       response.on("error", (error) => {
