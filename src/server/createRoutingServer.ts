@@ -47,11 +47,12 @@ export const createRoutingServer = <T extends Record<string, unknown>>(
   { timeout = 10_000 }: { timeout?: number } = {},
 ) => {
   return createServer({}, async (request, response) => {
-    const url = new URL(request.url ?? "", `https://${request.headers.host}`);
+    const url = new URL(request.url ?? "", `http://${request.headers.host}`);
     const path = url.pathname;
 
     if (path.endsWith("/") && path !== "/") {
-      response.writeHead(301, { location: path.slice(0, -1) });
+      url.pathname = path.slice(0, -1);
+      response.writeHead(301, { location: url.toString() });
       response.end();
       return;
     }

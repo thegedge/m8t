@@ -239,7 +239,7 @@ describe("createRoutingServer", () => {
       const response = await fetch(`${server.url}/blog/`, { redirect: "manual" });
 
       expect(response.status).toBe(301);
-      expect(response.headers.get("location")).toBe("/blog");
+      expect(response.headers.get("location")).toBe(`${server.url}/blog`);
     });
 
     test("does not redirect the root path `/`", async () => {
@@ -257,6 +257,23 @@ describe("createRoutingServer", () => {
 
       expect(response.status).toBe(200);
       expect(await response.text()).toBe("home");
+    });
+
+    test("does not drop the query string", async () => {
+      await using server = await serve<TestData>(
+        {
+          "/blog": ({ response }) => {
+            response.writeHead(200, { "Content-Type": "text/plain" });
+            response.end("blog index");
+          },
+        },
+        { label: "root" },
+      );
+
+      const response = await fetch(`${server.url}/blog/?testing=yes`, { redirect: "manual" });
+
+      expect(response.status).toBe(301);
+      expect(response.headers.get("location")).toBe(`${server.url}/blog?testing=yes`);
     });
   });
 
