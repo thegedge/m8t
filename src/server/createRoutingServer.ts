@@ -57,6 +57,15 @@ export const createRoutingServer = <T extends Record<string, unknown>>(
       return;
     }
 
+    response.setTimeout(timeout, () => {
+      if (!response.writableEnded) {
+        if (!response.headersSent) {
+          response.writeHead(500, { "Content-Type": "text/plain" });
+        }
+        response.end("Request timed out");
+      }
+    });
+
     const pathSegments = path
       .slice(1)
       .split("/")
@@ -124,13 +133,6 @@ export const createRoutingServer = <T extends Record<string, unknown>>(
       response.end("Not found");
       return;
     }
-
-    response.setTimeout(timeout, () => {
-      if (!response.headersSent) {
-        response.writeHead(500, { "Content-Type": "text/plain" });
-      }
-      response.end("Request timed out");
-    });
 
     try {
       await route({ data: extraData, params, request, response });

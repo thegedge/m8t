@@ -68,8 +68,15 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
   if (redirects) {
     const redirect = redirects.match(pagePath);
     if (redirect) {
-      response.writeHead(redirect[1], { location: redirect[0] });
-      response.end();
+      const [location, status] = redirect;
+      if (status >= 300 && status < 400) {
+        response.writeHead(status, { location });
+        response.end();
+      } else {
+        response.writeHead(status);
+        // TODO need to internally resolve the location and respond appropriately
+        response.end("");
+      }
       return;
     }
   }
