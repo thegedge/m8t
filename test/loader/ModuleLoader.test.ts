@@ -150,6 +150,119 @@ describe("ModuleLoader", () => {
     expect(namespaceB).toHaveProperty("b", "has-esbuild-B");
   });
 
+  test("returns a namespace whose bindings are initialized when a module with top-level await is loaded concurrently as a static dependency", async () => {
+    await writeFixtures(root, {
+      "entryA.mjs": dedent`
+        import "./top-level-await.mjs";
+        export const value = "A";
+      `,
+      "top-level-await.mjs": dedent`
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        export const s = "ready";
+      `,
+    });
+
+    const entryA = path.join(root, "entryA.mjs");
+    const topLevelAwait = path.join(root, "top-level-await.mjs");
+
+    const loadA = loader.load(entryA);
+    const namespaceTopLevelAwait = await loader.load(topLevelAwait);
+
+    // An invalid implementation of module evaluation may not properly wait for the top-level
+    // await to settle first, and we access this before it's initialized.
+    expect(namespaceTopLevelAwait.s).toBe("ready");
+
+    // Let entryA's load settle too so it doesn't leak into other tests.
+    await loadA;
+  });
+
+  test("returns a namespace whose bindings are initialized when a module with top-level await is dynamically imported while loading concurrently as a static dependency", async () => {
+    await writeFixtures(root, {
+      "entryA.mjs": dedent`
+        import "./tla.mjs";
+        export const value = "A";
+      `,
+      "entryB.mjs": dedent`
+        const { s } = await import("./tla.mjs");
+        export const value = s;
+      `,
+      "tla.mjs": dedent`
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        export const s = "ready";
+      `,
+    });
+
+    const loadA = loader.load(path.join(root, "entryA.mjs"));
+    const namespaceB = await loader.load(path.join(root, "entryB.mjs"));
+
+    expect(namespaceB).toHaveProperty("value", "ready");
+
+    await loadA;
+  });
+
+  test("resolves a dynamic import, from a module with top-level await, of an already evaluated sibling dependency", async () => {
+    await writeFixtures(root, {
+      "entry.mjs": dedent`
+        import "./sibling.mjs";
+        import { value } from "./tla.mjs";
+        export { value };
+      `,
+      "sibling.mjs": dedent`
+        export const value = "sibling";
+      `,
+      "tla.mjs": dedent`
+        const { value: siblingValue } = await import("./sibling.mjs");
+        export const value = siblingValue;
+      `,
+    });
+
+    const namespace = await loader.load(path.join(root, "entry.mjs"));
+
+    expect(namespace).toHaveProperty("value", "sibling");
+  });
+
+  test("rejects a concurrent load of a static dependency whose top-level await rejects", async () => {
+    await writeFixtures(root, {
+      "entryA.mjs": dedent`
+        import "./tla.mjs";
+        export const value = "A";
+      `,
+      "tla.mjs": dedent`
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        throw new Error("tla failed");
+      `,
+    });
+
+    const loadA = loader.load(path.join(root, "entryA.mjs"));
+    const loadTla = loader.load(path.join(root, "tla.mjs"));
+
+    await expect(loadTla).rejects.toThrow("tla failed");
+    await expect(loadA).rejects.toThrow("tla failed");
+  });
+
+  test("resolves a concurrent load of a static dependency when a sibling dependency's top-level await rejects", async () => {
+    await writeFixtures(root, {
+      "entryA.mjs": dedent`
+        import "./ok.mjs";
+        import "./tla.mjs";
+        export const value = "A";
+      `,
+      "ok.mjs": dedent`
+        export const value = "ok";
+      `,
+      "tla.mjs": dedent`
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        throw new Error("tla failed");
+      `,
+    });
+
+    const loadA = loader.load(path.join(root, "entryA.mjs"));
+    const loadOk = loader.load(path.join(root, "ok.mjs"));
+
+    await expect(loadOk).resolves.toHaveProperty("value", "ok");
+    await expect(loadA).rejects.toThrow("tla failed");
+  });
+
   test("properly captures errors thrown from a transpiler", async () => {
     const loader = ModuleLoader.with(async (_filename) => {
       throw new Error("this is my error");

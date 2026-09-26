@@ -45,7 +45,6 @@ export class ModuleLoader {
   }
 
   #moduleCache = new Map<string, Promise<Module>>();
-  #evaluations = new WeakMap<Module, Promise<void>>();
   #linkQueue: [Module, Promise<void>][]; // serialize linking across multiple load calls
   #resolver = new Resolver();
   #transpilers: Transpiler[];
@@ -274,23 +273,20 @@ export class ModuleLoader {
         promise = module.evaluate();
         break;
       case "evaluating": {
-        const maybePromise = this.#evaluations.get(module);
-        if (!maybePromise) {
-          // In theory, we could create a polling promise on the status
-          return Promise.reject("module's evaluation promise was lost");
-        }
-        promise = maybePromise;
+        promise = Promise.resolve().then(() => module.evaluate());
         break;
       }
       case "evaluated":
-        promise = Promise.resolve();
+        // Node also reports "evaluated" for a module whose top-level await (or that of one of its
+        // dependencies) hasn't settled yet. Evaluating again returns a promise that settles with
+        // the module's own evaluation, so we don't expose bindings still in their TDZ.
+        promise = module.evaluate();
         break;
       case "errored":
         promise = Promise.reject(module.error);
         break;
     }
 
-    this.#evaluations.set(module, promise);
     return promise;
   }
 }
