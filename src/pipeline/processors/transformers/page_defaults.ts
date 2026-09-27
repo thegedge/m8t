@@ -88,10 +88,11 @@ export class PageDefaultsTransformer implements SingleProcessor {
     const currentUrl = datum.maybeGetString("url");
     if (
       currentUrl &&
-      currentUrl.startsWith(".") &&
+      !currentUrl.startsWith("./") &&
       datum.maybeGetString("outputPath") &&
       datum.maybeGetString("title") &&
       datum.maybeGetString("slug") &&
+      datum.maybeGetString("mimeType") &&
       datum.get("date") instanceof Date
     ) {
       // Everything is already set, so we don't need to do anything
@@ -142,7 +143,7 @@ export class PageDefaultsTransformer implements SingleProcessor {
     let url: string;
     if (!currentUrl) {
       url = path.join("/", parsed.dir, name);
-    } else if (currentUrl.startsWith(".")) {
+    } else if (currentUrl.startsWith("./")) {
       url = path.join("/", parsed.dir, currentUrl);
     } else {
       url = currentUrl;

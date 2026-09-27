@@ -54,6 +54,22 @@ describe("PageDefaultsTransformer", () => {
     });
   });
 
+  test("properly re-writes urls that start with ./", async () => {
+    const datum = new Datum({
+      basePath: "/src",
+      filename: "/src/blog/my-post.mdx",
+      url: "./something",
+      date: new Date("1999-01-13"),
+      outputPath: "/blog/my-post.html",
+      title: "My Post",
+      slug: "my-post",
+    });
+
+    const processed = await process(datum);
+
+    expect(processed.get("url")).toEqual("/blog/something");
+  });
+
   test("doesn't clobber an existing date value when filename lacks a date prefix", async () => {
     const date = new Date("1999-01-13");
     const datum = new Datum({
