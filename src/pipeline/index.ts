@@ -9,6 +9,7 @@ export {
   FilesystemInitializer,
   type FilesystemLoader as Loader,
 } from "./processors/initializers/filesystem.js";
+export { JsonLoader } from "./processors/loaders/json.js";
 export { MdxLoader, type MdxOptions } from "./processors/loaders/mdx.js";
 export { ReadFileLoader } from "./processors/loaders/read_file.js";
 export { TypescriptLoader } from "./processors/loaders/typescript.js";

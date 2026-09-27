@@ -119,6 +119,12 @@ export class FilesystemInitializer implements ManyProcessor {
 }
 
 // @public
+export class JsonLoader implements SingleProcessor {
+    // (undocumented)
+    processOne(datum: Datum, _context: DefaultContext): Promise<Datum>;
+}
+
+// @public
 export class LayoutTransformer implements SingleProcessor {
     constructor(layoutDir: string, pipeline: Readonly<NonEmptyPipeline>);
     readonly layoutDir: string;

@@ -97,12 +97,17 @@ export class FilesystemInitializer implements ManyProcessor {
       return !context.site.ignoredFilesMatcher.matches(fullPath);
     });
 
-    const dataFile = listing.find((entry) => entry.name.startsWith("_data."));
-    if (dataFile) {
-      log("found data file: %s", dataFile.name);
-      const dataFilePath = path.join(fileSystem.rootPath, dataFile.name);
-      const dataFileDatum = parentData.branch({ filename: dataFilePath, [symProcessedBy]: this });
-      parentData = await this.load(dataFileDatum, context);
+    const dataFiles = listing.filter((entry) => entry.name.startsWith("_data."));
+    if (dataFiles.length > 0) {
+      log(
+        "found data files: %s",
+        dataFiles.map((df) => df.name),
+      );
+      for (const dataFile of dataFiles) {
+        const dataFilePath = path.join(fileSystem.rootPath, dataFile.name);
+        const dataFileDatum = parentData.branch({ filename: dataFilePath, [symProcessedBy]: this });
+        parentData = await this.load(dataFileDatum, context);
+      }
     }
 
     // Process files in current dir before descending
@@ -110,7 +115,7 @@ export class FilesystemInitializer implements ManyProcessor {
     const results = await pMap(
       [...files, ...dirs],
       async (entry): Promise<readonly Datum[]> => {
-        if (entry.name.startsWith(".") || entry === dataFile) {
+        if (entry.name.startsWith(".") || entry.name.startsWith("_data.")) {
           // skip hidden files and directories
           return [];
         }

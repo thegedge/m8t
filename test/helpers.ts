@@ -6,25 +6,7 @@ import pMap from "p-map";
 
 import { Datum, Pipeline, Site, TypescriptLoader, type SiteOptions } from "../src/index.js";
 import { symProcessedBy, type DatumShape } from "../src/pipeline/Datum.js";
-import type { FilesystemLoader } from "../src/pipeline/processors/initializers/filesystem.js";
 import type { DefaultContext } from "../src/pipeline/utils.js";
-
-/**
- * A loader that parses each fixture file as JSON and merges it into the datum.
- *
- * Files containing invalid JSON make the load throw, which lets tests exercise the error paths.
- */
-export class StubLoader implements FilesystemLoader {
-  readonly loadedFilenames: string[] = [];
-
-  async processOne(datum: Datum, _context: DefaultContext): Promise<Datum> {
-    const filename = datum.stringOrThrow("filename");
-    const contents = await fs.readFile(filename, "utf-8");
-    const parsed: unknown = JSON.parse(contents);
-    this.loadedFilenames.push(filename);
-    return datum.branch(parsed as Record<string, unknown>);
-  }
-}
 
 export type TestContext = DefaultContext & {
   /** The root path where tests can write output, fixtures, etc */

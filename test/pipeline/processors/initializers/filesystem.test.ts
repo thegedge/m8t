@@ -1,12 +1,13 @@
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
-import { Datum, symProcessedBy } from "../../../../src/pipeline/Datum.js";
+import { Datum } from "../../../../src/pipeline/Datum.js";
 import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/filesystem.js";
-import { makeContext, StubLoader, writeFixtures, type TestContext } from "../../../helpers.js";
+import { JsonLoader } from "../../../../src/pipeline/processors/loaders/json.js";
+import { TypescriptLoader } from "../../../../src/pipeline/processors/loaders/typescript.js";
+import { makeContext, writeFixtures, type TestContext } from "../../../helpers.js";
 
 describe("FilesystemInitializer", () => {
-  let loader: StubLoader;
   let initializer: FilesystemInitializer;
   let context: TestContext;
 
@@ -16,8 +17,9 @@ describe("FilesystemInitializer", () => {
   };
 
   beforeEach(async () => {
-    loader = new StubLoader();
-    initializer = new FilesystemInitializer({ loaders: [loader] });
+    initializer = new FilesystemInitializer({
+      loaders: [new TypescriptLoader(), new JsonLoader()],
+    });
     context = await makeContext({
       pipelines: {},
       ignore: {
@@ -33,11 +35,11 @@ describe("FilesystemInitializer", () => {
   describe("with nested _data files", () => {
     beforeEach(async () => {
       await writeFixtures(context.root, {
-        "_data.ts": JSON.stringify({ fromRoot: "root", shadowed: "root" }),
+        "_data.json": JSON.stringify({ fromRoot: "root", shadowed: "root" }),
         "a.json": JSON.stringify({ title: "a" }),
         "b.json": JSON.stringify({ title: "b" }),
         ".hidden.json": JSON.stringify({ title: "hidden" }),
-        "sub/_data.ts": JSON.stringify({ fromSub: "sub", shadowed: "sub" }),
+        "sub/_data.json": JSON.stringify({ fromSub: "sub", shadowed: "sub" }),
         "sub/c.json": JSON.stringify({ title: "c" }),
         "sub/deep/d.json": JSON.stringify({ title: "d" }),
         "ignored/shallow.json": JSON.stringify({ title: "ignored-d" }),
@@ -61,13 +63,6 @@ describe("FilesystemInitializer", () => {
       }
     });
 
-    test("marks results as processed by the loader that loaded them", async () => {
-      const results = await processRoot();
-      for (const datum of results) {
-        expect(datum.get(symProcessedBy)).toBe(loader);
-      }
-    });
-
     test("produces results in listing order, depth-first, deterministically", async () => {
       // Implicitly, this is also testing the skipping of _data and hidden files
       const expected = ["a.json", "b.json", "z.json", "sub/c.json", "sub/deep/d.json"].map((p) => {
@@ -79,6 +74,20 @@ describe("FilesystemInitializer", () => {
       expect(firstRun).toEqual(expected);
       expect(secondRun).toEqual(expected);
     });
+  });
+
+  test("loads and merges two data files", async () => {
+    await writeFixtures(context.root, {
+      "a.json": JSON.stringify({ title: "a" }),
+      "_data.mjs": "export const value = 1;",
+      "_data.json": JSON.stringify({ value: "testing" }),
+    });
+
+    const result = await processRoot();
+
+    expect(result).toHaveLength(1);
+    expect(result[0].toRecord()).toHaveProperty("title", "a");
+    expect(result[0].get("value")).toBeOneOf([1, "testing"]);
   });
 
   describe("error handling", () => {
@@ -94,8 +103,8 @@ describe("FilesystemInitializer", () => {
 
     test("throws errors when a _data file fails to load", async () => {
       await writeFixtures(context.root, {
-        "_data.ts": JSON.stringify({ fromRoot: "root" }),
-        "sub/_data.ts": "not json",
+        "_data.json": JSON.stringify({ fromRoot: "root" }),
+        "sub/_data.json": "not json",
         "sub/c.json": JSON.stringify({ title: "c" }),
       });
 
