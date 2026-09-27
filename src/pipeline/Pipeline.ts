@@ -93,14 +93,6 @@ export class Pipeline {
       }
 
       const newData = await Promise.race([dataProcessingPromise, workStopped]);
-      if (stageIndex === this.#stages.length - 1) {
-        return newData;
-      }
-
-      if (stageIndex == context.until) {
-        return newData;
-      }
-
       const [newItems, nextStage] = partition(newData, (datum) => !!datum.get(reprocess));
       if (newItems.length > 0) {
         const newItemsData = await this.addTask({
@@ -112,6 +104,14 @@ export class Pipeline {
           },
         });
         nextStage.push(...newItemsData);
+      }
+
+      if (stageIndex === this.#stages.length - 1) {
+        return nextStage;
+      }
+
+      if (stageIndex == context.until) {
+        return nextStage;
       }
 
       return await this.addTask({

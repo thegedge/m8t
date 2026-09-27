@@ -2,7 +2,7 @@ import { getEventListeners } from "node:events";
 import { describe, expect, test } from "vitest";
 
 import { Datum } from "../../src/pipeline/Datum.js";
-import { Pipeline } from "../../src/pipeline/Pipeline.js";
+import { Pipeline, reprocess } from "../../src/pipeline/Pipeline.js";
 import type { Site } from "../../src/site/Site.js";
 
 const site = {} as unknown as Site;
@@ -74,5 +74,50 @@ describe("Pipeline", () => {
 
     expect(listenerCounts).toEqual([1, 1, 1]);
     expect(getEventListeners(controller.signal, "abort")).toHaveLength(0);
+  });
+
+  test("reprocesses a datum when requested at the last stage", async () => {
+    const stage0Calls: string[] = [];
+    const stage0 = async (data: readonly Datum[]) => {
+      stage0Calls.push(...data.map((datum) => datum.get("filename") as string));
+      return data.map((d) => d.branch({ stage0Runs: d.getOr("stage0Runs", 0) + 1 }));
+    };
+    const stage1 = async (data: readonly Datum[]) => data;
+    const stage2 = async (data: readonly Datum[]) =>
+      data.map((datum) =>
+        datum.get("reprocessed") ? datum : datum.with({ reprocessed: true, [reprocess]: true }),
+      );
+    const datum = new Datum({ basePath: "/", filename: "a.txt", title: "a" });
+
+    const pipeline = new Pipeline({ stages: [stage0, stage1, stage2] });
+    const [result] = await pipeline.add([datum], { site });
+
+    expect(stage0Calls).toEqual(["a.txt", "a.txt"]);
+    expect(result.get(reprocess)).toBeFalsy();
+    expect(result.get("stage0Runs")).toBe(2);
+  });
+
+  test("reprocesses a datum requesting it when a sub-pipeline hits its `until`", async () => {
+    const stage0Calls: string[] = [];
+    const stage0 = async (data: readonly Datum[]) => {
+      stage0Calls.push(...data.map((datum) => datum.get("filename") as string));
+      return data.map((d) => d.branch({ stage0Runs: d.getOr("stage0Runs", 0) + 1 }));
+    };
+    let stage1NumCalls = 0;
+    const stage1 = async (data: readonly Datum[]) => {
+      stage1NumCalls += 1;
+      const shouldReprocess = stage1NumCalls <= 2;
+      return data.map((datum) => (shouldReprocess ? datum.with({ [reprocess]: true }) : datum));
+    };
+
+    const stage2 = async (data: readonly Datum[]) => data;
+    const datum = new Datum({ basePath: "/", filename: "a.txt", title: "a" });
+
+    const pipeline = new Pipeline({ stages: [stage0, stage1, stage2] });
+    const [result] = await pipeline.add([datum], { site });
+
+    expect(stage0Calls).toEqual(["a.txt", "a.txt", "a.txt"]);
+    expect(result.get(reprocess)).toBeFalsy();
+    expect(result.get("stage0Runs")).toBe(3);
   });
 });

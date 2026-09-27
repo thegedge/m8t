@@ -31,7 +31,9 @@ export class Datum<Shape extends DefaultDatumShape = DefaultDatumShape> {
     branch(additionalData?: Partial<Shape>): Datum;
     delete(key: keyof Shape): this;
     // (undocumented)
-    get<K extends keyof Shape>(key: K): Shape[K];
+    get<K extends keyof Shape | string>(key: K): Shape[K];
+    // (undocumented)
+    getOr<V>(key: string | symbol, defaultValue: V): V;
     // (undocumented)
     has(key: keyof Shape): boolean;
     // (undocumented)

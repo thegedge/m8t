@@ -137,8 +137,12 @@ export class Datum<Shape extends DatumShape = DatumShape> {
     return this;
   }
 
-  get<K extends keyof Shape>(key: K): Shape[K] {
+  get<K extends keyof Shape | string>(key: K): Shape[K] {
     return this.#data[key];
+  }
+
+  getOr<V>(key: string | symbol, defaultValue: V): V {
+    return (this.#data[key] as V) ?? defaultValue;
   }
 
   maybeGetString(key: string | symbol): string | undefined {
