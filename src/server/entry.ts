@@ -1,7 +1,9 @@
 import fs from "node:fs/promises";
+import { createServer } from "node:http";
+import { pathToFileURL } from "node:url";
 
 import { Site } from "../site/Site.js";
-import { createRoutingServer } from "./createRoutingServer.js";
+import { createRequestHandler } from "./createRoutingServer.js";
 import { Redirects } from "./Redirects.js";
 import { debugPageGet } from "./routes/__debug/GET-[url].js";
 import { debugGet } from "./routes/__debug/GET.js";
@@ -35,15 +37,15 @@ export const run = async (): Promise<void> => {
   await runServer(site, exiting.signal);
 };
 
-const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
-  // Eagerly load the data, instead of lazily on first request
-  await site.data;
-
-  const redirects = site.devServer!.redirectsPath
-    ? await Redirects.fromFilesystem(site.root, site.devServer!.redirectsPath)
-    : null;
-
-  const server = createRoutingServer(
+/**
+ * Build the request handler for a site: the `/__debug__` inspection routes, plus the default
+ * route that serves the site's pages/static files (and follows redirects).
+ *
+ * This is deliberately free of any process/network concerns (env vars, signals, `listen`, etc.) so
+ * it can be tested directly against lightweight fake request/response objects.
+ */
+export const createSiteHandler = (site: Site, redirects: Redirects | null) => {
+  return createRequestHandler(
     {
       "/__debug__": {
         "/[url]": debugPageGet,
@@ -53,6 +55,17 @@ const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
     },
     { site, redirects },
   );
+};
+
+const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
+  // Eagerly load the data, instead of lazily on first request
+  await site.data;
+
+  const redirects = site.devServer!.redirectsPath
+    ? await Redirects.fromFilesystem(site.root, site.devServer!.redirectsPath)
+    : null;
+
+  const server = createServer({}, createSiteHandler(site, redirects));
 
   server.listen({
     host: "0.0.0.0",
@@ -63,4 +76,9 @@ const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
   process.send?.("ready");
 };
 
-run().catch(console.error);
+// Only run automatically when this module is the process's entry point (i.e. when forked as
+// `server/entry.js`, per the contract with `cli/commands/serve.ts`), not when it's imported (e.g.
+// by tests wanting `createSiteHandler` without the process/network side effects of `run`).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  run().catch(console.error);
+}

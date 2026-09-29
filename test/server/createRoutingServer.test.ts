@@ -1,249 +1,172 @@
 import { describe, expect, test } from "vitest";
 
-import { createRoutingServer, type Routes } from "../../src/server/createRoutingServer.js";
+import {
+  createRequestHandler,
+  createRoutingServer,
+  resolveRoute,
+  type Routes,
+} from "../../src/server/createRoutingServer.js";
+import { waitForResponse } from "./helpers.js";
 
 interface TestData extends Record<string, unknown> {
   label: string;
 }
 
-describe("createRoutingServer", () => {
-  /**
-   * Starts a routing server on an OS-assigned port and returns its base URL alongside an
-   * `[Symbol.asyncDispose]` that closes the server, for use with `await using`.
-   */
-  const serve = async <T extends Record<string, unknown>>(
-    routes: Routes<T>,
-    data: T,
-    options?: { timeout?: number },
-  ) => {
-    const server = createRoutingServer(routes, data, options);
-
-    await new Promise<void>((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", () => resolve());
-    });
-
-    const address = server.address();
-    if (address === null || typeof address === "string") {
-      throw new Error("Failed to determine server address");
-    }
-
-    return {
-      url: `http://127.0.0.1:${address.port}`,
-      [Symbol.asyncDispose]: () => new Promise<void>((resolve) => server.close(() => resolve())),
-    };
-  };
-
+describe("resolveRoute", () => {
   describe("literal routes", () => {
-    test("routes the root path `/`", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/": ({ response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
-            response.end("home");
-          },
-        },
-        { label: "root" },
-      );
+    test("matches the root path `/`", () => {
+      const root = () => {};
+      const match = resolveRoute<TestData>({ "/": root }, "/");
 
-      const response = await fetch(server.url + "/");
-
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe("home");
+      expect(match).toEqual({ route: root, params: {} });
     });
 
-    test("routes a nested, multi-segment path", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/blog": {
-            "/2024": {
-              "/hello-world": ({ response }) => {
-                response.writeHead(200, { "Content-Type": "text/plain" });
-                response.end("a blog post");
-              },
-            },
+    test("matches a nested, multi-segment path", () => {
+      const post = () => {};
+      const routes: Routes<TestData> = {
+        "/blog": {
+          "/2024": {
+            "/hello-world": post,
           },
         },
-        { label: "root" },
-      );
+      };
 
-      const response = await fetch(`${server.url}/blog/2024/hello-world`);
+      const match = resolveRoute(routes, "/blog/2024/hello-world");
 
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe("a blog post");
+      expect(match).toEqual({ route: post, params: {} });
     });
 
-    test("does not match when a literal function segment is not the final segment", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/file": ({ response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
-            response.end("file handler");
-          },
-        },
-        { label: "root" },
-      );
+    test("does not match when a literal function segment is not the final segment", () => {
+      const routes: Routes<TestData> = { "/file": () => {} };
 
-      const response = await fetch(`${server.url}/file/extra`);
-
-      expect(response.status).toBe(404);
+      expect(resolveRoute(routes, "/file/extra")).toBeUndefined();
     });
   });
 
   describe("parameterized routes", () => {
-    test("captures a single parameterized segment", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/users": {
-            "/[id]": ({ params, response }) => {
-              response.writeHead(200, { "Content-Type": "application/json" });
-              response.end(JSON.stringify(params));
-            },
-          },
-        },
-        { label: "root" },
-      );
+    test("captures a single parameterized segment", () => {
+      const byId = () => {};
+      const routes: Routes<TestData> = { "/users": { "/[id]": byId } };
 
-      const response = await fetch(`${server.url}/users/42`);
+      const match = resolveRoute(routes, "/users/42");
 
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ id: "42" });
+      expect(match).toEqual({ route: byId, params: { id: "42" } });
     });
 
-    test("captures multiple parameterized segments across levels", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/users": {
-            "/[id]": {
-              "/[action]": ({ params, response }) => {
-                response.writeHead(200, { "Content-Type": "application/json" });
-                response.end(JSON.stringify(params));
-              },
-            },
-          },
-        },
-        { label: "root" },
-      );
+    test("captures multiple parameterized segments across levels", () => {
+      const action = () => {};
+      const routes: Routes<TestData> = {
+        "/users": { "/[id]": { "/[action]": action } },
+      };
 
-      const response = await fetch(`${server.url}/users/42/edit`);
+      const match = resolveRoute(routes, "/users/42/edit");
 
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ id: "42", action: "edit" });
+      expect(match).toEqual({ route: action, params: { id: "42", action: "edit" } });
     });
   });
 
   describe("catchall routes", () => {
-    test("captures the remaining path when catchall named", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/[...rest]": ({ params, response }) => {
-            response.writeHead(200, { "Content-Type": "application/json" });
-            response.end(JSON.stringify(params));
-          },
-        },
-        { label: "root" },
-      );
+    test("captures the remaining path when catchall named", () => {
+      const rest = () => {};
+      const routes: Routes<TestData> = { "/[...rest]": rest };
 
-      const response = await fetch(`${server.url}/anything/goes/here`);
+      const match = resolveRoute(routes, "/anything/goes/here");
 
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ rest: "/anything/goes/here" });
+      expect(match).toEqual({ route: rest, params: { rest: "/anything/goes/here" } });
     });
 
-    test("captures the remaining path when catchall not named", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/[...]": ({ params, response }) => {
-            response.writeHead(200, { "Content-Type": "application/json" });
-            response.end(JSON.stringify(params));
-          },
-        },
-        { label: "root" },
-      );
+    test("captures the remaining path when catchall not named", () => {
+      const all = () => {};
+      const routes: Routes<TestData> = { "/[...]": all };
 
-      const response = await fetch(`${server.url}/whatever`);
+      const match = resolveRoute(routes, "/whatever");
 
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ "*": "/whatever" });
+      expect(match).toEqual({ route: all, params: { "*": "/whatever" } });
     });
 
-    test("falls back to a catchall when a literal function segment is not the final segment", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/file": ({ response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
-            response.end("file handler");
-          },
-          "/[...rest]": ({ params, response }) => {
-            response.writeHead(200, { "Content-Type": "application/json" });
-            response.end(JSON.stringify(params));
-          },
-        },
-        { label: "root" },
-      );
+    test("falls back to a catchall when a literal function segment is not the final segment", () => {
+      const file = () => {};
+      const rest = () => {};
+      const routes: Routes<TestData> = { "/file": file, "/[...rest]": rest };
 
-      const response = await fetch(`${server.url}/file/extra`);
+      const match = resolveRoute(routes, "/file/extra");
 
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ rest: "/file/extra" });
+      expect(match).toEqual({ route: rest, params: { rest: "/file/extra" } });
     });
-    test("prefers the nearest catchall over a more distant ancestor's catchall", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/a": {
-            "/b": {
-              "/c": ({ response }) => {
-                response.writeHead(200, { "Content-Type": "text/plain" });
-                response.end("exact match");
-              },
-            },
-            "/[...nearest]": ({ params, response }) => {
-              response.writeHead(200, { "Content-Type": "application/json" });
-              response.end(JSON.stringify(params));
-            },
-          },
-          "/[...farthest]": ({ params, response }) => {
-            response.writeHead(200, { "Content-Type": "application/json" });
-            response.end(JSON.stringify(params));
-          },
+
+    test("prefers the nearest catchall over a more distant ancestor's catchall", () => {
+      const exact = () => {};
+      const nearest = () => {};
+      const farthest = () => {};
+      const routes: Routes<TestData> = {
+        "/a": {
+          "/b": { "/c": exact },
+          "/[...nearest]": nearest,
         },
-        { label: "root" },
-      );
+        "/[...farthest]": farthest,
+      };
 
-      const nearResponse = await fetch(`${server.url}/a/does-not-exist`);
-      expect(nearResponse.status).toBe(200);
-      expect(await nearResponse.json()).toEqual({ nearest: "/a/does-not-exist" });
-
-      const farResponse = await fetch(`${server.url}/elsewhere`);
-      expect(farResponse.status).toBe(200);
-      expect(await farResponse.json()).toEqual({ farthest: "/elsewhere" });
-
-      const exactResponse = await fetch(`${server.url}/a/b/c`);
-      expect(exactResponse.status).toBe(200);
-      expect(await exactResponse.text()).toBe("exact match");
+      expect(resolveRoute(routes, "/a/does-not-exist")).toEqual({
+        route: nearest,
+        params: { nearest: "/a/does-not-exist" },
+      });
+      expect(resolveRoute(routes, "/elsewhere")).toEqual({
+        route: farthest,
+        params: { farthest: "/elsewhere" },
+      });
+      expect(resolveRoute(routes, "/a/b/c")).toEqual({ route: exact, params: {} });
     });
   });
 
+  describe("unknown routes", () => {
+    test("returns undefined when nothing matches and there is no catchall", () => {
+      const routes: Routes<TestData> = { "/known": () => {} };
+
+      expect(resolveRoute(routes, "/unknown")).toBeUndefined();
+    });
+  });
+
+  describe("path decoding", () => {
+    test("URL-decodes a parameterized segment", () => {
+      const byTerm = () => {};
+      const routes: Routes<TestData> = { "/search": { "/[term]": byTerm } };
+
+      const match = resolveRoute(routes, `/search/${encodeURIComponent("hello world")}`);
+
+      expect(match).toEqual({ route: byTerm, params: { term: "hello world" } });
+    });
+
+    test("URL-decodes a literal segment before matching", () => {
+      const cafe = () => {};
+      const routes: Routes<TestData> = { "/café": cafe };
+
+      const match = resolveRoute(routes, `/${encodeURIComponent("café")}`);
+
+      expect(match).toEqual({ route: cafe, params: {} });
+    });
+  });
+});
+
+describe("createRequestHandler", () => {
   describe("trailing slashes", () => {
     test("redirects a trailing-slash path to its non-trailing-slash equivalent", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/blog": ({ response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
             response.end("blog index");
           },
         },
         { label: "root" },
       );
 
-      const response = await fetch(`${server.url}/blog/`, { redirect: "manual" });
+      const response = await waitForResponse(handler, "/blog/");
 
-      expect(response.status).toBe(301);
-      expect(response.headers.get("location")).toBe(`${server.url}/blog`);
+      expect(response.statusCode).toBe(301);
+      expect(response.headers.location).toBe("http://example.test/blog");
     });
 
     test("does not redirect the root path `/`", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/": ({ response }) => {
             response.writeHead(200, { "Content-Type": "text/plain" });
@@ -253,129 +176,84 @@ describe("createRoutingServer", () => {
         { label: "root" },
       );
 
-      const response = await fetch(`${server.url}/`, { redirect: "manual" });
+      const response = await waitForResponse(handler, "/");
 
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe("home");
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toBe("home");
     });
 
     test("does not drop the query string", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/blog": ({ response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
             response.end("blog index");
           },
         },
         { label: "root" },
       );
+      const response = await waitForResponse(handler, "/blog/?testing=yes");
 
-      const response = await fetch(`${server.url}/blog/?testing=yes`, { redirect: "manual" });
-
-      expect(response.status).toBe(301);
-      expect(response.headers.get("location")).toBe(`${server.url}/blog?testing=yes`);
+      expect(response.statusCode).toBe(301);
+      expect(response.headers.location).toBe("http://example.test/blog?testing=yes");
     });
   });
 
   describe("unknown routes", () => {
     test("returns 404 when nothing matches and there is no catchall", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/known": ({ response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
             response.end("known");
           },
         },
         { label: "root" },
       );
 
-      const response = await fetch(`${server.url}/unknown`);
+      const response = await waitForResponse(handler, "/unknown");
 
-      expect(response.status).toBe(404);
-      expect(await response.text()).toBe("Not found");
-    });
-  });
-
-  describe("path decoding", () => {
-    test("URL-decodes a parameterized segment", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/search": {
-            "/[term]": ({ params, response }) => {
-              response.writeHead(200, { "Content-Type": "application/json" });
-              response.end(JSON.stringify(params));
-            },
-          },
-        },
-        { label: "root" },
-      );
-
-      const response = await fetch(`${server.url}/search/${encodeURIComponent("hello world")}`);
-
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({ term: "hello world" });
-    });
-
-    test("URL-decodes a literal segment before matching", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/café": ({ response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
-            response.end("coffee");
-          },
-        },
-        { label: "root" },
-      );
-
-      const response = await fetch(`${server.url}/${encodeURIComponent("café")}`);
-
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe("coffee");
+      expect(response.statusCode).toBe(404);
+      expect(response.body).toBe("Not found");
     });
   });
 
   describe("extra data", () => {
     test("passes the extra data provided at server creation through to the route", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/": ({ data, response }) => {
-            response.writeHead(200, { "Content-Type": "text/plain" });
             response.end(data.label);
           },
         },
         { label: "hello from extra data" },
       );
 
-      const response = await fetch(`${server.url}/`);
+      const response = await waitForResponse(handler, "/");
 
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe("hello from extra data");
+      expect(response.body).toBe("hello from extra data");
     });
   });
 
   describe("async route handlers", () => {
     test("awaits an async route handler before responding", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/": async ({ response }) => {
             await new Promise((resolve) => setTimeout(resolve, 10));
-            response.writeHead(200, { "Content-Type": "text/plain" });
             response.end("done after awaiting");
           },
         },
         { label: "root" },
       );
 
-      const response = await fetch(`${server.url}/`);
+      const response = await waitForResponse(handler, "/");
 
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe("done after awaiting");
+      expect(response.body).toBe("done after awaiting");
     });
   });
 
   describe("errors thrown from a route", () => {
     test("responds with a server-error body when a route throws synchronously", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/": () => {
             throw new Error("boom");
@@ -384,16 +262,15 @@ describe("createRoutingServer", () => {
         { label: "root" },
       );
 
-      const response = await fetch(`${server.url}/`);
-      const text = await response.text();
+      const response = await waitForResponse(handler, "/");
 
-      expect(response.status).toBe(500);
-      expect(text).toContain("Internal Server Error");
-      expect(text).toContain("boom");
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toContain("Internal Server Error");
+      expect(response.body).toContain("boom");
     });
 
     test("responds with a server-error body when an async route rejects", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/": async () => {
             await Promise.resolve();
@@ -403,16 +280,14 @@ describe("createRoutingServer", () => {
         { label: "root" },
       );
 
-      const response = await fetch(`${server.url}/`);
-      const text = await response.text();
+      const response = await waitForResponse(handler, "/");
 
-      expect(response.status).toBe(500);
-      expect(text).toContain("Internal Server Error");
-      expect(text).toContain("async boom");
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toContain("async boom");
     });
 
     test("does not attempt to write again if the response already ended before throwing", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/": ({ response }) => {
             response.end("already done");
@@ -422,50 +297,47 @@ describe("createRoutingServer", () => {
         { label: "root" },
       );
 
-      const response = await fetch(`${server.url}/`);
+      const response = await waitForResponse(handler, "/");
 
-      expect(response.status).toBe(200);
-      expect(await response.text()).toBe("already done");
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toBe("already done");
     });
   });
 
   describe("request timeout", () => {
     test("responds with a timeout error if the route never settles", async () => {
-      await using server = await serve<TestData>(
-        {
-          "/slow": () => new Promise<void>(() => {}), // never settles
-        },
+      const handler = createRequestHandler<TestData>(
+        { "/slow": () => new Promise<void>(() => {}) }, // never settles
         { label: "root" },
         { timeout: 20 },
       );
 
-      const response = await fetch(`${server.url}/slow`);
+      const response = await waitForResponse(handler, "/slow");
 
-      expect(response.status).toBe(500);
-      expect(await response.text()).toBe("Request timed out");
+      expect(response.statusCode).toBe(500);
+      expect(response.body).toBe("Request timed out");
     });
 
     test("does not overwrite headers already sent when the timeout fires", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/slow": ({ response }) => {
             response.writeHead(202, { "Content-Type": "text/plain" });
-            return new Promise<void>(() => {}); // never settles, headers already sent though
+            return new Promise<void>(() => {});
           },
         },
         { label: "root" },
         { timeout: 20 },
       );
 
-      const response = await fetch(`${server.url}/slow`);
+      const response = await waitForResponse(handler, "/slow");
 
-      // Status is left untouched since headers were already sent, but the response still ends
-      expect(response.status).toBe(202);
-      expect(await response.text()).toBe("Request timed out");
+      expect(response.statusCode).toBe(202);
+      expect(response.body).toBe("Request timed out");
     });
 
     test("does not respond with a timeout error if the route settles before the timeout", async () => {
-      await using server = await serve<TestData>(
+      const handler = createRequestHandler<TestData>(
         {
           "/fast": ({ response }) => {
             response.writeHead(200, { "Content-Type": "text/plain" });
@@ -476,10 +348,43 @@ describe("createRoutingServer", () => {
         { timeout: 100 },
       );
 
-      const response = await fetch(`${server.url}/fast`);
+      const response = await waitForResponse(handler, "/fast");
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toBe("fast enough");
+    });
+  });
+});
+
+describe("createRoutingServer", () => {
+  test("serves a real HTTP request end to end", async () => {
+    const server = createRoutingServer<TestData>(
+      {
+        "/": ({ response }) => {
+          response.writeHead(200, { "Content-Type": "text/plain" });
+          response.end("home");
+        },
+      },
+      { label: "root" },
+    );
+
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+
+    try {
+      const address = server.address();
+      if (address === null || typeof address === "string") {
+        throw new Error("Failed to determine server address");
+      }
+
+      const response = await fetch(`http://127.0.0.1:${address.port}/`);
 
       expect(response.status).toBe(200);
-      expect(await response.text()).toBe("fast enough");
-    });
+      expect(await response.text()).toBe("home");
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
 });

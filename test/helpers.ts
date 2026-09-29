@@ -4,7 +4,14 @@ import os from "node:os";
 import path from "node:path";
 import pMap from "p-map";
 
-import { Datum, Pipeline, Site, TypescriptLoader, type SiteOptions } from "../src/index.js";
+import {
+  Datum,
+  PageDefaultsTransformer,
+  Pipeline,
+  Site,
+  TypescriptLoader,
+  type SiteOptions,
+} from "../src/index.js";
 import { symProcessedBy, type DatumShape } from "../src/pipeline/Datum.js";
 import type { DefaultContext } from "../src/pipeline/utils.js";
 
@@ -23,11 +30,32 @@ export type TestContext = DefaultContext & {
 };
 
 /**
+ * A pipeline that yields the given data as-is, rooted at the site root.
+ *
+ * Also has the {@link PageDefaultsTransformer} so the data looks like most data.
+ */
+export const passthrough = (data: readonly Partial<DatumShape>[]): SiteOptions["pipelines"] => {
+  return {
+    ".": [
+      async (baseData) => {
+        const base = baseData[0];
+        return data.map((datum) => base.branch(datum));
+      },
+      new PageDefaultsTransformer(),
+    ],
+  };
+};
+
+/**
  * Make a test context.
  */
 export const makeContext = async (options?: SiteOptions): Promise<TestContext> => {
   const root = await fixturesRoot("m8t-test-");
-  const site = await Site.fromOptions(root, { pipelines: {}, ...options });
+  const site = await Site.fromOptions(root, {
+    pipelines: {},
+    ...options,
+  });
+
   let filenameIndex = 0;
   return {
     pipeline: new Pipeline({ stages: Object.values(site.pipelines)[0] }),
@@ -51,8 +79,8 @@ export const makeContext = async (options?: SiteOptions): Promise<TestContext> =
         filename = path.resolve(root, filenameOrDatum["filename"] || `test-${++filenameIndex}.ts`);
         initial = new Datum({
           [symProcessedBy]: processor,
-          basePath: root,
           ...filenameOrDatum,
+          basePath: root,
           filename,
         });
       }
