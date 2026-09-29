@@ -112,9 +112,9 @@ exports[`TypesProcessor > quotes keys that need them 1`] = `
 "import "path";
 
 export interface RootData {
-  basePath: string;
+  "needs:quotes": boolean;
+    basePath: string;
     filename: string;
-    "needs:quotes": boolean;
 }
 declare module "some_thing.ts" {
   export interface DataProps extends RootData {

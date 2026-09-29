@@ -172,14 +172,18 @@ export class TypesProcessor implements ManyProcessor {
       .map(([typeName, mapping]) => {
         const keyTypes = mapping
           .entries()
-          .map(([key, types]) => `${maybeQuote(key)}: ${Array.from(types).join(" | ")}`);
+          .map(([key, types]) => `${maybeQuote(key)}: ${Array.from(types).join(" | ")}`)
+          .toArray()
+          .sort((a, b) => a[0].localeCompare(b[0]));
+
         return dedent`
           export interface ${typeName} {
-            ${keyTypes.toArray().join(";\n  ")};
+            ${keyTypes.join(";\n  ")};
           }
         `;
       })
       .toArray()
+      .sort((a, b) => a[0].localeCompare(b[0]))
       .join("\n\n");
 
     await context.site.root.writeFile(
