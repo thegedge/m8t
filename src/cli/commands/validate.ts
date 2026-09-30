@@ -1,89 +1,65 @@
 import { link } from "ansi-escapes";
-import debug from "debug";
-import { HtmlValidate, type Result, type RuleConfig } from "html-validate";
 
 import { Site } from "../../site/Site.js";
-
-const log = debug("m8t:validate");
+import { Validator, type ValidationResult } from "../../utils/Validator.js";
 
 export const run = async (
   root: string,
-  args: { _: string[]; "fail-fast": boolean },
+  args: {
+    _: string[];
+    verbose?: boolean;
+    "fail-fast"?: boolean;
+  },
   signal: AbortSignal,
 ): Promise<number> => {
   const site = await Site.forRoot(root);
-  const validator = new HtmlValidate({
-    root: true,
-    extends: ["html-validate:recommended", "html-validate:a11y"],
-  });
+  const validator = new Validator();
+  const verbose = !!args["verbose"];
+  const failFast = !!args["fail-fast"];
 
-  // TODO verify that all pages have distinct urls and output paths
-
-  let failed = false;
-  for (const url of await site.urls) {
-    if (signal.aborted) {
-      return 123;
-    }
-
-    log("validating %s", url);
-
-    const datum = await site.dataByUrl(url);
-    if (!datum) {
-      throw new Error(`Could not build page for URL ${url}`);
-    }
-
-    const outputPath = datum.stringOrThrow("outputPath");
-    if (!outputPath.endsWith(".html")) {
-      continue;
-    }
-
-    const filename = datum.stringOrThrow("filename");
-    const content = datum.stringOrThrow("content");
-
-    let rules: RuleConfig | undefined = undefined;
-    if (datum.has("htmlValidateRules")) {
-      rules = datum.get("htmlValidateRules") as RuleConfig;
-    }
-
-    const { valid, results } = await validator.validateString(content, filename, { rules });
-    if (!valid) {
-      failed = true;
-
-      console.log(`--> ${filename}:`);
-      dumpMessages(results);
-
-      if (args["fail-fast"]) {
-        return 1;
-      }
+  let exitCode = 0;
+  for await (const result of validator.run(site, { signal, failFast })) {
+    switch (result.description) {
+      case "aborted":
+        break;
+      case "skipped-fail-fast":
+        break;
+      case "passed":
+        if (verbose) {
+          console.log(`✅ ${result.filename}`);
+        }
+        break;
+      case "failed":
+        console.log(`❌ ${result.filename}:`);
+        dumpMessages(result);
+        exitCode = 1;
     }
   }
 
-  return failed ? 1 : 0;
+  return exitCode;
 };
 
-const dumpMessages = (results: Result[]) => {
-  for (const { messages, source } of results) {
-    for (const { message, ruleId, ruleUrl, offset, severity, line, column } of messages) {
-      let prefix: string;
-      switch (severity) {
-        case 2:
-          prefix = "❌";
-          break;
-        case 1:
-          prefix = "⚠️";
-          break;
-        default:
-          prefix = "ℹ️";
-      }
+const dumpMessages = ({ content, messages }: ValidationResult) => {
+  for (const { message, ruleId, ruleUrl, offset, severity, line, column } of messages) {
+    let prefix: string;
+    switch (severity) {
+      case 2:
+        prefix = "❌";
+        break;
+      case 1:
+        prefix = "⚠️";
+        break;
+      default:
+        prefix = "ℹ️";
+    }
 
-      const rule = ruleUrl ? link(ruleId, ruleUrl) : ruleId;
+    const rule = ruleUrl ? link(ruleId, ruleUrl) : ruleId;
 
-      console.log(`  - ${prefix} ${line}:${column} ${message} (${rule})`);
-      if (source) {
-        console.log();
-        console.log(contextString(source, offset, { indent: "    " }));
-        console.log();
-      }
+    console.log(`  - ${prefix} ${line}:${column} ${message} (${rule})`);
+    if (content) {
+      console.log();
+      console.log(contextString(content, offset, { indent: "    " }));
+      console.log();
     }
   }
 };
