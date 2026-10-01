@@ -14,6 +14,7 @@ import {
 } from "../src/index.js";
 import { symProcessedBy, type DatumShape } from "../src/pipeline/Datum.js";
 import type { DefaultContext } from "../src/pipeline/utils.js";
+import { dedent } from "../src/utils/dedent.js";
 
 export type TestContext = DefaultContext & {
   /** The root path where tests can write output, fixtures, etc */
@@ -158,3 +159,20 @@ export const testData = (data: Record<string, unknown>) => {
     ...data,
   });
 };
+
+/**
+ * Build content for a `site.ts` fixture whose single pipeline stage produces the given data.
+ */
+export const siteTsWithPages = (pages: readonly Record<string, unknown>[]) => dedent`
+  export default {
+    pipelines: {
+      ".": [
+        async (data) => {
+          return data.flatMap((datum) => [
+            ${pages.map((page) => `datum.branch(${JSON.stringify(page)})`).join(",\n")}
+          ]);
+        },
+      ],
+    },
+  };
+`;
