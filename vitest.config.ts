@@ -5,6 +5,7 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, "dist/**"],
     execArgv: ["--experimental-vm-modules"],
     setupFiles: ["test/matchers.ts"],
+    restoreMocks: true,
 
     // Default is 5 seconds, but none of these tests need that long
     testTimeout: 1000,
