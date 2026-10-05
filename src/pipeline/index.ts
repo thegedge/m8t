@@ -3,7 +3,7 @@ import type { Transpiler } from "../loader/ModuleLoader.js";
 import type { Datum, DatumShape } from "./Datum.js";
 import type { DefaultContext } from "./utils.js";
 
-export { Datum, type DatumShape as DefaultDatumShape } from "./Datum.js";
+export { Datum, type DatumShape } from "./Datum.js";
 export { Pipeline, reprocess } from "./Pipeline.js";
 export {
   FilesystemInitializer,

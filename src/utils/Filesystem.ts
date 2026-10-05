@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, stat, unlink, writeFile } from "fs/promises";
 import pathModule from "path";
 
 import { isNoEntryError } from "./is.js";
@@ -21,7 +21,7 @@ export class Filesystem {
    * Construct a new filesystem rooted at the given path.
    */
   constructor(path: string) {
-    this.rootPath = ensureEndSlash(pathModule.resolve(process.cwd(), path));
+    this.rootPath = pathModule.resolve(process.cwd(), path);
   }
 
   /**
@@ -109,6 +109,15 @@ export class Filesystem {
   }
 
   /**
+   * Remove the given entry from.
+   *
+   * @param path - the path to remove
+   */
+  async remove(path: string) {
+    await unlink(path);
+  }
+
+  /**
    * Read contents of a given file.
    *
    * @returns the string contents of the file if utf8 encoding specified, otherwise a
@@ -125,7 +134,14 @@ export class Filesystem {
    *
    * Ensures the parent directory exists.
    */
-  async writeFile(path: string, contents: string) {
+  async writeFile(
+    path: string,
+    contents:
+      | string
+      | NodeJS.ArrayBufferView
+      | Iterable<string | NodeJS.ArrayBufferView>
+      | AsyncIterable<string | NodeJS.ArrayBufferView>,
+  ) {
     await this.ensureDir(pathModule.dirname(path));
     await writeFile(this.absolute(path), contents);
   }
@@ -150,5 +166,3 @@ export class Filesystem {
     return pathModule.resolve(this.rootPath, ...paths);
   }
 }
-
-const ensureEndSlash = (path: string) => (path.endsWith("/") ? path : path + "/");

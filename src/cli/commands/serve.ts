@@ -1,4 +1,5 @@
 import { link } from "ansi-escapes";
+import debug from "debug";
 import { watch } from "fs";
 import { fork } from "node:child_process";
 import path from "node:path";
@@ -7,6 +8,8 @@ import { styleText } from "node:util";
 import { Site } from "../../site/Site.js";
 import { Reloader, type ReloaderSubprocess } from "../../utils/Reloader.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
+
+const log = debug("m8t:serve");
 
 const clearLine = () => {
   process.stdout.write("\r" + " ".repeat(80) + "\r");
@@ -71,8 +74,16 @@ const watchFiles = (site: Site, exiting: AbortSignal): void => {
   // Normally you should close watchers once you're done with them, but since we're going to reload
   // the process we instead just unref them, to allow everything to terminate nicely.
   for (const watchDir of site.watchDirs) {
-    watch(watchDir.rootPath, { recursive: true, signal: exiting }, (_event, filePath) => {
+    watch(watchDir.rootPath, { recursive: true, signal: exiting }, (event, filePath) => {
       if (!filePath) {
+        return;
+      }
+
+      if (filePath == path.basename(watchDir.rootPath)) {
+        // TODO I observed this locally when running playwright, where what appeared to be a change
+        //      to the root dir was causing a reload, but verify it wasn't some other playwright
+        //      quirk where it was creating a dir named similarly to the path under which it was
+        //      running
         return;
       }
 
@@ -81,6 +92,7 @@ const watchFiles = (site: Site, exiting: AbortSignal): void => {
         return;
       }
 
+      log(`reloading because of ${filePath} (${event})`);
       reloader.reload();
     }).unref();
   }

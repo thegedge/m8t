@@ -4,8 +4,10 @@
 
 ```ts
 
+import type { BrowserContextOptions } from 'playwright';
 import { CompileOptions } from '@mdx-js/mdx';
 import { Context } from 'node:vm';
+import type { devices } from 'playwright';
 import { Dirent } from 'node:fs';
 import postcss from 'postcss';
 import { ReactNode } from 'react';
@@ -26,7 +28,7 @@ export class CssRenderer implements SingleProcessor {
 }
 
 // @public
-export class Datum<Shape extends DefaultDatumShape = DefaultDatumShape> {
+export class Datum<Shape extends DatumShape = DatumShape> {
     constructor(data: Shape, lineage?: Shape[]);
     branch(additionalData?: Partial<Shape>): Datum;
     delete(key: keyof Shape): this;
@@ -55,16 +57,8 @@ export class Datum<Shape extends DefaultDatumShape = DefaultDatumShape> {
     with_(additionalData: Partial<Shape>): this;
 }
 
-// @public
-export type DefaultContext = {
-    pipeline: Pipeline;
-    site: Site;
-    signal: AbortSignal;
-    [key: string | symbol]: unknown;
-};
-
 // @public (undocumented)
-export type DefaultDatumShape = Readonly<{
+export type DatumShape = Readonly<{
     basePath: string;
     filename: string;
     url?: string;
@@ -72,6 +66,14 @@ export type DefaultDatumShape = Readonly<{
     [symProcessingTimeNs]?: bigint;
     [key: string | symbol]: unknown;
 }>;
+
+// @public
+export type DefaultContext = {
+    pipeline: Pipeline;
+    site: Site;
+    signal: AbortSignal;
+    [key: string | symbol]: unknown;
+};
 
 // @public (undocumented)
 export type DevServerOptions = {
@@ -105,8 +107,9 @@ export class Filesystem {
     isDirectory(dir: string): Promise<boolean>;
     ls(recursive?: boolean): Promise<Dirent<string>[]>;
     readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;
+    remove(path: string): Promise<void>;
     readonly rootPath: string;
-    writeFile(path: string, contents: string): Promise<void>;
+    writeFile(path: string, contents: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView>): Promise<void>;
 }
 
 // @public
@@ -140,13 +143,13 @@ export class LayoutTransformer implements SingleProcessor {
 export type Loader = SingleProcessor<Datum>;
 
 // @public
-export interface ManyProcessor<DataT = Datum<DefaultDatumShape>, ResultT = DataT, ContextT extends DefaultContext = DefaultContext> {
+export interface ManyProcessor<DataT = Datum<DatumShape>, ResultT = DataT, ContextT extends DefaultContext = DefaultContext> {
     processMany(data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
     transpilersFor?(site: Site): Transpiler[];
 }
 
 // @public
-export type ManyProcessorFunction<DataT = Datum<DefaultDatumShape>, ResultT = DataT, ContextT extends DefaultContext = DefaultContext> = {
+export type ManyProcessorFunction<DataT = Datum<DatumShape>, ResultT = DataT, ContextT extends DefaultContext = DefaultContext> = {
     transpilersFor?(site: Site): Transpiler;
     (data: readonly DataT[], context: ContextT): Promise<readonly ResultT[]>;
 };
@@ -229,10 +232,10 @@ export const reprocess: unique symbol;
 
 // @public
 export interface Searcher {
-    next(url: string, query: Query): Promise<DefaultDatumShape | null>;
+    next(url: string, query: Query): Promise<DatumShape | null>;
     // Warning: (ae-forgotten-export) The symbol "Query" needs to be exported by the entry point index.d.ts
-    pages(query: Query): Promise<DefaultDatumShape[]>;
-    previous(url: string, query: Query): Promise<DefaultDatumShape | null>;
+    pages(query: Query): Promise<DatumShape[]>;
+    previous(url: string, query: Query): Promise<DatumShape | null>;
 }
 
 // @public
@@ -243,7 +246,7 @@ export class SearchTransformer implements ManyProcessor {
 }
 
 // @public
-export interface SingleProcessor<DataT = Datum<DefaultDatumShape>, ResultT = MaybeArray<DataT>, ContextT extends DefaultContext = DefaultContext> {
+export interface SingleProcessor<DataT = Datum<DatumShape>, ResultT = MaybeArray<DataT>, ContextT extends DefaultContext = DefaultContext> {
     processOne(data: DataT, context: ContextT): Promise<ResultT>;
     transpilersFor?(site: Site): Transpiler[];
 }
@@ -253,6 +256,8 @@ export class Site {
     get data(): Promise<readonly Datum[]>;
     dataByUrl(url: string): Promise<Datum | undefined>;
     readonly devServer: DevServerOptions | null;
+    // Warning: (ae-forgotten-export) The symbol "ScreenshotterOptions" needs to be exported by the entry point index.d.ts
+    readonly diff: Record<string, ScreenshotterOptions> | null;
     static forRoot(root: string): Promise<Site>;
     static fromOptions(root: string, options: SiteOptions): Promise<Site>;
     readonly ignoredFilesMatcher: FileMatcher;
@@ -269,17 +274,18 @@ export class Site {
 
 // @public (undocumented)
 export type SiteOptions = {
-    mode?: "development" | "production";
-    root?: string;
-    static?: string;
-    out?: string;
+    additionalWatchDirs?: readonly string[];
+    devServer?: Partial<DevServerOptions>;
+    diff?: Record<string, ScreenshotterOptions>;
     ignore?: {
         files?: readonly string[];
         globs?: readonly string[];
     } | string[];
+    mode?: "development" | "production";
+    out?: string;
     pipelines: Record<string, readonly PipelineStage[]>;
-    additionalWatchDirs?: readonly string[];
-    devServer?: Partial<DevServerOptions>;
+    root?: string;
+    static?: string;
 };
 
 // @public

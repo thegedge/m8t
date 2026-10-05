@@ -9,6 +9,7 @@ import { Datum, Pipeline, type PipelineStage } from "../pipeline/index.js";
 import { FileMatcher, type FileMatcherOptions } from "../utils/FileMatcher.js";
 import { Filesystem } from "../utils/Filesystem.js";
 import { keyBy } from "../utils/keyBy.js";
+import type { ScreenshotterOptions } from "../utils/Screenshotter.js";
 
 export type DevServerOptions = {
   port: number;
@@ -17,32 +18,23 @@ export type DevServerOptions = {
 
 export type SiteOptions = {
   /**
-   * The mode the site will run in.
+   * The directories to watch for changes, in addition to the root directory.
+   *
+   * If not an absolute path, paths will be relative to the root directory.
    */
-  mode?: "development" | "production";
+  additionalWatchDirs?: readonly string[];
 
   /**
-   * The root directory of the site.
+   * Dev server configuration.
    */
-  root?: string;
+  devServer?: Partial<DevServerOptions>;
 
   /**
-   * The static directory of the site.
+   * Optional configuration for the diff command
    *
-   * If not an absolute path, it will be relative to the root directory.
-   *
-   * @defaultValue "static"
+   * The key is used as a directory to group all screenshots for a given browser.
    */
-  static?: string;
-
-  /**
-   * The out directory of the site.
-   *
-   * If not an absolute path, it will be relative to the root directory.
-   *
-   * @defaultValue "out"
-   */
-  out?: string;
+  diff?: Record<string, ScreenshotterOptions>;
 
   /**
    * Files to ignore.
@@ -76,21 +68,37 @@ export type SiteOptions = {
     | string[];
 
   /**
+   * The mode the site will run in.
+   */
+  mode?: "development" | "production";
+
+  /**
+   * The out directory of the site.
+   *
+   * If not an absolute path, it will be relative to the root directory.
+   *
+   * @defaultValue "out"
+   */
+  out?: string;
+
+  /**
    * The pipelines the site will use to process data.
    */
   pipelines: Record<string, readonly PipelineStage[]>;
 
   /**
-   * The directories to watch for changes, in addition to the root directory.
-   *
-   * If not an absolute path, paths will be relative to the root directory.
+   * The root directory of the site.
    */
-  additionalWatchDirs?: readonly string[];
+  root?: string;
 
   /**
-   * Dev server configuration.
+   * The static directory of the site.
+   *
+   * If not an absolute path, it will be relative to the root directory.
+   *
+   * @defaultValue "static"
    */
-  devServer?: Partial<DevServerOptions>;
+  static?: string;
 };
 
 /**
@@ -105,6 +113,7 @@ type ResolvedSiteOptions = {
   pipelines: Record<string, readonly PipelineStage[]>;
   additionalWatchDirs: readonly string[];
   devServer?: Partial<DevServerOptions>;
+  diff?: Record<string, ScreenshotterOptions>;
 };
 
 /** The default port to serve the dev server on. */
@@ -168,7 +177,14 @@ export class Site {
 
     let fileMatcherOptions: FileMatcherOptions = {
       base: siteRoot,
-      globs: [CPU_PROFILE_FILENAME, "out/", "diff/", ".git/"],
+      globs: [
+        CPU_PROFILE_FILENAME,
+        "out/",
+        "diff/",
+        ".git/",
+        // Playwright emits stuff like this
+        "_tmp_*",
+      ],
       files: [".gitignore", ".git/info/exclude"],
     };
 
@@ -186,6 +202,7 @@ export class Site {
       root: siteRoot,
       static: staticRoot,
       out: outRoot,
+      diff: options.diff,
       mode:
         options.mode ||
         (process.env.PUBLISH && "production") ||
@@ -229,6 +246,9 @@ export class Site {
   /** An optional dev server configuration */
   readonly devServer: DevServerOptions | null;
 
+  /** The filesystem under which static files are copied/served */
+  readonly diff: Record<string, ScreenshotterOptions> | null;
+
   #dataPromise: Promise<readonly Datum[]> | null = null;
   #dataWithUrlsPromise: Promise<readonly Datum[]> | null = null;
   #dataByUrlPromise: Promise<Readonly<Record<string, Datum>>> | null = null;
@@ -254,6 +274,8 @@ export class Site {
           redirectsPath: options.devServer.redirectsPath,
         }
       : null;
+
+    this.diff = options.diff ?? null;
 
     this.loader = ModuleLoader.with(
       ...Object.values(options.pipelines).flatMap((p) => {
