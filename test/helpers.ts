@@ -50,7 +50,7 @@ export const passthrough = (data: readonly Partial<DatumShape>[]): SiteOptions["
 /**
  * Make a test context.
  */
-export const makeContext = async (options?: SiteOptions): Promise<TestContext> => {
+export const makeContext = async (options?: Partial<SiteOptions>): Promise<TestContext> => {
   const root = await fixturesRoot("m8t-test-");
   const site = await Site.fromOptions(root, {
     pipelines: {},

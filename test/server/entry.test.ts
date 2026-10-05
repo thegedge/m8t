@@ -1,7 +1,10 @@
-import { afterEach, describe, expect, test } from "vitest";
+import { createServer } from "node:http";
+import { type AddressInfo } from "node:net";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { createSiteHandler } from "../../src/server/entry.js";
+import { createSiteHandler, run, runServer } from "../../src/server/entry.js";
 import { Redirects } from "../../src/server/Redirects.js";
+import { Site } from "../../src/site/Site.js";
 import { makeContext, passthrough, type TestContext } from "../helpers.js";
 import { waitForResponse } from "./helpers.js";
 
@@ -62,3 +65,53 @@ describe("createSiteHandler", () => {
     expect(response.statusCode).toBe(404);
   });
 });
+
+describe("run", () => {
+  let controller: AbortController;
+  let context: TestContext;
+
+  beforeEach(async () => {
+    controller = new AbortController();
+    context = await makeContext({ devServer: { port: await freePort() } });
+
+    vi.stubEnv("SITE_ROOT", context.root);
+    vi.spyOn(Site, "forRoot").mockImplementation(async (root) => {
+      if (root == context.root) {
+        return context.site;
+      }
+      throw new Error(`no site present in ${root}`);
+    });
+  });
+
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    controller.abort();
+    await context[Symbol.asyncDispose]();
+  });
+
+  test("rejects when the port is already in use", async () => {
+    const spy = vi.spyOn(process, "send");
+    await runServer(context.site, controller.signal);
+
+    await expect(run(controller)).rejects.toThrow(/EADDRINUSE/);
+
+    expect(spy).not.toHaveBeenCalledWith("send:ready");
+  });
+
+  test("sends 'ready' only after the server has started listening", async () => {
+    const spy = vi.spyOn(process, "send");
+
+    await run(controller);
+
+    await vi.waitFor(() => expect(spy).toHaveBeenCalledExactlyOnceWith("ready"));
+  });
+});
+
+/** Find a free port by briefly binding to port 0. */
+const freePort = async (): Promise<number> => {
+  const probe = createServer();
+  await new Promise<void>((resolve) => probe.listen(0, "0.0.0.0", () => resolve()));
+  const { port } = probe.address() as AddressInfo;
+  probe.close();
+  return port;
+};

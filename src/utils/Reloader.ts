@@ -57,7 +57,11 @@ export class Reloader {
     return server;
   }
 
-  /** Spawn a new process */
+  /**
+   * Reload the process.
+   *
+   * Any process already running will be terminated while the new one is booting.
+   */
   reload(): void {
     void this.#debouncedReload();
   }

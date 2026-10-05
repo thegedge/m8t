@@ -9,7 +9,7 @@ import { debugPageGet } from "./routes/__debug/GET-[url].js";
 import { debugGet } from "./routes/__debug/GET.js";
 import { defaultRoute } from "./routes/GET-[...].js";
 
-export const run = async (): Promise<void> => {
+export const run = async (controller = new AbortController()): Promise<void> => {
   const root = process.env.SITE_ROOT;
   if (!root) {
     throw new Error("Cannot run server because SITE_ROOT env var is not set");
@@ -24,9 +24,8 @@ export const run = async (): Promise<void> => {
     throw new Error("Cannot run server because site hasn't been configured with a dev server");
   }
 
-  const exiting = new AbortController();
   const shutdown = () => {
-    exiting.abort();
+    controller.abort();
     setTimeout(() => {
       process.exit(1);
     }, 1000).unref();
@@ -34,7 +33,7 @@ export const run = async (): Promise<void> => {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  await runServer(site, exiting.signal);
+  await runServer(site, controller.signal);
 };
 
 /**
@@ -57,7 +56,8 @@ export const createSiteHandler = (site: Site, redirects: Redirects | null) => {
   );
 };
 
-const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
+/** @private */
+export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
   // Eagerly load the data, instead of lazily on first request
   await site.data;
 
@@ -66,14 +66,25 @@ const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
     : null;
 
   const server = createServer({}, createSiteHandler(site, redirects));
+  const { resolve, reject, promise } = Promise.withResolvers<void>();
 
-  server.listen({
-    host: "0.0.0.0",
-    port: site.devServer!.port,
-    signal: exiting,
+  server.once("error", (err) => {
+    reject(err);
   });
 
-  process.send?.("ready");
+  server.listen(
+    {
+      host: "0.0.0.0",
+      port: site.devServer!.port,
+      signal: exiting,
+    },
+    () => {
+      process.send?.("ready");
+      resolve();
+    },
+  );
+
+  await promise;
 };
 
 // Only run automatically when this module is the process's entry point (i.e. when forked as
