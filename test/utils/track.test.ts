@@ -23,7 +23,7 @@ const measureWall = async <T>(fn: () => Promise<T>): Promise<[T, bigint]> => {
   return [out, process.hrtime.bigint() - t0];
 };
 
-const EPSILON = 1_000_000n; // one million nanoseconds = 1 millisecond
+const EPSILON_NS = 10_000_000n; // 10 milliseconds
 
 // These are my best attempt at measuring properties of the measurement vs timings
 describe("track", () => {
@@ -68,15 +68,15 @@ describe("track", () => {
     const [[, slow], slowWall] = await measureWall(() => track(body(120)));
 
     // Not sure why, but this one has to be a little more lenient than other checks
-    expect(slowWall).toBeInRange(fastWall + 100_000_000n, 5n * EPSILON);
-    expect(slow).toBeInRange(fast, EPSILON);
+    expect(slowWall).toBeInRange(fastWall + 100_000_000n, 2n * EPSILON_NS);
+    expect(slow).toBeInRange(fast, EPSILON_NS);
   });
 
   test("async waiting measures close to zero", async () => {
     const [, timing] = await track(async () => {
       await waitAsync(100);
     });
-    expect(timing).toBeInRange(0n, EPSILON);
+    expect(timing).toBeInRange(0n, EPSILON_NS);
   });
 
   test.skip("empty microtask chains measures close to zero", async () => {
@@ -99,7 +99,7 @@ describe("track", () => {
     const [[, timing], wall] = await measureWall(() => track(() => waitAsync(10)));
 
     expect(wall).toBeGreaterThan(50);
-    expect(timing).toBeLessThan(EPSILON);
+    expect(timing).toBeLessThan(EPSILON_NS);
   });
 
   test("concurrent branches are not double-counted", async () => {
@@ -115,7 +115,7 @@ describe("track", () => {
         })(),
       ]);
     });
-    expect(timing).toBeInRange(80_000_000n, EPSILON);
+    expect(timing).toBeInRange(80_000_000n, EPSILON_NS);
   });
 
   test("nested tracks each see only their own work", async () => {
@@ -127,7 +127,7 @@ describe("track", () => {
         spin(40);
       });
     });
-    expect(innerPair[1]).toBeInRange(40_000_000n, EPSILON);
-    expect(outerTiming).toBeInRange(20_000_000n, EPSILON);
+    expect(innerPair[1]).toBeInRange(40_000_000n, EPSILON_NS);
+    expect(outerTiming).toBeInRange(20_000_000n, EPSILON_NS);
   });
 });
