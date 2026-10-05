@@ -32,7 +32,7 @@ const COMMANDS = {
 };
 
 const isCommand = (command: string | undefined): command is keyof typeof COMMANDS => {
-  return !!command && command in COMMANDS;
+  return !!command && Object.hasOwn(COMMANDS, command);
 };
 
 const main = async (command: string | undefined, args: Args): Promise<number> => {
