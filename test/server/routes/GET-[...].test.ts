@@ -91,6 +91,15 @@ describe("defaultRoute", () => {
     expect(response.body).toBe("User-agent: *");
   });
 
+  test("doesn't resolve static files outside of the static file root", async () => {
+    await writeFixtures(context.root, { "stuff.txt": "uh oh!" });
+
+    const response = await serveDefaultRoute("/static/../../stuff.txt");
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body).not.toBe("uh oh!");
+  });
+
   describe("with redirects", () => {
     test("redirects when a redirect rule matches a 3xx status", async () => {
       const redirects = Redirects.fromString("/old /new 301");

@@ -32,34 +32,39 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
     return;
   }
 
-  const staticFile = path.join(site.static.rootPath, pagePath);
+  const staticFile = path.resolve(site.static.rootPath, pagePath.slice(1));
   try {
-    const statResult = await stat(staticFile);
-    if (statResult.isFile()) {
-      response.writeHead(200, {
-        "Content-Type": mime.lookup(staticFile) || "application/octet-stream",
-        "Content-Length": statResult.size,
-      });
+    // Really make sure it resolved inside the static dir (i.e., no ../ paths).
+    // This is a bit defensive because `URL` will often resolve `..` paths, so the pathname should,
+    // in the worst case, at the site root
+    if (staticFile.startsWith(site.static.rootPath)) {
+      const statResult = await stat(staticFile);
+      if (statResult.isFile()) {
+        response.writeHead(200, {
+          "Content-Type": mime.lookup(staticFile) || "application/octet-stream",
+          "Content-Length": statResult.size,
+        });
 
-      const stream = createReadStream(staticFile, {
-        autoClose: true,
-        emitClose: true,
-      });
+        const stream = createReadStream(staticFile, {
+          autoClose: true,
+          emitClose: true,
+        });
 
-      stream.on("error", (error) => {
-        console.error("read stream error", error);
-        response.destroy(error);
-      });
+        stream.on("error", (error) => {
+          console.error("read stream error", error);
+          response.destroy(error);
+        });
 
-      response.on("error", (error) => {
-        console.error("response error", error);
-        stream.destroy();
-        response.destroy();
-      });
+        response.on("error", (error) => {
+          console.error("response error", error);
+          stream.destroy();
+          response.destroy();
+        });
 
-      stream.pipe(response);
+        stream.pipe(response);
 
-      return;
+        return;
+      }
     }
   } catch {
     // fall through to 404
