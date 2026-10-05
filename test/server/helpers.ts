@@ -6,7 +6,7 @@ import type { MateRoute } from "../../src/server/routes/types.js";
 import { FakeResponse } from "./FakeResponse.js";
 
 /** A minimal version of `http.IncomingMessage`. */
-const fakeRequest = (options: { url?: string; host?: string } = {}): IncomingMessage =>
+export const fakeRequest = (options: { url?: string; host?: string } = {}): IncomingMessage =>
   ({
     url: options.url ?? "/",
     headers: { host: options.host ?? "example.test" },

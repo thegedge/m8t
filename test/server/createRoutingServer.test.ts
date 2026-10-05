@@ -6,7 +6,7 @@ import {
   resolveRoute,
   type Routes,
 } from "../../src/server/createRoutingServer.js";
-import { waitForResponse } from "./helpers.js";
+import { fakeRequest, waitForResponse } from "./helpers.js";
 
 interface TestData extends Record<string, unknown> {
   label: string;
@@ -375,6 +375,26 @@ describe("createRequestHandler", () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.body).toBe("fast enough");
+    });
+
+    test("does not throw when provided an invalid Host header", async () => {
+      const handler = createRequestHandler<TestData>(
+        {
+          "/response": ({ response }) => {
+            response.writeHead(200, { "Content-Type": "text/plain" });
+            response.end("stuff");
+          },
+        },
+        { label: "root" },
+      );
+
+      const response = await waitForResponse(
+        handler,
+        fakeRequest({ url: "/response", host: "a b" }),
+      );
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body).toBe("Invalid host: a b");
     });
   });
 });

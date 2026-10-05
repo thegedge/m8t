@@ -153,13 +153,20 @@ export const createRequestHandler = <T extends Record<string, unknown>>(
   { timeout = 10_000 }: { timeout?: number } = {},
 ): RequestListener => {
   return async (request, response) => {
-    const url = new URL(request.url ?? "", `http://${request.headers.host}`);
+    const host = `http://${request.headers.host}`;
+    if (!URL.canParse(host)) {
+      response.writeHead(400, { "Content-Type": "text/plain" });
+      response.end(`Invalid host: ${request.headers.host}`);
+      return;
+    }
+
+    const url = new URL(request.url ?? "", host);
     const path = url.pathname;
 
     if (path.endsWith("/") && path !== "/") {
       url.pathname = path.slice(0, -1);
       response.writeHead(301, { location: url.toString() });
-      response.end();
+      response.end("");
       return;
     }
 
