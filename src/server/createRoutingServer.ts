@@ -63,7 +63,7 @@ export const resolveRoute = <T>(routes: Routes<T>, path: string): RouteMatch<T> 
     .map((v) => decodeURIComponent(v));
 
   let catchall = getCatchallRoute(routes);
-  let catchallPath = path;
+  let catchallParam = pathSegments.join("/");
 
   let route: RouteFunction<T> | undefined = undefined;
   let routesToTry = routes;
@@ -99,9 +99,12 @@ export const resolveRoute = <T>(routes: Routes<T>, path: string): RouteMatch<T> 
       //     "/*": fallback
       //   }
       //
-      // will still route the path `/a/c` to the fallback route.
-      catchall = getCatchallRoute(routesToTry) ?? catchall;
-      catchallPath = `/${pathSegment}/${pathSegments.join("/")}`;
+      // will still route the path `/a/b/x` to the fallback route (with param "b/x")
+      const newCatchall = getCatchallRoute(routesToTry);
+      if (newCatchall) {
+        catchall = newCatchall;
+        catchallParam = pathSegments.join("/");
+      }
     } else if (typeof routeHandler === "function") {
       // A literal path segment that resolves to a routing function MUST be the final segment
       if (pathSegments.length == 0) {
@@ -115,7 +118,7 @@ export const resolveRoute = <T>(routes: Routes<T>, path: string): RouteMatch<T> 
   }
 
   if (!route && catchall) {
-    params[catchall[0]] = catchallPath;
+    params[catchall[0]] = catchallParam;
     route = catchall[1];
   }
 

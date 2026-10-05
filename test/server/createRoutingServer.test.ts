@@ -72,7 +72,7 @@ describe("resolveRoute", () => {
 
       const match = resolveRoute(routes, "/anything/goes/here");
 
-      expect(match).toEqual({ route: rest, params: { rest: "/anything/goes/here" } });
+      expect(match).toEqual({ route: rest, params: { rest: "anything/goes/here" } });
     });
 
     test("captures the remaining path when catchall not named", () => {
@@ -81,7 +81,7 @@ describe("resolveRoute", () => {
 
       const match = resolveRoute(routes, "/whatever");
 
-      expect(match).toEqual({ route: all, params: { "*": "/whatever" } });
+      expect(match).toEqual({ route: all, params: { "*": "whatever" } });
     });
 
     test("falls back to a catchall when a literal function segment is not the final segment", () => {
@@ -91,7 +91,7 @@ describe("resolveRoute", () => {
 
       const match = resolveRoute(routes, "/file/extra");
 
-      expect(match).toEqual({ route: rest, params: { rest: "/file/extra" } });
+      expect(match).toEqual({ route: rest, params: { rest: "file/extra" } });
     });
 
     test("prefers the nearest catchall over a more distant ancestor's catchall", () => {
@@ -108,13 +108,36 @@ describe("resolveRoute", () => {
 
       expect(resolveRoute(routes, "/a/does-not-exist")).toEqual({
         route: nearest,
-        params: { nearest: "/a/does-not-exist" },
+        params: { nearest: "does-not-exist" },
       });
       expect(resolveRoute(routes, "/elsewhere")).toEqual({
         route: farthest,
-        params: { farthest: "/elsewhere" },
+        params: { farthest: "elsewhere" },
       });
-      expect(resolveRoute(routes, "/a/b/c")).toEqual({ route: exact, params: {} });
+      expect(resolveRoute(routes, "/a/b/c")).toEqual({
+        route: exact,
+        params: {},
+      });
+    });
+
+    test("test", () => {
+      const c = () => {};
+      const catchall = () => {};
+      const routes: Routes<TestData> = {
+        "/a": {
+          "/b": {
+            "/c": c,
+          },
+          "/[...]": catchall,
+        },
+      };
+
+      const match = resolveRoute(routes, "/a/b/x");
+
+      expect(match).toEqual({
+        route: catchall,
+        params: { "*": "b/x" },
+      });
     });
   });
 
