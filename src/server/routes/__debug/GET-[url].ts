@@ -15,7 +15,7 @@ export const debugPageGet: MateRoute = async ({
 }): Promise<void> => {
   const data = await site.dataByUrl(url);
   if (!data) {
-    response.writeHead(404, { "content-type": "text/html" });
+    response.writeHead(404, { "content-type": "text/plain" });
     response.end("Not found");
     return;
   }

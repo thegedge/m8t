@@ -27,7 +27,7 @@ describe("debugPageGet", () => {
     const response = await serveDebugPage(context, "/missing");
 
     expect(response.statusCode).toBe(404);
-    expect(response.headers["content-type"]).toBe("text/html");
+    expect(response.headers["content-type"]).toBe("text/plain");
     expect(response.body).toBe("Not found");
   });
 
@@ -67,5 +67,15 @@ describe("debugPageGet", () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body.match(/<details open="open">/g)).toHaveLength(3);
+  });
+
+  test("validates the given path", async () => {
+    context = await makeContext({
+      pipelines: { "/": [] },
+    });
+
+    const response = await serveDebugPage(context, "toString");
+
+    expect(response.statusCode).toBe(404);
   });
 });

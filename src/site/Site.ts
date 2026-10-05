@@ -307,7 +307,7 @@ export class Site {
       keyBy(data, (d) => d.maybeGetString("url") || ""),
     );
     const dataByUrl = await this.#dataByUrlPromise;
-    return dataByUrl[url];
+    return Object.hasOwn(dataByUrl, url) ? dataByUrl[url] : undefined;
   }
 
   /**
