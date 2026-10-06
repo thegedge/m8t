@@ -2,6 +2,7 @@ import mime from "mime-types";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import path from "node:path";
+import { pipeline } from "node:stream";
 
 import type { MateRoute } from "./types.js";
 
@@ -45,24 +46,10 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
           "Content-Length": statResult.size,
         });
 
-        const stream = createReadStream(staticFile, {
-          autoClose: true,
-          emitClose: true,
+        const stream = createReadStream(staticFile);
+        pipeline(stream, response, () => {
+          // TODO handle error
         });
-
-        stream.on("error", (error) => {
-          console.error("read stream error", error);
-          response.destroy(error);
-        });
-
-        response.on("error", (error) => {
-          console.error("response error", error);
-          stream.destroy();
-          response.destroy();
-        });
-
-        stream.pipe(response);
-
         return;
       }
     }
