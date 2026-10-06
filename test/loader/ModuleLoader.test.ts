@@ -54,7 +54,13 @@ describe("ModuleLoader", () => {
 
     const brokenPath = path.join(root, "broken.mjs");
 
-    await expect(loader.load(brokenPath)).rejects.toThrow(/unable to resolve/);
+    const loading = loader.load(brokenPath);
+    await expect(loading).rejects.toThrow(/unable to resolve/);
+    await expect(loading).rejects.toMatchObject({
+      name: "LoadError",
+      specifier: "not_a_thing",
+      cause: expect.any(Error),
+    });
   });
 
   test("loads two modules that import each other without deadlocking or throwing", async () => {

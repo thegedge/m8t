@@ -5,6 +5,7 @@ import { fork } from "node:child_process";
 import path from "node:path";
 import { styleText } from "node:util";
 
+import { MissingOptionError } from "../../errors/MissingOptionError.js";
 import { Site } from "../../site/Site.js";
 import { Reloader, type ReloaderSubprocess } from "../../utils/Reloader.js";
 import { printLogoAndTitleWithLines } from "../tui/logo.js";
@@ -52,7 +53,7 @@ const isIgnoredChange = (site: Site, watchDirRoot: string, absolutePath: string)
 
 const watchFiles = (site: Site, exiting: AbortSignal): void => {
   if (!site.devServer) {
-    throw new Error("Dev server port not found");
+    throw new MissingOptionError("devServer");
   }
   const url = `http://localhost:${site.devServer.port}`;
 

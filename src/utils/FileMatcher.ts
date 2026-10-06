@@ -4,6 +4,8 @@ import path from "node:path";
 import type { Readable } from "node:stream";
 import { getSystemErrorName } from "node:util";
 
+import { InternalError } from "../errors/InternalError.js";
+
 export type FileMatcherOptions = {
   /**
    * Ignore files to match (e.g., `.gitignore`).
@@ -55,7 +57,7 @@ export class FileMatcher {
    */
   static async fromOptions(options: Partial<FileMatcherOptions>): Promise<FileMatcher> {
     if (options.base && !options.base.startsWith("/")) {
-      throw new Error("base must be an absolute path");
+      throw new InternalError("base must be an absolute path");
     }
 
     const base = options.base ?? process.cwd();

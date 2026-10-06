@@ -1,6 +1,7 @@
 import * as esbuild from "esbuild";
 import path from "node:path";
 
+import { BuildError } from "../../errors/BuildError.js";
 import type { ManyProcessor } from "../../index.js";
 import { partition } from "../../utils/partition.js";
 import { Datum } from "../Datum.js";
@@ -41,7 +42,7 @@ export class StaticJavascriptProcessor implements ManyProcessor {
 
     if (!basePath) {
       if (jsData.length > 0) {
-        throw new Error("Could not find any base path in data");
+        throw new BuildError("Could not find any base path in data");
       }
 
       return nonJsData;
@@ -90,7 +91,7 @@ export class StaticJavascriptProcessor implements ManyProcessor {
     });
 
     if (result.errors.length > 0) {
-      throw new Error(
+      throw new BuildError(
         "Failed to build static bundle:\n\n" + result.errors.map((e) => e.text).join("\n"),
       );
     }

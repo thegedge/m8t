@@ -1,3 +1,4 @@
+import { EnvironmentError } from "../errors/EnvironmentError.js";
 import { memoize } from "../utils/memoize.js";
 
 /**
@@ -8,7 +9,10 @@ export class Resolver {
 
   constructor() {
     if (!metaResolveParentSupported()) {
-      throw new Error("m8t requires node to be run with --experimental-import-meta-resolve");
+      throw new EnvironmentError(
+        "m8t requires node to be run with --experimental-import-meta-resolve",
+        { flag: "--experimental-import-meta-resolve" },
+      );
     }
     this.#cache = new Map();
   }

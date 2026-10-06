@@ -6,6 +6,7 @@ import path from "node:path";
 import { styleText } from "node:util";
 
 import packageJSON from "../../package.json" with { type: "json" };
+import { formatError } from "./formatError.js";
 import { printLogoAndTitleWithLines } from "./tui/logo.js";
 
 const log = debug("m8t:cli");
@@ -51,25 +52,33 @@ const runCommand = <
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
 
-    process.exitCode = await Promise.race([
-      timedOut,
-      run({
-        opts: commandOpts as unknown as GlobalOptsT & OptsT,
-        args: args as unknown as ArgsT, // we've popped off the command and opts
-        root,
-        signal: exiting.signal,
-      }),
-    ]);
+    try {
+      process.exitCode = await Promise.race([
+        timedOut,
+        run({
+          opts: commandOpts as unknown as GlobalOptsT & OptsT,
+          args: args as unknown as ArgsT, // we've popped off the command and opts
+          root,
+          signal: exiting.signal,
+        }),
+      ]);
+    } catch (e) {
+      // Work rejected because the user asked us to stop isn't worth reporting
+      if (exiting.signal.aborted && e instanceof Error && e.name === "AbortError") {
+        process.exitCode = 1;
+        return;
+      }
+      throw e;
+    }
   };
 };
 
-const program = new Command();
-
-program
+const program = new Command()
   .name("m8t")
   .description("Static site generator")
   .version(packageJSON.version)
-  .option("-C, --directory <path>", "directory to run in");
+  .option("-C, --directory <path>", "directory to run in")
+  .option("-v, --verbose", "emit more verbose output");
 
 program.configureHelp({
   styleTitle(str) {
@@ -125,7 +134,6 @@ program
   .command("validate")
   .description("Validate the site's pages")
   .option("--fail-fast", "stop when the first validation failure is encountered")
-  .option("--verbose", "emit more verbose logging")
   .action(
     runCommand(async ({ root, signal, opts }) => {
       const { failFast = false, verbose = false } = opts;
@@ -142,8 +150,8 @@ program
 try {
   await program.parseAsync(process.argv);
 } catch (e) {
-  // TODO nicer formatting for errors, since users see this
-  console.error(e);
+  const { verbose = false } = program.opts();
+  process.stderr.write(formatError(e, { verbose }) + "\n");
   process.exitCode = 1;
 } finally {
   // Ideally this wouldn't be necessary, but esbuild (for importing tsx/jsx) lingers.

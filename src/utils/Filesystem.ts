@@ -1,6 +1,7 @@
 import { copyFile, mkdir, readdir, readFile, rm, stat, unlink, writeFile } from "fs/promises";
 import pathModule from "path";
 
+import { InternalError } from "../errors/InternalError.js";
 import { isNoEntryError } from "./is.js";
 
 // TODO allow there to be a "root" filesystem. Every `cd` will retain that root value
@@ -49,7 +50,7 @@ export class Filesystem {
   async cd(root: string) {
     const resolvedRoot = pathModule.resolve(this.rootPath, root);
     if (!(await this.isDirectory(resolvedRoot))) {
-      throw new Error(`can't descend into a non-directory ${resolvedRoot}`);
+      throw new InternalError(`can't descend into a non-directory ${resolvedRoot}`);
     }
     return new Filesystem(resolvedRoot);
   }

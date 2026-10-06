@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 
+import { MissingOptionError } from "../../errors/MissingOptionError.js";
 import type { Datum, DatumShape } from "../../pipeline/Datum.js";
 import { Site } from "../../site/Site.js";
 import { imageDiff } from "../../utils/imageDiff.js";
@@ -13,11 +14,11 @@ export const run = async (opts: { root: string; signal: AbortSignal }): Promise<
   const { root, signal } = opts;
   const site = await Site.forRoot(root);
   if (!site.diff) {
-    throw new Error("site.ts doesn't specify any diff options");
+    throw new MissingOptionError("diff");
   }
 
   if (!site.devServer) {
-    throw new Error("m8t diff cannot run without a devServer configured");
+    throw new MissingOptionError("devServer");
   }
   const baseURL = `http://localhost:${site.devServer.port}`;
 

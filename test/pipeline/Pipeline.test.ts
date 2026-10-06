@@ -1,6 +1,7 @@
 import { getEventListeners } from "node:events";
 import { describe, expect, test } from "vitest";
 
+import { AbortError } from "../../src/errors/AbortError.js";
 import { Datum } from "../../src/pipeline/Datum.js";
 import { Pipeline, reprocess } from "../../src/pipeline/Pipeline.js";
 import type { Site } from "../../src/site/Site.js";
@@ -36,7 +37,8 @@ describe("Pipeline", () => {
     });
     controller.abort();
 
-    await expect(result).rejects.toThrow("work stopped");
+    await expect(result).rejects.toThrow(AbortError);
+    await expect(result).rejects.toHaveProperty("name", "AbortError");
   });
 
   test("rejects when the signal is already aborted", async () => {
@@ -52,7 +54,7 @@ describe("Pipeline", () => {
         site,
         signal: controller.signal,
       }),
-    ).rejects.toThrow("work stopped");
+    ).rejects.toThrow(AbortError);
   });
 
   test("removes abort listeners once work settles", async () => {

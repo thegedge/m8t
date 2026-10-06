@@ -15,6 +15,23 @@ import type { Readable } from 'node:stream';
 import { Stats } from 'node:fs';
 
 // @public
+export class AbortError extends M8tError {
+    constructor(message?: string, options?: M8tErrorOptions);
+}
+
+// @public
+export class BuildError extends M8tError {
+    constructor(message: string, options?: M8tErrorOptions & {
+        url?: string;
+    });
+    readonly url: string | undefined;
+}
+
+// @public
+export class ConfigError extends M8tError {
+}
+
+// @public
 export class ContentFunctionTransformer implements SingleProcessor {
     // (undocumented)
     processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>>;
@@ -82,6 +99,20 @@ export type DevServerOptions = {
 };
 
 // @public
+export class EnvironmentError extends M8tError {
+    constructor(message: string, options?: M8tErrorOptions & {
+        flag?: string;
+    });
+    readonly flag: string | undefined;
+}
+
+// @public
+export type ErrorFormatOptions = {
+    verbose?: boolean;
+    maxCauseDepth?: number;
+};
+
+// @public
 export class FileMatcher {
     static fromOptions(options: Partial<FileMatcherOptions>): Promise<FileMatcher>;
     matches(filepath: string): boolean;
@@ -124,6 +155,11 @@ export class FilesystemInitializer implements ManyProcessor {
 }
 
 // @public
+export class InternalError extends M8tError {
+    constructor(message: string, options?: M8tErrorOptions);
+}
+
+// @public
 export class JsonLoader implements SingleProcessor {
     // (undocumented)
     processOne(datum: Datum, _context: DefaultContext): Promise<Datum>;
@@ -141,6 +177,28 @@ export class LayoutTransformer implements SingleProcessor {
 
 // @public (undocumented)
 export type Loader = SingleProcessor<Datum>;
+
+// @public
+export class LoadError extends M8tError {
+    constructor(message: string, options?: M8tErrorOptions & {
+        filename?: string;
+        specifier?: string;
+    });
+    readonly filename: string | undefined;
+    readonly specifier: string | undefined;
+}
+
+// @public
+export class M8tError extends Error {
+    constructor(message: string, options?: M8tErrorOptions);
+    format(options?: ErrorFormatOptions): string;
+    readonly hint: string | undefined;
+}
+
+// @public
+export type M8tErrorOptions = ErrorOptions & {
+    hint?: string;
+};
 
 // @public
 export interface ManyProcessor<DataT = Datum<DatumShape>, ResultT = DataT, ContextT extends DefaultContext = DefaultContext> {
@@ -171,6 +229,12 @@ export class MdxLoader implements SingleProcessor {
 
 // @public (undocumented)
 export type MdxOptions = Omit<CompileOptions, "format" | "outputFormat" | "development" | "baseUrl">;
+
+// @public
+export class MissingOptionError extends ConfigError {
+    constructor(option: keyof SiteOptions);
+    readonly option: keyof SiteOptions;
+}
 
 // @public
 export class ModuleLoader {

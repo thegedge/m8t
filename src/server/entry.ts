@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import { createServer } from "node:http";
 import { pathToFileURL } from "node:url";
 
+import { EnvironmentError } from "../errors/EnvironmentError.js";
+import { MissingOptionError } from "../errors/MissingOptionError.js";
 import { Site } from "../site/Site.js";
 import { createRequestHandler } from "./createRoutingServer.js";
 import { Redirects } from "./Redirects.js";
@@ -12,16 +14,16 @@ import { defaultRoute } from "./routes/GET-[...].js";
 export const run = async (controller = new AbortController()): Promise<void> => {
   const root = process.env.SITE_ROOT;
   if (!root) {
-    throw new Error("Cannot run server because SITE_ROOT env var is not set");
+    throw new EnvironmentError("Cannot run server because SITE_ROOT env var is not set");
   }
 
   if ((await fs.stat(root)).isDirectory() != true) {
-    throw new Error("Cannot run server because SITE_ROOT is not a directory");
+    throw new EnvironmentError("Cannot run server because SITE_ROOT is not a directory");
   }
 
   const site = await Site.forRoot(root);
   if (!site.devServer) {
-    throw new Error("Cannot run server because site hasn't been configured with a dev server");
+    throw new MissingOptionError("devServer");
   }
 
   const shutdown = () => {

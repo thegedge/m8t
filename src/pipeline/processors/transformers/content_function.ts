@@ -1,5 +1,6 @@
 import { isGeneratorFunction } from "node:util/types";
 
+import { LoadError } from "../../../errors/LoadError.js";
 import type { MaybeArray } from "../../../types.js";
 import { Datum, type DatumShape } from "../../Datum.js";
 import type { SingleProcessor } from "../../index.js";
@@ -39,14 +40,17 @@ export class ContentFunctionTransformer implements SingleProcessor {
         switch (typeof result) {
           case "object":
             if (!result) {
-              throw new Error(`unexpected nil result from content function in ${filename}`);
+              throw new LoadError(`unexpected nil result from content function in ${filename}`, {
+                filename,
+              });
             }
 
             newData.push(datum.branch(result as unknown as DatumShape));
             break;
           default:
-            throw new Error(
+            throw new LoadError(
               `Expected object result from content function in ${filename}, but received ${typeof result}`,
+              { filename },
             );
         }
       }

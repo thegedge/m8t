@@ -2,6 +2,7 @@ import { compile, type CompileOptions } from "@mdx-js/mdx";
 import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
+import { LoadError } from "../../../errors/LoadError.js";
 import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Site } from "../../../site/Site.js";
 import type { Datum } from "../../Datum.js";
@@ -42,7 +43,9 @@ export class MdxLoader implements SingleProcessor {
 
     const { default: mdxContent, ...mdxData } = await context.site.loader.load(filename);
     if (typeof mdxContent != "function") {
-      throw new Error("expected default MDX export to be a function");
+      throw new LoadError(`expected default MDX export to be a function in ${filename}`, {
+        filename,
+      });
     }
 
     return datum.with({

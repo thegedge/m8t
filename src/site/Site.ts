@@ -1,13 +1,17 @@
 import debug from "debug";
+import { stat } from "node:fs/promises";
 import { Session } from "node:inspector/promises";
 import path from "node:path";
 import pMap from "p-map";
 
+import { ConfigError } from "../errors/ConfigError.js";
+import { LoadError } from "../errors/LoadError.js";
 import { ModuleLoader } from "../loader/ModuleLoader.js";
 import { symProcessedBy } from "../pipeline/Datum.js";
 import { Datum, Pipeline, type PipelineStage } from "../pipeline/index.js";
 import { FileMatcher, type FileMatcherOptions } from "../utils/FileMatcher.js";
 import { Filesystem } from "../utils/Filesystem.js";
+import { isNoEntryError } from "../utils/is.js";
 import { keyBy } from "../utils/keyBy.js";
 import type { ScreenshotterOptions } from "../utils/Screenshotter.js";
 
@@ -142,17 +146,25 @@ export class Site {
   static async forRoot(root: string): Promise<Site> {
     log("initializing site from %s", root);
 
+    const sitePath = path.join(root, "site.ts");
+    if (!(await isFile(sitePath))) {
+      throw new LoadError(`could not find a site.ts file in ${root}`, {
+        filename: sitePath,
+        hint: "Run m8t from the site's root directory, or point to it with -C <path>",
+      });
+    }
+
     let siteOptions: SiteOptions;
     try {
-      ({ default: siteOptions } = await import(path.join(root, "site.ts")));
-      if (typeof siteOptions !== "object" || siteOptions === null) {
-        throw new Error("site.ts must export site options");
-      }
+      ({ default: siteOptions } = await import(sitePath));
     } catch (e) {
-      if (e instanceof Error && "code" in e && e.code == "ERR_MODULE_NOT_FOUND") {
-        throw new Error(`could not find a site.ts file in ${root}`);
-      }
-      throw e;
+      throw new LoadError(`could not load ${sitePath}`, { cause: e, filename: sitePath });
+    }
+
+    if (typeof siteOptions !== "object" || siteOptions === null) {
+      throw new ConfigError("site.ts must export site options", {
+        hint: "Default-export an object of site options from site.ts",
+      });
     }
 
     return await Site.fromOptions(root, siteOptions);
@@ -172,7 +184,9 @@ export class Site {
     const outRoot = path.resolve(siteRoot, options.out || "out");
 
     if (!outRoot.startsWith(siteRoot)) {
-      throw new Error("output dir must be a subdirectory of the site root");
+      throw new ConfigError("output dir must be a subdirectory of the site root", {
+        hint: `Set the \`out\` option in site.ts to a path inside ${siteRoot}`,
+      });
     }
 
     let fileMatcherOptions: FileMatcherOptions = {
@@ -376,3 +390,14 @@ export class Site {
     }
   }
 }
+
+const isFile = async (filename: string): Promise<boolean> => {
+  try {
+    return (await stat(filename)).isFile();
+  } catch (e) {
+    if (isNoEntryError(e)) {
+      return false;
+    }
+    throw e;
+  }
+};

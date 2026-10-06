@@ -3,6 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { run } from "../../../src/cli/commands/build.js";
+import { LoadError } from "../../../src/errors/LoadError.js";
 import { fixturesRoot, siteTsWithPages, writeFixtures } from "../../helpers.js";
 
 describe("build command", () => {
@@ -14,6 +15,22 @@ describe("build command", () => {
 
   afterEach(async () => {
     await fs.rm(root, { recursive: true, force: true });
+  });
+
+  test("rejects with a LoadError when the root has no site.ts", async () => {
+    const building = run({ root, signal: new AbortController().signal });
+    await expect(building).rejects.toBeInstanceOf(LoadError);
+    await expect(building).rejects.toHaveProperty("filename", path.join(root, "site.ts"));
+  });
+
+  test("rejects with a LoadError when site.ts imports a missing module", async () => {
+    await writeFixtures(root, {
+      "site.ts": `import "./missing.ts";\nexport default { pipelines: {} };\n`,
+    });
+
+    const building = run({ root, signal: new AbortController().signal });
+    await expect(building).rejects.toBeInstanceOf(LoadError);
+    await expect(building).rejects.toHaveProperty("cause.code", "ERR_MODULE_NOT_FOUND");
   });
 
   test("writes each page's content to its output path under out/build", async () => {

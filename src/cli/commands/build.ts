@@ -2,6 +2,7 @@ import debug from "debug";
 import path from "node:path";
 import pMap from "p-map";
 
+import { BuildError } from "../../errors/BuildError.js";
 import { Site } from "../../site/Site.js";
 
 const log = debug("m8t:build");
@@ -28,7 +29,7 @@ export const run = async (opts: { root: string; signal: AbortSignal }): Promise<
       process.stdout.write(`Building ${url}\n`);
       const data = await site.dataByUrl(url);
       if (!data) {
-        throw new Error(`Could not build page for URL ${url}`);
+        throw new BuildError(`Could not build page for URL ${url}`, { url });
       }
 
       if (signal.aborted) {

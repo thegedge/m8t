@@ -5,6 +5,7 @@ import {
   type ServerResponse,
 } from "node:http";
 
+import { formatError } from "../cli/formatError.js";
 import type { MaybePromise } from "../index.js";
 
 /** A route handler */
@@ -189,12 +190,11 @@ export const createRequestHandler = <T extends Record<string, unknown>>(
     try {
       await match.route({ data: extraData, params: match.params, request, response });
     } catch (error) {
-      console.error(error);
       if (!response.writableEnded) {
         if (!response.headersSent) {
           response.writeHead(500, { "Content-Type": "text/plain" });
         }
-        response.end(`Internal Server Error\n\n${error.stack}`);
+        response.end(formatError(error));
       }
     }
   };

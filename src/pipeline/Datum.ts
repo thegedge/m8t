@@ -1,3 +1,4 @@
+import { InternalError } from "../errors/InternalError.js";
 import { merge } from "../utils/merge.js";
 
 /** Datum key for the processor that processed the datum */
@@ -153,7 +154,7 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   stringOrThrow(key: string | symbol): string {
     const value = this.#data[key];
     if (typeof value !== "string") {
-      throw new Error(`expected string, got ${typeof value} for ${String(key)}`);
+      throw new InternalError(`expected string, got ${typeof value} for ${String(key)}`);
     }
     return value;
   }

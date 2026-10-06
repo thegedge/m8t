@@ -4,6 +4,8 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import vm, { type Module, type SourceTextModule, type Context } from "node:vm";
 
+import { EnvironmentError } from "../errors/EnvironmentError.js";
+import { LoadError } from "../errors/LoadError.js";
 import type { MaybePromise } from "../types.js";
 import { memoize } from "../utils/memoize.js";
 import { canonicalModulePath } from "./canonicalModulePath.js";
@@ -61,7 +63,9 @@ export class ModuleLoader {
    */
   constructor(options?: ModuleLoaderOptions) {
     if (!checkModuleSupportAvailable()) {
-      throw new Error("m8t requires node to be run with --experimental-vm-modules");
+      throw new EnvironmentError("m8t requires node to be run with --experimental-vm-modules", {
+        flag: "--experimental-vm-modules",
+      });
     }
 
     this.#transpilers = [...(options?.transpilers ?? [])];
@@ -115,8 +119,10 @@ export class ModuleLoader {
     try {
       resolved = this.#resolver.resolve(specifier, referrer.identifier);
     } catch (error) {
-      throw new Error(`unable to resolve "${specifier}" from ${referrer.identifier}`, {
+      throw new LoadError(`unable to resolve "${specifier}" from ${referrer.identifier}`, {
         cause: error,
+        filename: referrer.identifier,
+        specifier,
       });
     }
 

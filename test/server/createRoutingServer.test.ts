@@ -288,8 +288,7 @@ describe("createRequestHandler", () => {
       const response = await waitForResponse(handler, "/");
 
       expect(response.statusCode).toBe(500);
-      expect(response.body).toContain("Internal Server Error");
-      expect(response.body).toContain("boom");
+      expect(response.body).toContain("Unknown error: boom");
     });
 
     test("responds with a server-error body when an async route rejects", async () => {

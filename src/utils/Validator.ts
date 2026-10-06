@@ -1,6 +1,7 @@
 import { HtmlValidate, type Message, type RuleConfig } from "html-validate";
 import { pMapSkip } from "p-map";
 
+import { BuildError } from "../errors/BuildError.js";
 import type { Site } from "../site/Site.js";
 
 export { type Result } from "html-validate";
@@ -63,7 +64,7 @@ export class Validator {
     for (const url of await site.urls) {
       const datum = await site.dataByUrl(url);
       if (!datum) {
-        throw new Error(`Could not build page for URL ${url}`);
+        throw new BuildError(`Could not build page for URL ${url}`, { url });
       }
 
       const mimeType = datum.stringOrThrow("mimeType");

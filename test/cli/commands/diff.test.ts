@@ -26,9 +26,10 @@ describe("diff command", () => {
       `,
     });
 
-    await expect(run({ root, signal: new AbortController().signal })).rejects.toThrow(
-      "site.ts doesn't specify any diff options",
-    );
+    await expect(run({ root, signal: new AbortController().signal })).rejects.toMatchObject({
+      name: "MissingOptionError",
+      option: "diff",
+    });
   });
 
   test("rejects when the site has no devServer configuration", async () => {
@@ -41,9 +42,10 @@ describe("diff command", () => {
       `,
     });
 
-    await expect(run({ root, signal: new AbortController().signal })).rejects.toThrow(
-      "m8t diff cannot run without a devServer configured",
-    );
+    await expect(run({ root, signal: new AbortController().signal })).rejects.toMatchObject({
+      name: "MissingOptionError",
+      option: "devServer",
+    });
   });
 
   // TODO either run real browsers or allow for providing/mocking/stubbing a "differ" so we can test

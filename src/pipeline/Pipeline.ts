@@ -1,5 +1,6 @@
 import debug from "debug";
 
+import { AbortError } from "../errors/AbortError.js";
 import type { PipelineStage } from "../index.js";
 import { partition } from "../utils/partition.js";
 import type { Datum } from "./Datum.js";
@@ -68,7 +69,7 @@ export class Pipeline {
     }
 
     if (context.signal?.aborted) {
-      throw new Error("work stopped");
+      throw new AbortError();
     }
 
     const stage = this.#stages[stageIndex];
@@ -78,7 +79,7 @@ export class Pipeline {
     }
 
     const { reject: rejectWork, promise: workStopped } = Promise.withResolvers<never>();
-    const stop = () => rejectWork(new Error("work stopped"));
+    const stop = () => rejectWork(new AbortError());
     context.signal?.addEventListener("abort", stop);
     try {
       log("pipeline stage %s (%s)", stageIndex + 1, stage.constructor.name);
