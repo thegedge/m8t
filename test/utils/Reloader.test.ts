@@ -7,12 +7,23 @@ import { Reloader, type ReloaderSubprocess } from "../../src/utils/Reloader.js";
 class FakeServer extends EventEmitter implements ReloaderSubprocess {
   exitCode: number | null = null;
   signalCode: NodeJS.Signals | null = null;
+  #exited = false;
 
   kill(signal: NodeJS.Signals | number = "SIGTERM"): boolean {
+    if (this.#exited) return false;
+
     this.signalCode = typeof signal === "number" ? null : signal;
-    // Simulate the process exiting asynchronously, like a real child process would.
-    queueMicrotask(() => this.emit("exit"));
+    queueMicrotask(() => this.exit(null, typeof signal === "string" ? signal : "SIGTERM"));
+
     return true;
+  }
+
+  exit(code: number | null = 0, signal: NodeJS.Signals | null = null): void {
+    if (this.#exited) return;
+    this.#exited = true;
+    this.exitCode = code;
+    this.signalCode = signal;
+    this.emit("exit", code, signal);
   }
 }
 
