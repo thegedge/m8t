@@ -45,6 +45,18 @@ describe("debugPageGet", () => {
     expect(response.body).toContain("<h3>Lineage</h3>");
   });
 
+  test("renders the datum's data as JSON when found", async () => {
+    context = await makeContext({
+      pipelines: passthrough([{ url: "/hello", title: "Hello", data: "</testing>" }]),
+    });
+
+    const response = await serveDebugPage(context, "/hello");
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toBe("text/html");
+    expect(response.body).not.toContain("</testing>");
+  });
+
   test("renders one lineage entry per prior state of the datum", async () => {
     context = await makeContext({
       pipelines: {

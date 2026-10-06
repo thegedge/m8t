@@ -173,7 +173,7 @@ const jsonViewerForData = (obj: Record<string | symbol, unknown>, id: string | n
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const wrapper = document.getElementById("data-${id}");
-        wrapper.data = ${JSON.stringify(obj, DatumJsonReplacer())};
+        wrapper.data = ${stringify(obj)};
       });
     </script>
   `;
@@ -191,10 +191,16 @@ const processorNameForDatum = (datum: DatumShape): string => {
       return processorConstructorName;
     }
 
-    return `&lt;${truncate(JSON.stringify(processor))}&gt;`;
+    return `&lt;${truncate(stringify(processor))}&gt;`;
   }
 
   return "&lt;unknown&gt;";
+};
+
+const stringify = (value: unknown) => {
+  const result = JSON.stringify(value, DatumJsonReplacer());
+  // Avoids any form of tag injection or other trickery
+  return result.replaceAll("<", "\\u003c");
 };
 
 const DatumJsonReplacer = () => {
