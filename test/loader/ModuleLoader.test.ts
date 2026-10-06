@@ -156,6 +156,48 @@ describe("ModuleLoader", () => {
     expect(namespaceB).toHaveProperty("b", "has-esbuild-B");
   });
 
+  test("loads a dependency concurrently while it is being linked as part of its dependent", async () => {
+    await writeFixtures(root, {
+      "entryA.mjs": dedent`
+        import { b } from "./depB.mjs";
+        export const a = b + "-A";
+      `,
+      "depB.mjs": dedent`
+        import { c } from "./depC.mjs";
+        export const b = c + "-B";
+      `,
+      "depC.mjs": dedent`
+        export const c = "C";
+      `,
+    });
+
+    const depC = path.join(root, "depC.mjs");
+
+    const cGate = Promise.withResolvers<void>();
+    const cRequested = Promise.withResolvers<void>();
+
+    const loader = ModuleLoader.with(async (filename) => {
+      if (filename === depC) {
+        cRequested.resolve();
+        await cGate.promise;
+      }
+      return await fs.promises.readFile(filename, "utf-8");
+    });
+
+    const loadA = loader.load(path.join(root, "entryA.mjs"));
+
+    // depB is now "linking" as part of entryA's link, waiting on depC
+    await cRequested.promise;
+    const loadB = loader.load(path.join(root, "depB.mjs"));
+    await setImmediate(); // flush microtask queue
+    cGate.resolve();
+
+    const [namespaceA, namespaceB] = await Promise.all([loadA, loadB]);
+
+    expect(namespaceA).toHaveProperty("a", "C-B-A");
+    expect(namespaceB).toHaveProperty("b", "C-B");
+  });
+
   test("returns a namespace whose bindings are initialized when a module with top-level await is loaded concurrently as a static dependency", async () => {
     await writeFixtures(root, {
       "entryA.mjs": dedent`

@@ -249,8 +249,14 @@ export class ModuleLoader {
 
         break;
       case "linking":
-        const f = this.#linkQueue.find((v) => v[0] === mod) ?? [mod, Promise.resolve()];
-        promise = f[1];
+        const queued = this.#linkQueue.find((v) => v[0] === mod);
+        if (queued) {
+          promise = queued[1];
+        } else {
+          const tail = this.#linkQueue.at(-1);
+          const link = () => this.#link(mod); // really make sure it was linked
+          promise = tail ? tail[1].then(link, link) : Promise.resolve();
+        }
         break;
       case "linked":
       case "evaluating":
@@ -273,7 +279,11 @@ export class ModuleLoader {
     switch (module.status) {
       case "unlinked":
       case "linking":
-        promise = Promise.reject();
+        promise = Promise.reject(
+          new LoadError(`cannot evaluate module that is ${module.status}`, {
+            filename: module.identifier,
+          }),
+        );
         break;
       case "linked":
         promise = module.evaluate();
