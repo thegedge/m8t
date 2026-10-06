@@ -26,7 +26,7 @@ describe("diff command", () => {
       `,
     });
 
-    await expect(run(root, { _: [] }, new AbortController().signal)).rejects.toThrow(
+    await expect(run({ root, signal: new AbortController().signal })).rejects.toThrow(
       "site.ts doesn't specify any diff options",
     );
   });
@@ -41,7 +41,7 @@ describe("diff command", () => {
       `,
     });
 
-    await expect(run(root, { _: [] }, new AbortController().signal)).rejects.toThrow(
+    await expect(run({ root, signal: new AbortController().signal })).rejects.toThrow(
       "m8t diff cannot run without a devServer configured",
     );
   });

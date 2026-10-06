@@ -3,19 +3,15 @@ import { link } from "ansi-escapes";
 import { Site } from "../../site/Site.js";
 import { Validator, type ValidationResult } from "../../utils/Validator.js";
 
-export const run = async (
-  root: string,
-  args: {
-    _: string[];
-    verbose?: boolean;
-    "fail-fast"?: boolean;
-  },
-  signal: AbortSignal,
-): Promise<number> => {
+export const run = async (opts: {
+  root: string;
+  signal: AbortSignal;
+  verbose: boolean;
+  failFast: boolean;
+}): Promise<number> => {
+  const { root, signal, verbose, failFast } = opts;
   const site = await Site.forRoot(root);
   const validator = new Validator();
-  const verbose = !!args["verbose"];
-  const failFast = !!args["fail-fast"];
 
   let exitCode = 0;
   for await (const result of validator.run(site, { signal, failFast })) {

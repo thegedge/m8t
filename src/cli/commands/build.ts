@@ -7,11 +7,8 @@ import { Site } from "../../site/Site.js";
 const log = debug("m8t:build");
 const CONCURRENCY = 8;
 
-export const run = async (
-  root: string,
-  _args: { _: [string] },
-  signal: AbortSignal,
-): Promise<number> => {
+export const run = async (opts: { root: string; signal: AbortSignal }): Promise<number> => {
+  const { root, signal } = opts;
   const site = await Site.forRoot(root);
   await site.out.ensureDir("build");
 

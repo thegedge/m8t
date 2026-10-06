@@ -150,7 +150,7 @@ export class Site {
       }
     } catch (e) {
       if (e instanceof Error && "code" in e && e.code == "ERR_MODULE_NOT_FOUND") {
-        throw new Error("could not find a site.ts file in the current directory");
+        throw new Error(`could not find a site.ts file in ${root}`);
       }
       throw e;
     }

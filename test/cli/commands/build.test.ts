@@ -24,7 +24,7 @@ describe("build command", () => {
       ]),
     });
 
-    const code = await run(root, { _: [] } as never, new AbortController().signal);
+    const code = await run({ root, signal: new AbortController().signal });
 
     expect(code).toBe(0);
     await expect(fs.readFile(path.join(root, "out/build/index.html"), "utf-8")).resolves.toBe(
@@ -43,7 +43,7 @@ describe("build command", () => {
       "static/images/logo.png": "totally-a-png",
     });
 
-    await run(root, { _: [] } as never, new AbortController().signal);
+    await run({ root, signal: new AbortController().signal });
 
     await expect(fs.readFile(path.join(root, "out/build/images/logo.png"), "utf-8")).resolves.toBe(
       "totally-a-png",
@@ -58,7 +58,7 @@ describe("build command", () => {
       "out/build/stale.html": "should be removed",
     });
 
-    await run(root, { _: [] } as never, new AbortController().signal);
+    await run({ root, signal: new AbortController().signal });
 
     await expect(fs.stat(path.join(root, "out/build/stale.html"))).rejects.toThrow();
   });

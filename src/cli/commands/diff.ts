@@ -9,11 +9,8 @@ import { screenshotterForOptions } from "../../utils/Screenshotter.js";
 //      Even better: just start the server, if it isn't already running.
 //      Also, make sure to retry on connection failure. Sometimes it slips.
 
-export const run = async (
-  root: string,
-  _args: Record<string, unknown>,
-  signal: AbortSignal,
-): Promise<number> => {
+export const run = async (opts: { root: string; signal: AbortSignal }): Promise<number> => {
+  const { root, signal } = opts;
   const site = await Site.forRoot(root);
   if (!site.diff) {
     throw new Error("site.ts doesn't specify any diff options");

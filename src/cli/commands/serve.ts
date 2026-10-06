@@ -98,11 +98,8 @@ const watchFiles = (site: Site, exiting: AbortSignal): void => {
   }
 };
 
-export const run = async (
-  root: string,
-  _args: Record<string, unknown>,
-  signal: AbortSignal,
-): Promise<number> => {
+export const run = async (opts: { root: string; signal: AbortSignal }): Promise<number> => {
+  const { root, signal } = opts;
   const site = await Site.forRoot(root);
 
   const { resolve: finished, promise: finishedPromise } = Promise.withResolvers<number>();
