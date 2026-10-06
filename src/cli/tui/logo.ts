@@ -19,25 +19,13 @@ const bgRgb = (r: number, g: number, b: number) => {
   return func;
 };
 
-export const printLogo = (stream: WriteStream) => {
-  if (!stream.isTTY) {
-    return;
-  }
-
-  if (stream.columns > LOGO_WIDTH) {
-    stream.write(LOGO_LINES.join("\n"));
-  } else if (stream.columns > LOGO_SMALL_WIDTH) {
-    stream.write(LOGO_SMALL_LINES.join("\n"));
-  }
-};
-
 const LOGO_LINE_GAP = "  ";
 
 export const printLogoAndTitleWithLines = (stream: WriteStream, lines: string[]) => {
   printLogoWithLines(stream, [...M8T_TITLE_LINES, "", ...lines]);
 };
 
-export const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
+const printLogoWithLines = (stream: WriteStream, lines: string[]) => {
   if (!stream.isTTY) {
     stream.write(lines.join("\n"));
     return;

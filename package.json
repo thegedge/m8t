@@ -39,12 +39,13 @@
   },
   "scripts": {
     "build": "tsc",
-    "lint": "pnpm lint:format && pnpm lint:syntax && pnpm lint:types",
+    "lint": "pnpm lint:format && pnpm lint:syntax && pnpm lint:types && pnpm lint:unused",
     "lint:format": "./scripts/format-with-diff",
     "lint:format:fix": "oxfmt --write .",
     "lint:syntax": "oxlint",
     "lint:syntax:fix": "oxlint --fix .",
     "lint:types": "api-extractor run --local --verbose --print-api-report-diff",
+    "lint:unused": "knip",
     "prepublishOnly": "tsc",
     "tc": "tsc --noEmit",
     "test": "vitest run",
@@ -73,6 +74,7 @@
     "@types/node": "^26.4.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
+    "knip": "^6.39.0",
     "oxfmt": "^0.66.0",
     "oxlint": "^1.81.0",
     "typescript": "^7.0.2",
@@ -85,5 +87,13 @@
   "optionalDependencies": {
     "playwright": "^1.62.1",
     "playwright-core": "^1.62.1"
+  },
+  "knip": {
+    "exclude": [
+      "types"
+    ],
+    "ignoreUnresolved": [
+      "./probe.js"
+    ]
   }
 }
