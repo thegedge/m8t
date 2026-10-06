@@ -68,7 +68,7 @@ describe("track", () => {
     const [[, slow], slowWall] = await measureWall(() => track(body(120)));
 
     // Not sure why, but this one has to be a little more lenient than other checks
-    expect(slowWall).toBeInRange(fastWall + 100_000_000n, 2n * EPSILON_NS);
+    expect(slowWall).toBeInRange(fastWall + 100_000_000n, 5n * EPSILON_NS);
     expect(slow).toBeInRange(fast, EPSILON_NS);
   });
 

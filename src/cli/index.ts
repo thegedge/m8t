@@ -152,10 +152,5 @@ try {
 } catch (e) {
   const { verbose = false } = program.opts();
   process.stderr.write(formatError(e, { verbose }) + "\n");
-  process.exitCode = 1;
-} finally {
-  // Ideally this wouldn't be necessary, but esbuild (for importing tsx/jsx) lingers.
-  // TODO now that we have our own loader and use node for type stripping, we can probably
-  //      ask the loader to shut down esbuild.
-  process.exit();
+  process.exitCode ??= 1;
 }
