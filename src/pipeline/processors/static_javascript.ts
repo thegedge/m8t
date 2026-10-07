@@ -1,10 +1,17 @@
-import * as esbuild from "esbuild";
+import {
+  context as esbuildContext,
+  type BuildContext,
+  type BuildOptions,
+  type OutputFile,
+} from "esbuild";
 import path from "node:path";
 
+import { AbortError } from "../../errors/AbortError.js";
 import { BuildError } from "../../errors/BuildError.js";
-import type { ManyProcessor } from "../../index.js";
+import { deepCompare } from "../../utils/deepCompare.js";
 import { partition } from "../../utils/partition.js";
 import { Datum } from "../Datum.js";
+import type { ManyProcessor } from "../index.js";
 import type { DefaultContext } from "../utils.js";
 
 const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
@@ -17,6 +24,8 @@ const JAVASCRIPT_FILE_REGEX = /\.[cm]?[jt]sx?$/;
  */
 export class StaticJavascriptProcessor implements ManyProcessor {
   readonly #publicPath: string;
+  #buildContext: BuildContext | null;
+  #buildOptions: BuildOptions;
 
   /**
    * Constructs a static javascript processor.
@@ -25,6 +34,8 @@ export class StaticJavascriptProcessor implements ManyProcessor {
    */
   constructor(publicPath: string) {
     this.#publicPath = publicPath;
+    this.#buildContext = null;
+    this.#buildOptions = {};
   }
 
   async processMany(data: readonly Datum[], context: DefaultContext): Promise<readonly Datum[]> {
@@ -71,10 +82,15 @@ export class StaticJavascriptProcessor implements ManyProcessor {
     ];
   }
 
-  private async build({ site }: DefaultContext, basePath: string, entryPoints: string[]) {
+  private async build(
+    { site, signal }: DefaultContext,
+    basePath: string,
+    entryPoints: string[],
+  ): Promise<Map<string, OutputFile>> {
     // TODO not ideal to hardcode this
     const outdir = path.join(site.out.rootPath, "build");
-    const result = await esbuild.build({
+
+    const newOptions: BuildOptions = {
       entryPoints,
       absWorkingDir: basePath,
       outbase: basePath,
@@ -88,20 +104,44 @@ export class StaticJavascriptProcessor implements ManyProcessor {
       sourcemap: site.isDevelopment ? "inline" : undefined,
       logLevel: "silent",
       write: false,
-    });
+    };
 
-    if (result.errors.length > 0) {
-      throw new BuildError(
-        "Failed to build static bundle:\n\n" + result.errors.map((e) => e.text).join("\n"),
-      );
+    if (deepCompare(this.#buildOptions, newOptions)) {
+      this.#buildOptions = newOptions;
+      this.#buildContext = await esbuildContext(this.#buildOptions);
     }
 
-    const mapping = new Map<string, esbuild.OutputFile>();
-    for (const output of result.outputFiles) {
-      mapping.set(path.relative(outdir, output.path), output);
+    const context = this.#buildContext;
+    if (!context) {
+      return new Map();
     }
 
-    return mapping;
+    const { reject: abort, promise: buildAborted } = Promise.withResolvers<never>();
+    const stop = () => {
+      context.cancel().then(() => {
+        abort(new AbortError("pipeline stopped", { cause: signal.reason }));
+      });
+    };
+
+    signal?.addEventListener("abort", stop);
+    try {
+      const result = await Promise.any([context.rebuild(), buildAborted]);
+      if (result.errors.length > 0) {
+        throw new BuildError(
+          "Failed to build static bundle:\n\n" + result.errors.map((e) => e.text).join("\n"),
+        );
+      }
+
+      const mapping = new Map();
+      if (result.outputFiles) {
+        for (const output of result.outputFiles) {
+          mapping.set(path.relative(outdir, output.path), output);
+        }
+      }
+      return mapping;
+    } finally {
+      signal?.removeEventListener("abort", stop);
+    }
   }
 }
 

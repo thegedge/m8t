@@ -1,6 +1,7 @@
 #!/usr/bin/env -S node --no-warnings --experimental-vm-modules --experimental-import-meta-resolve
 import { Command, Help, type OptionValues } from "@commander-js/extra-typings";
 import debug from "debug";
+import { stop } from "esbuild";
 import module from "node:module";
 import path from "node:path";
 import { styleText } from "node:util";
@@ -153,4 +154,7 @@ try {
   const { verbose = false } = program.opts();
   process.stderr.write(formatError(e, { verbose }) + "\n");
   process.exitCode ??= 1;
+} finally {
+  // TODO allow the pipeline to dispose itself once completed so that we don't have this here
+  await stop();
 }
