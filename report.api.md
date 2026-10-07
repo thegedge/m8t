@@ -34,7 +34,7 @@ export class ConfigError extends M8tError {
 // @public
 export class ContentFunctionTransformer implements SingleProcessor {
     // (undocumented)
-    processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>>;
+    processOne(datum: Datum, context: DefaultContext): Promise<MaybeArray<Datum>>;
 }
 
 // @public

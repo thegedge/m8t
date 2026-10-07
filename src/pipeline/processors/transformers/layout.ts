@@ -101,11 +101,14 @@ export class LayoutTransformer implements SingleProcessor {
       if (typeof layoutContent === "function") {
         const resultRecord = resultDatum.toRecord();
         const layoutRecord = layoutDatum.toRecord();
-        const content = await layoutContent({
-          ...layoutRecord,
-          ...resultRecord,
-          children: resultDatum.get("content"),
-        });
+        const content = await layoutContent(
+          {
+            ...layoutRecord,
+            ...resultRecord,
+            children: resultDatum.get("content"),
+          },
+          { signal: context.signal },
+        );
         resultDatum = resultDatum.set({
           ...layoutRecord, // layout data is lower priority, so that's why we can't use `with`
           ...resultRecord,

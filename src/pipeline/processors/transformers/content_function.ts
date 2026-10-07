@@ -25,7 +25,7 @@ import type { DefaultContext } from "../../utils.js";
  * the {@link reprocess} symbol in the result object.
  */
 export class ContentFunctionTransformer implements SingleProcessor {
-  async processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>> {
+  async processOne(datum: Datum, context: DefaultContext): Promise<MaybeArray<Datum>> {
     const content = datum.get("content");
     if (typeof content !== "function") {
       return datum;
@@ -58,6 +58,6 @@ export class ContentFunctionTransformer implements SingleProcessor {
       return newData;
     }
 
-    return datum.with({ content: await content(datumRecord) });
+    return datum.with({ content: await content(datumRecord, { signal: context.signal }) });
   }
 }
