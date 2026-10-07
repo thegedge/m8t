@@ -2,7 +2,6 @@ import debug from "debug";
 import path from "node:path";
 import pMap from "p-map";
 
-import { BuildError } from "../../errors/BuildError.js";
 import { Site } from "../../site/Site.js";
 
 const log = debug("m8t:build");
@@ -16,28 +15,20 @@ export const run = async (opts: { root: string; signal: AbortSignal }): Promise<
   const out = await site.out.cd("build");
 
   log(`clearing out directory ${out.rootPath}`);
-  await Promise.all([site.urls, out.clear()]); // also get the urls promises booted up
+  const [siteData] = await Promise.all([site.load({ signal }), out.clear()]);
 
-  log(`building pages to ${out.rootPath}`);
+  log(`write pages to ${out.rootPath}`);
   await pMap(
-    await site.urls,
-    async (url) => {
+    siteData,
+    async (datum) => {
       if (signal.aborted) {
         return;
       }
 
+      const outputPath = datum.stringOrThrow("outputPath");
+      const content = datum.stringOrThrow("content");
+      const url = datum.maybeGetString("url");
       process.stdout.write(`Building ${url}\n`);
-      const data = await site.dataByUrl(url);
-      if (!data) {
-        throw new BuildError(`Could not build page for URL ${url}`, { url });
-      }
-
-      if (signal.aborted) {
-        return;
-      }
-
-      const outputPath = data.stringOrThrow("outputPath");
-      const content = data.stringOrThrow("content");
 
       await out.writeFile(outputPath, content);
     },

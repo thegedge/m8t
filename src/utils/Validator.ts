@@ -1,8 +1,6 @@
 import { HtmlValidate, type Message, type RuleConfig } from "html-validate";
-import { pMapSkip } from "p-map";
 
-import { BuildError } from "../errors/BuildError.js";
-import type { Site } from "../site/Site.js";
+import type { Datum } from "../pipeline/Datum.js";
 
 export { type Result } from "html-validate";
 
@@ -15,7 +13,7 @@ export type ValidationResult = {
   content: string;
 
   /** What kind of result this is */
-  description: "aborted" | "skipped-fail-fast" | "failed" | "passed";
+  description: "failed" | "warned" | "passed";
 
   /** The results describing what's wrong. */
   messages: Message[];
@@ -24,13 +22,6 @@ export type ValidationResult = {
 export type ValidationOptions = {
   /** An optional signal to abort validation */
   signal?: AbortSignal;
-
-  /**
-   * If `true`, fail as soon as there's a single failure
-   *
-   * @defaultValue false
-   */
-  failFast?: boolean;
 };
 
 /**
@@ -52,53 +43,38 @@ export class Validator {
   }
 
   /**
-   * Validate every HTML page the site produces.
+   * Validate every HTML page in a snapshot of site data.
    *
    * @returns a list of validation results for all datum with a mime type of `text/html`
    */
-  public async *run(site: Site, options: ValidationOptions = {}): AsyncGenerator<ValidationResult> {
-    const { signal, failFast = false } = options;
-
-    let skipBecauseOfFailure = false;
-
-    for (const url of await site.urls) {
-      const datum = await site.dataByUrl(url);
-      if (!datum) {
-        throw new BuildError(`Could not build page for URL ${url}`, { url });
-      }
-
-      const mimeType = datum.stringOrThrow("mimeType");
-      if (mimeType !== "text/html") {
-        return pMapSkip;
-      }
-
-      const filename = datum.stringOrThrow("filename");
-      const content = datum.stringOrThrow("content");
-
-      let description: ValidationResult["description"];
-      let messages: Message[];
-      if (signal?.aborted) {
-        description = "aborted";
-        messages = [];
-      } else if (skipBecauseOfFailure) {
-        description = "skipped-fail-fast";
-        messages = [];
-      } else {
-        let rules: RuleConfig | undefined = undefined;
-        if (datum.has("htmlValidateRules")) {
-          rules = datum.get("htmlValidateRules") as RuleConfig;
-        }
-
-        const { valid, results } = await this.#validator.validateString(content, filename, {
-          rules,
-        });
-
-        skipBecauseOfFailure ||= !valid && failFast;
-        description = valid ? "passed" : "failed";
-        messages = results[0]?.messages ?? [];
-      }
-
-      yield { filename, content, description, messages };
+  public async validate(
+    datum: Datum,
+    options: ValidationOptions = {},
+  ): Promise<ValidationResult | null> {
+    const mimeType = datum.stringOrThrow("mimeType");
+    if (mimeType !== "text/html") {
+      return null;
     }
+
+    const { signal } = options;
+    signal?.throwIfAborted();
+
+    const filename = datum.stringOrThrow("filename");
+    const content = datum.stringOrThrow("content");
+
+    let rules: RuleConfig | undefined = undefined;
+    if (datum.has("htmlValidateRules")) {
+      rules = datum.get("htmlValidateRules") as RuleConfig;
+    }
+
+    const { valid, results } = await this.#validator.validateString(content, filename, { rules });
+    const warningCount = results[0]?.warningCount || 0;
+
+    return {
+      filename,
+      content,
+      description: valid ? (warningCount == 0 ? "passed" : "warned") : "failed",
+      messages: results[0]?.messages ?? [],
+    };
   }
 }

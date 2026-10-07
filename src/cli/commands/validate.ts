@@ -11,24 +11,30 @@ export const run = async (opts: {
 }): Promise<number> => {
   const { root, signal, verbose, failFast } = opts;
   const site = await Site.forRoot(root);
+  const siteData = await site.load({ signal });
   const validator = new Validator();
 
   let exitCode = 0;
-  for await (const result of validator.run(site, { signal, failFast })) {
-    switch (result.description) {
-      case "aborted":
-        break;
-      case "skipped-fail-fast":
-        break;
+  for (const datum of siteData) {
+    const result = await validator.validate(datum, { signal });
+    switch (result?.description) {
       case "passed":
         if (verbose) {
           console.log(`✅ ${result.filename}`);
         }
         break;
+      case "warned":
+        // TODO "warnings = errors" option
+        console.log(`⚠️ ${result.filename}:`);
+        dumpMessages(result);
+        break;
       case "failed":
         console.log(`❌ ${result.filename}:`);
         dumpMessages(result);
         exitCode = 1;
+        if (failFast) {
+          return 1;
+        }
     }
   }
 

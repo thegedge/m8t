@@ -6,7 +6,11 @@ import { pipeline } from "node:stream";
 
 import type { MateRoute } from "./types.js";
 
-export const defaultRoute: MateRoute = async ({ data: { redirects, site }, request, response }) => {
+export const defaultRoute: MateRoute = async ({
+  data: { redirects, site, siteData },
+  request,
+  response,
+}) => {
   const url = new URL(request.url ?? "", `https://${request.headers.host}`);
   const pagePath = decodeURIComponent(url.pathname);
   const urlsToTry = [
@@ -20,7 +24,7 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
       continue;
     }
 
-    const data = await site.dataByUrl(url);
+    const data = siteData.byUrl(url);
     if (!data) {
       continue;
     }
@@ -74,7 +78,7 @@ export const defaultRoute: MateRoute = async ({ data: { redirects, site }, reque
   }
 
   if (!response.headersSent) {
-    const urls = await site.urls;
+    const urls = siteData.urls;
     if (!response.headersSent) {
       response.writeHead(404, { "Content-Type": "text/plain" });
     }

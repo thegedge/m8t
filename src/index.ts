@@ -19,6 +19,7 @@ export type { ErrorFormatOptions } from "./errors/formatting.js";
 export * from "./jsx.js";
 export * from "./pipeline/index.js";
 export { Site } from "./site/Site.js";
+export { SiteData } from "./site/SiteData.js";
 
 export type * from "./types.js";
 export type * from "./utils/Filesystem.js";

@@ -3,6 +3,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { run } from "../../../src/cli/commands/build.js";
+import { AbortError } from "../../../src/errors/AbortError.js";
 import { LoadError } from "../../../src/errors/LoadError.js";
 import { fixturesRoot, siteTsWithPages, writeFixtures } from "../../helpers.js";
 
@@ -50,6 +51,19 @@ describe("build command", () => {
     await expect(fs.readFile(path.join(root, "out/build/about/index.html"), "utf-8")).resolves.toBe(
       "<h1>About</h1>",
     );
+  });
+
+  test("stops processing the site when the signal is aborted", async () => {
+    await writeFixtures(root, {
+      "site.ts": siteTsWithPages([
+        { url: "/", outputPath: "index.html", content: "<h1>Home</h1>" },
+      ]),
+    });
+
+    const building = run({ root, signal: AbortSignal.abort(new AbortError("sad")) });
+
+    await expect(building).rejects.toThrow(AbortError);
+    await expect(building).rejects.toThrow("sad");
   });
 
   test("copies static files into the build output, preserving their relative paths", async () => {

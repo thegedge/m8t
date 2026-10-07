@@ -162,7 +162,7 @@ export class InternalError extends M8tError {
 // @public
 export class JsonLoader implements SingleProcessor {
     // (undocumented)
-    processOne(datum: Datum, _context: DefaultContext): Promise<Datum>;
+    processOne(datum: Datum, context: DefaultContext): Promise<Datum>;
 }
 
 // @public
@@ -272,13 +272,13 @@ export type PipelineStage = ManyProcessor | ManyProcessorFunction | SingleProces
 // @public
 export class ReactRenderer implements SingleProcessor {
     // (undocumented)
-    processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>>;
+    processOne(datum: Datum, context: DefaultContext): Promise<MaybeArray<Datum>>;
 }
 
 // @public
 export class ReadFileLoader implements SingleProcessor {
     // (undocumented)
-    processOne(datum: Datum, _context: DefaultContext): Promise<Datum>;
+    processOne(datum: Datum, context: DefaultContext): Promise<Datum>;
 }
 
 // @public
@@ -289,7 +289,9 @@ export class ReadingTimeTransformer implements SingleProcessor {
 }
 
 // @public
-export const renderElementToHTML: (element: ReactNode) => Promise<string>;
+export const renderElementToHTML: (element: ReactNode, options?: {
+    signal?: AbortSignal;
+}) => Promise<string>;
 
 // @public
 export const reprocess: unique symbol;
@@ -317,8 +319,6 @@ export interface SingleProcessor<DataT = Datum<DatumShape>, ResultT = MaybeArray
 
 // @public
 export class Site {
-    get data(): Promise<readonly Datum[]>;
-    dataByUrl(url: string): Promise<Datum | undefined>;
     readonly devServer: DevServerOptions | null;
     // Warning: (ae-forgotten-export) The symbol "ScreenshotterOptions" needs to be exported by the entry point index.d.ts
     readonly diff: Record<string, ScreenshotterOptions> | null;
@@ -326,14 +326,29 @@ export class Site {
     static fromOptions(root: string, options: SiteOptions): Promise<Site>;
     readonly ignoredFilesMatcher: FileMatcher;
     get isDevelopment(): boolean;
+    load(options?: {
+        signal?: AbortSignal;
+    }): Promise<SiteData>;
     readonly loader: ModuleLoader;
     readonly mode: "development" | "production";
     readonly out: Filesystem;
     readonly pipelines: Record<string, readonly PipelineStage[]>;
     readonly root: Filesystem;
     readonly static: Filesystem;
-    get urls(): Promise<readonly string[]>;
     readonly watchDirs: readonly Filesystem[];
+}
+
+// @public
+export class SiteData<Shape extends DatumShape = DatumShape> {
+    // (undocumented)
+    [Symbol.iterator](): Iterator<Datum<Shape>>;
+    constructor(data: readonly Datum<Shape>[]);
+    byUrl(url: string): Datum<Shape> | undefined;
+    readonly data: readonly Datum<Shape>[];
+    get dataByUrl(): Readonly<Record<string, Datum<Shape & {
+        url: string;
+    }>>>;
+    get urls(): ReadonlyArray<string>;
 }
 
 // @public (undocumented)

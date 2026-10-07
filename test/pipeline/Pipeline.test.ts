@@ -12,9 +12,7 @@ const neverSettlingStage = () => new Promise<readonly Datum[]>(() => {});
 
 describe("Pipeline", () => {
   test("passes data through a stage", async () => {
-    const pipeline = new Pipeline({
-      stages: [async (data: readonly Datum[]) => data],
-    });
+    const pipeline = new Pipeline({ stages: [async (data: readonly Datum[]) => data] });
 
     const data = [
       new Datum({ basePath: "/", filename: "a.txt", title: "a" }),
@@ -27,9 +25,7 @@ describe("Pipeline", () => {
 
   test("rejects in-flight work when the signal aborts mid-stage", async () => {
     const controller = new AbortController();
-    const pipeline = new Pipeline({
-      stages: [neverSettlingStage],
-    });
+    const pipeline = new Pipeline({ stages: [neverSettlingStage] });
 
     const result = pipeline.add([new Datum({ basePath: "/", filename: "a.txt", title: "a" })], {
       site,
@@ -43,18 +39,32 @@ describe("Pipeline", () => {
 
   test("rejects when the signal is already aborted", async () => {
     const controller = new AbortController();
-    controller.abort();
+    controller.abort(new AbortError("sad"));
 
-    const pipeline = new Pipeline({
-      stages: [neverSettlingStage],
+    const pipeline = new Pipeline({ stages: [neverSettlingStage] });
+
+    const result = pipeline.add([new Datum({ basePath: "/", filename: "a.txt", title: "a" })], {
+      site,
+      signal: controller.signal,
     });
 
-    await expect(
-      pipeline.add([new Datum({ basePath: "/", filename: "a.txt", title: "a" })], {
-        site,
-        signal: controller.signal,
-      }),
-    ).rejects.toThrow(AbortError);
+    await expect(result).rejects.toThrow(AbortError);
+    await expect(result).rejects.toThrow("sad");
+  });
+
+  test("includes the signal's abort reason as the cause when aborting", async () => {
+    const controller = new AbortController();
+    const reason = new Error("shutting down");
+    const pipeline = new Pipeline({ stages: [neverSettlingStage] });
+
+    const result = pipeline.add([new Datum({ basePath: "/", filename: "a.txt", title: "a" })], {
+      site,
+      signal: controller.signal,
+    });
+    controller.abort(reason);
+
+    await expect(result).rejects.toThrow(AbortError);
+    await expect(result).rejects.toHaveProperty("cause", reason);
   });
 
   test("removes abort listeners once work settles", async () => {

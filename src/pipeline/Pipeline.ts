@@ -68,18 +68,17 @@ export class Pipeline {
       return [];
     }
 
-    if (context.signal?.aborted) {
-      throw new AbortError();
-    }
-
     const stage = this.#stages[stageIndex];
     if (!stage) {
       log("pipeline stage %s is undefined, not processing data", stageIndex + 1);
       return data;
     }
 
+    context.signal.throwIfAborted();
+
     const { reject: rejectWork, promise: workStopped } = Promise.withResolvers<never>();
-    const stop = () => rejectWork(new AbortError());
+    const stop = () =>
+      rejectWork(new AbortError("pipeline stopped", { cause: context.signal.reason }));
     context.signal?.addEventListener("abort", stop);
     try {
       log("pipeline stage %s (%s)", stageIndex + 1, stage.constructor.name);

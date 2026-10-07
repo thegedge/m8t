@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 import { EnvironmentError } from "../errors/EnvironmentError.js";
 import { MissingOptionError } from "../errors/MissingOptionError.js";
 import { Site } from "../site/Site.js";
+import type { SiteData } from "../site/SiteData.js";
 import { createRequestHandler } from "./createRoutingServer.js";
 import { Redirects } from "./Redirects.js";
 import { debugPageGet } from "./routes/__debug/GET-[url].js";
@@ -45,7 +46,7 @@ export const run = async (controller = new AbortController()): Promise<void> => 
  * This is deliberately free of any process/network concerns (env vars, signals, `listen`, etc.) so
  * it can be tested directly against lightweight fake request/response objects.
  */
-export const createSiteHandler = (site: Site, redirects: Redirects | null) => {
+export const createSiteHandler = (site: Site, siteData: SiteData, redirects: Redirects | null) => {
   return createRequestHandler(
     {
       "/__debug__": {
@@ -54,20 +55,19 @@ export const createSiteHandler = (site: Site, redirects: Redirects | null) => {
       },
       "/[...]": defaultRoute,
     },
-    { site, redirects },
+    { site, siteData, redirects },
   );
 };
 
 /** @private */
-export const runServer = async (site: Site, exiting: AbortSignal): Promise<void> => {
-  // Eagerly load the data, instead of lazily on first request
-  await site.data;
+export const runServer = async (site: Site, signal: AbortSignal): Promise<void> => {
+  const siteData = await site.load({ signal });
 
   const redirects = site.devServer!.redirectsPath
-    ? await Redirects.fromFilesystem(site.root, site.devServer!.redirectsPath)
+    ? await Redirects.fromFilesystem(site.root, site.devServer!.redirectsPath, { signal })
     : null;
 
-  const server = createServer({}, createSiteHandler(site, redirects));
+  const server = createServer({}, createSiteHandler(site, siteData, redirects));
   const { resolve, reject, promise } = Promise.withResolvers<void>();
 
   server.once("error", (err) => {
@@ -78,7 +78,7 @@ export const runServer = async (site: Site, exiting: AbortSignal): Promise<void>
     {
       host: "0.0.0.0",
       port: site.devServer!.port,
-      signal: exiting,
+      signal,
     },
     () => {
       process.send?.("ready");

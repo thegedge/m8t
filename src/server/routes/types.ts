@@ -1,4 +1,5 @@
 import type { Site } from "../../site/Site.js";
+import type { SiteData } from "../../site/SiteData.js";
 import type { RouteFunction } from "../createRoutingServer.js";
 import type { Redirects } from "../Redirects.js";
 
@@ -7,5 +8,6 @@ import type { Redirects } from "../Redirects.js";
  */
 export type MateRoute = RouteFunction<{
   site: Site;
+  siteData: SiteData;
   redirects: Redirects | null;
 }>;

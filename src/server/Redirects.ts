@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import type { Filesystem } from "../utils/Filesystem.js";
 
 type Redirect = {
@@ -14,8 +16,15 @@ type Redirect = {
  * @see https://docs.netlify.com/manage/routing/redirects/overview/#syntax-for-the-_redirects-file
  */
 export class Redirects {
-  public static async fromFilesystem(filesystem: Filesystem, path: string): Promise<Redirects> {
-    const contents = await filesystem.readFile(path, "utf8");
+  public static async fromFilesystem(
+    filesystem: Filesystem,
+    path: string,
+    options: { signal?: AbortSignal } = {},
+  ): Promise<Redirects> {
+    const contents = await readFile(filesystem.absolute(path), {
+      encoding: "utf8",
+      signal: options.signal,
+    });
     return this.fromString(contents);
   }
 

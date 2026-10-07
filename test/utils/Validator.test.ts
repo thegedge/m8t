@@ -29,16 +29,45 @@ describe("Validator", () => {
       ]),
     });
 
-    const summary = await Array.fromAsync(validator.run(context.site));
+    const siteData = await context.site.load();
+    const summary = await validator.validate(siteData.data[0]);
 
-    expect(summary).toEqual([
-      {
-        filename: "index.html",
-        content: VALID_HTML,
-        description: "passed",
-        messages: [],
-      },
-    ]);
+    expect(summary).toEqual({
+      filename: "index.html",
+      content: VALID_HTML,
+      description: "passed",
+      messages: [],
+    });
+  });
+
+  test("reports a warning with results for an invalid page configured to only warn", async () => {
+    context = await makeContext({
+      pipelines: passthrough([
+        {
+          url: "/",
+          mimeType: "text/html",
+          filename: "index.html",
+          content: INVALID_HTML,
+          htmlValidateRules: { "wcag/h37": "warn" },
+        },
+      ]),
+    });
+
+    const siteData = await context.site.load();
+    const summary = await validator.validate(siteData.data[0]);
+
+    expect(summary).toEqual({
+      filename: "index.html",
+      content: INVALID_HTML,
+      description: "warned",
+      messages: [
+        expect.objectContaining({
+          message: '<img> is missing required "alt" attribute',
+          ruleId: "wcag/h37",
+          selector: "html > body > img",
+        }),
+      ],
+    });
   });
 
   test("reports a failure with results for an invalid page", async () => {
@@ -48,22 +77,21 @@ describe("Validator", () => {
       ]),
     });
 
-    const summary = await Array.fromAsync(validator.run(context.site));
+    const siteData = await context.site.load();
+    const summary = await validator.validate(siteData.data[0]);
 
-    expect(summary).toEqual([
-      {
-        filename: "index.html",
-        content: INVALID_HTML,
-        description: "failed",
-        messages: [
-          expect.objectContaining({
-            message: '<img> is missing required "alt" attribute',
-            ruleId: "wcag/h37",
-            selector: "html > body > img",
-          }),
-        ],
-      },
-    ]);
+    expect(summary).toEqual({
+      filename: "index.html",
+      content: INVALID_HTML,
+      description: "failed",
+      messages: [
+        expect.objectContaining({
+          message: '<img> is missing required "alt" attribute',
+          ruleId: "wcag/h37",
+          selector: "html > body > img",
+        }),
+      ],
+    });
   });
 
   test("skips validation for output paths that aren't html", async () => {
@@ -78,61 +106,10 @@ describe("Validator", () => {
       ]),
     });
 
-    const summary = await Array.fromAsync(validator.run(context.site));
+    const siteData = await context.site.load();
+    const summary = await validator.validate(siteData.data[0]);
 
-    expect(summary).toEqual([]);
-  });
-
-  test("stops at the first invalid page when failFast is set", async () => {
-    context = await makeContext({
-      pipelines: passthrough([
-        { url: "/a", outputPath: "a.html", filename: "a.html", content: INVALID_HTML },
-        { url: "/b", outputPath: "b.html", filename: "b.html", content: INVALID_HTML },
-      ]),
-    });
-
-    const summary = await Array.fromAsync(validator.run(context.site, { failFast: true }));
-
-    expect(summary).toEqual([
-      {
-        filename: "a.html",
-        content: INVALID_HTML,
-        description: "failed",
-        messages: expect.any(Array),
-      },
-      {
-        filename: "b.html",
-        content: INVALID_HTML,
-        description: "skipped-fail-fast",
-        messages: expect.any(Array),
-      },
-    ]);
-  });
-
-  test("collects failures for every invalid page when failFast is not set", async () => {
-    context = await makeContext({
-      pipelines: passthrough([
-        { url: "/a", outputPath: "a.html", filename: "a.html", content: INVALID_HTML },
-        { url: "/b", outputPath: "b.html", filename: "b.html", content: INVALID_HTML },
-      ]),
-    });
-
-    const summary = await Array.fromAsync(validator.run(context.site));
-
-    expect(summary).toEqual([
-      {
-        filename: "a.html",
-        content: INVALID_HTML,
-        description: "failed",
-        messages: expect.any(Array),
-      },
-      {
-        filename: "b.html",
-        content: INVALID_HTML,
-        description: "failed",
-        messages: expect.any(Array),
-      },
-    ]);
+    expect(summary).toEqual(null);
   });
 
   test("returns aborted with no failures when the signal is already aborted", async () => {
@@ -143,15 +120,10 @@ describe("Validator", () => {
     });
 
     const signal = AbortSignal.abort();
-    const summary = await Array.fromAsync(validator.run(context.site, { signal }));
+    const siteData = await context.site.load();
 
-    expect(summary).toEqual([
-      {
-        filename: "index.html",
-        content: VALID_HTML,
-        description: "aborted",
-        messages: expect.any(Array),
-      },
-    ]);
+    await expect(() => validator.validate(siteData.data[0], { signal })).rejects.toThrow(
+      "This operation was aborted",
+    );
   });
 });

@@ -12,8 +12,8 @@ import { Datum, Pipeline, type PipelineStage } from "../pipeline/index.js";
 import { FileMatcher, type FileMatcherOptions } from "../utils/FileMatcher.js";
 import { Filesystem } from "../utils/Filesystem.js";
 import { isNoEntryError } from "../utils/is.js";
-import { keyBy } from "../utils/keyBy.js";
 import type { ScreenshotterOptions } from "../utils/Screenshotter.js";
+import { SiteData } from "./SiteData.js";
 
 export type DevServerOptions = {
   port: number;
@@ -263,11 +263,6 @@ export class Site {
   /** The filesystem under which static files are copied/served */
   readonly diff: Record<string, ScreenshotterOptions> | null;
 
-  #dataPromise: Promise<readonly Datum[]> | null = null;
-  #dataWithUrlsPromise: Promise<readonly Datum[]> | null = null;
-  #dataByUrlPromise: Promise<Readonly<Record<string, Datum>>> | null = null;
-  #urlsPromise: Promise<string[]> | null = null;
-
   private constructor(options: ResolvedSiteOptions) {
     this.root = new Filesystem(options.root);
     this.out = new Filesystem(path.resolve(options.root, options.out || "./out"));
@@ -299,32 +294,6 @@ export class Site {
   }
 
   /**
-   * All of the `url`s that have been processed by the site, sorted alphabetically.
-   *
-   * @returns a list of all the `url` properties found in the processed data.
-   */
-  get urls(): Promise<readonly string[]> {
-    this.#dataByUrlPromise ??= this.#dataWithUrls.then((data) =>
-      keyBy(data, (d) => d.maybeGetString("url") || ""),
-    );
-    this.#urlsPromise ??= this.#dataByUrlPromise.then((dataByUrl) => Object.keys(dataByUrl).sort());
-    return this.#urlsPromise;
-  }
-
-  /**
-   * Get data for a given url.
-   *
-   * @returns the datum with the given url, or `undefined` if no datum is found with the given url.
-   */
-  async dataByUrl(url: string): Promise<Datum | undefined> {
-    this.#dataByUrlPromise ??= this.#dataWithUrls.then((data) =>
-      keyBy(data, (d) => d.maybeGetString("url") || ""),
-    );
-    const dataByUrl = await this.#dataByUrlPromise;
-    return Object.hasOwn(dataByUrl, url) ? dataByUrl[url] : undefined;
-  }
-
-  /**
    * Whether or not this site is operating in development mode.
    */
   get isDevelopment(): boolean {
@@ -332,26 +301,17 @@ export class Site {
   }
 
   /**
-   * Get all processed data.
+   * Process all of the site's data by running it through the site's pipelines.
    *
-   * Note that this will start processing data if it hasn't already began processing.
-   */
-  get data(): Promise<readonly Datum[]> {
-    this.#dataPromise ??= this.#process();
-    return this.#dataPromise;
-  }
-
-  /**
-   * Get all processed data that has a "url" field
+   * Every call processes the site from scratch; nothing is cached between calls.
    *
-   * Note that this will start processing data if it hasn't already began processing.
+   * @param options - `signal` stops processing when aborted.
+   *
+   * @returns a snapshot of the processed data.
    */
-  get #dataWithUrls(): Promise<readonly Datum[]> {
-    this.#dataWithUrlsPromise ??= this.data.then((data) => data.filter((d) => d.has("url")));
-    return this.#dataWithUrlsPromise;
-  }
+  async load(options: { signal?: AbortSignal } = {}): Promise<SiteData> {
+    const { signal } = options;
 
-  async #process() {
     let session: Session | undefined = undefined;
     if (process.env.PROFILE) {
       session = new Session();
@@ -369,18 +329,14 @@ export class Site {
         async ([pipelineRoot, stages]) => {
           const pipeline = new Pipeline({ stages });
           const basePath = this.root.absolute(pipelineRoot);
-          const data = await pipeline.add(
+          return await pipeline.add(
             [new Datum({ filename: basePath, basePath, [symProcessedBy]: "root" })],
-            {
-              site: this,
-              signal: AbortSignal.timeout(30_000),
-            },
+            { site: this, signal },
           );
-          return data;
         },
-        { concurrency: 4 },
+        { concurrency: 4, signal },
       );
-      return results.flat();
+      return new SiteData(results.flat());
     } finally {
       if (session) {
         const { profile } = await session.post("Profiler.stop");

@@ -1,9 +1,42 @@
-import { describe, expect, test } from "vitest";
+import fs from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
+import { AbortError } from "../../src/index.js";
 import { Redirects } from "../../src/server/Redirects.js";
 import { dedent } from "../../src/utils/dedent.js";
+import { Filesystem } from "../../src/utils/Filesystem.js";
+import { fixturesRoot, writeFixtures } from "../helpers.js";
 
 describe("Redirects", () => {
+  describe("fromFilesystem", () => {
+    let root: string;
+
+    beforeEach(async () => {
+      root = await fixturesRoot("m8t-redirects-test-");
+      await writeFixtures(root, { _redirects: "/old /new 302" });
+    });
+
+    afterEach(async () => {
+      await fs.rm(root, { recursive: true, force: true });
+    });
+
+    test("parses redirects from a file", async () => {
+      const redirects = await Redirects.fromFilesystem(new Filesystem(root), "_redirects");
+
+      expect(redirects.match("/old")).toEqual(["/new", 302]);
+    });
+
+    test("stops reading the file when the signal is aborted", async () => {
+      const reading = Redirects.fromFilesystem(new Filesystem(root), "_redirects", {
+        signal: AbortSignal.abort(new AbortError("sad")),
+      });
+
+      await expect(reading).rejects.toThrow(
+        expect.objectContaining({ cause: new AbortError("sad") }),
+      );
+    });
+  });
+
   test("parses correctly on the happy path", () => {
     const redirects = Redirects.fromString(dedent`
       # this is a comment

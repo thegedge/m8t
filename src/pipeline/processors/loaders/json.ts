@@ -10,7 +10,7 @@ const loadedFor = Symbol.for("loadedFor");
  * A loader that reads a file and decodes it as a UTF-8 string.
  */
 export class JsonLoader implements SingleProcessor {
-  async processOne(datum: Datum, _context: DefaultContext): Promise<Datum> {
+  async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {
     const filename = datum.get("filename");
     if (datum.get(loadedFor) === filename) {
       return datum;
@@ -20,6 +20,7 @@ export class JsonLoader implements SingleProcessor {
       return datum;
     }
 
-    return datum.with(JSON.parse(await readFile(datum.get("filename"), "utf8")));
+    const json = await readFile(filename, { encoding: "utf8", signal: context.signal });
+    return datum.with(JSON.parse(json));
   }
 }

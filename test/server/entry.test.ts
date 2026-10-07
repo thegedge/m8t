@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { type AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { AbortError } from "../../src/errors/AbortError.js";
 import { createSiteHandler, run, runServer } from "../../src/server/entry.js";
 import { Redirects } from "../../src/server/Redirects.js";
 import { Site } from "../../src/site/Site.js";
@@ -17,7 +18,7 @@ describe("createSiteHandler", () => {
 
   test("wires the default route to serve a site's page content", async () => {
     context = await makeContext({ pipelines: passthrough([{ url: "/", content: "hello site" }]) });
-    const handler = createSiteHandler(context.site, null);
+    const handler = createSiteHandler(context.site, await context.site.load(), null);
 
     const response = await waitForResponse(handler, "/");
 
@@ -27,7 +28,11 @@ describe("createSiteHandler", () => {
 
   test("wires the default route to apply redirects", async () => {
     context = await makeContext();
-    const handler = createSiteHandler(context.site, Redirects.fromString("/old /new 301"));
+    const handler = createSiteHandler(
+      context.site,
+      await context.site.load(),
+      Redirects.fromString("/old /new 301"),
+    );
 
     const response = await waitForResponse(handler, "/old");
 
@@ -37,7 +42,7 @@ describe("createSiteHandler", () => {
 
   test("wires the __debug__ index route", async () => {
     context = await makeContext({ pipelines: passthrough([{ url: "/hello" }]) });
-    const handler = createSiteHandler(context.site, null);
+    const handler = createSiteHandler(context.site, await context.site.load(), null);
 
     const response = await waitForResponse(handler, "/__debug__");
 
@@ -48,7 +53,7 @@ describe("createSiteHandler", () => {
 
   test("wires the __debug__ per-url route", async () => {
     context = await makeContext({ pipelines: passthrough([{ url: "/hello" }]) });
-    const handler = createSiteHandler(context.site, null);
+    const handler = createSiteHandler(context.site, await context.site.load(), null);
 
     const response = await waitForResponse(handler, `/__debug__/${encodeURIComponent("/hello")}`);
 
@@ -58,11 +63,31 @@ describe("createSiteHandler", () => {
 
   test("returns 404 for a path with no matching page, static file, or redirect", async () => {
     context = await makeContext();
-    const handler = createSiteHandler(context.site, null);
+    const handler = createSiteHandler(context.site, await context.site.load(), null);
 
     const response = await waitForResponse(handler, "/does-not-exist");
 
     expect(response.statusCode).toBe(404);
+  });
+});
+
+describe("runServer", () => {
+  let context: TestContext;
+
+  afterEach(async () => {
+    await context[Symbol.asyncDispose]();
+  });
+
+  test("stops loading site data with an AbortError when exiting is aborted", async () => {
+    context = await makeContext({
+      devServer: { port: await freePort() },
+      pipelines: passthrough([{ url: "/" }]),
+    });
+
+    const running = runServer(context.site, AbortSignal.abort(new AbortError("sad")));
+
+    await expect(running).rejects.toThrow(AbortError);
+    await expect(running).rejects.toThrow("sad");
   });
 });
 

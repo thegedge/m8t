@@ -12,6 +12,7 @@ import { screenshotterForOptions } from "../../utils/Screenshotter.js";
 
 export const run = async (opts: { root: string; signal: AbortSignal }): Promise<number> => {
   const { root, signal } = opts;
+
   const site = await Site.forRoot(root);
   if (!site.diff) {
     throw new MissingOptionError("diff");
@@ -25,9 +26,11 @@ export const run = async (opts: { root: string; signal: AbortSignal }): Promise<
   await site.out.ensureDir("diff");
   const out = await site.out.cd("diff");
 
-  const sitePages = Object.values(await site.data)
+  const siteData = await site.load({ signal });
+  const sitePages = Iterator.from(siteData)
     .filter((datum) => datum.get("mimeType") === "text/html")
-    .filter((datum): datum is Datum<DatumShape & { url: string }> => !!datum.get("url"));
+    .filter((datum): datum is Datum<DatumShape & { url: string }> => !!datum.get("url"))
+    .toArray();
 
   for (const [name, options] of Object.entries(site.diff)) {
     if (signal.aborted) {

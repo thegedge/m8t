@@ -9,11 +9,11 @@ import { truncate } from "../../../utils/truncate.js";
 import type { MateRoute } from "../types.js";
 
 export const debugPageGet: MateRoute = async ({
-  data: { site },
+  data: { siteData },
   params: { url },
   response,
 }): Promise<void> => {
-  const data = await site.dataByUrl(url);
+  const data = siteData.byUrl(url);
   if (!data) {
     response.writeHead(404, { "content-type": "text/plain" });
     response.end("Not found");

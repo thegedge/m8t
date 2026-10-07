@@ -47,7 +47,7 @@ export const processManyWithSingle = async <
       const result = await processOne(datum, context, processor);
       return result ?? datum;
     },
-    { concurrency: 4 },
+    { concurrency: 4, signal: context.signal },
   );
 
   // TODO how to avoid this cast?

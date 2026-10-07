@@ -45,7 +45,6 @@ export const scalarCompare = (a: unknown, b: unknown): number => {
         // @ts-ignore -- a and b are both same type, comparable with <
         return a < b ? -1 : 1;
       case "symbol":
-        // @ts-ignore -- a and b are both same type, comparable with <
         return String(a) < String(b) ? -1 : 1;
       case "object":
         if (!a || !b) {

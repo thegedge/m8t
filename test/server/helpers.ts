@@ -1,6 +1,6 @@
 import type { IncomingMessage, RequestListener, ServerResponse } from "node:http";
 
-import { Site } from "../../src/index.js";
+import type { Site, SiteData } from "../../src/index.js";
 import type { Redirects } from "../../src/server/Redirects.js";
 import type { MateRoute } from "../../src/server/routes/types.js";
 import { FakeResponse } from "./FakeResponse.js";
@@ -42,6 +42,7 @@ export const waitForResponse = async (
 export const waitForM8tResponse = async (args: {
   route: MateRoute;
   site: Site;
+  siteData?: SiteData;
   redirects?: Redirects;
   params?: Record<string, string>;
   request?: IncomingMessage | string;
@@ -50,6 +51,7 @@ export const waitForM8tResponse = async (args: {
   const {
     route,
     site,
+    siteData,
     params = {},
     request,
     redirects = null,
@@ -63,6 +65,7 @@ export const waitForM8tResponse = async (args: {
   await route({
     data: {
       site,
+      siteData: siteData ?? (await site.load()),
       redirects,
     },
     params,

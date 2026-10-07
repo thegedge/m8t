@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { run } from "../../../src/cli/commands/diff.js";
+import { AbortError } from "../../../src/errors/AbortError.js";
 import { dedent } from "../../../src/utils/dedent.js";
 import { fixturesRoot, writeFixtures } from "../../helpers.js";
 
@@ -46,6 +47,23 @@ describe("diff command", () => {
       name: "MissingOptionError",
       option: "devServer",
     });
+  });
+
+  test("stops processing the site with an AbortError when the signal is aborted", async () => {
+    await writeFixtures(root, {
+      "site.ts": dedent`
+        export default {
+          pipelines: { ".": [async (data) => data] },
+          devServer: { },
+          diff: { },
+        }
+      `,
+    });
+
+    const result = run({ root, signal: AbortSignal.abort(new AbortError("sad")) });
+
+    await expect(result).rejects.toThrow(AbortError);
+    await expect(result).rejects.toThrow("sad");
   });
 
   // TODO either run real browsers or allow for providing/mocking/stubbing a "differ" so we can test

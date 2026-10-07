@@ -38,13 +38,22 @@ class StringWritable extends Writable {
 /**
  * Render a given node to an HTML string.
  *
+ * @param element - the node to render.
+ * @param options - `signal` stops rendering when aborted.
+ *
  * @returns the HTML string.
  */
-export const renderElementToHTML = async (element: ReactNode): Promise<string> => {
+export const renderElementToHTML = async (
+  element: ReactNode,
+  options: { signal?: AbortSignal } = {},
+): Promise<string> => {
+  const { signal } = options;
+  signal?.throwIfAborted();
+
   const { resolve, reject, promise } = Promise.withResolvers<string>();
-  const { pipe } = renderToPipeableStream(element, {
+  const { pipe, abort } = renderToPipeableStream(element, {
     onAllReady() {
-      const stringWritable = new StringWritable({ defaultEncoding: "utf8" });
+      const stringWritable = new StringWritable({ defaultEncoding: "utf8", signal });
       pipe(stringWritable).once("close", () => {
         resolve(stringWritable.toString());
       });
@@ -57,5 +66,15 @@ export const renderElementToHTML = async (element: ReactNode): Promise<string> =
     },
   });
 
-  return await promise;
+  const onAbort = () => {
+    reject(signal?.reason);
+    abort(signal?.reason);
+  };
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    return await promise;
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+  }
 };

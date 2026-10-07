@@ -20,6 +20,9 @@ export type TestContext = DefaultContext & {
   /** The root path where tests can write output, fixtures, etc */
   root: string;
 
+  /** A controller to abort any ongoing work */
+  controller: AbortController;
+
   /** Create a datum for this context with the given lineage */
   datum(...lineage: Partial<DatumShape>[]): Datum;
 
@@ -56,13 +59,17 @@ export const makeContext = async (options?: Partial<SiteOptions>): Promise<TestC
     pipelines: {},
     ...options,
   });
+  const controller = new AbortController();
 
   let filenameIndex = 0;
   return {
     pipeline: new Pipeline({ stages: Object.values(site.pipelines)[0] }),
     root,
     site,
-    signal: new AbortController().signal,
+    signal: controller.signal,
+
+    // Additions to the context for testing
+    controller,
 
     datum: (filenameOrDatum, ...lineage) => {
       const processor = new TypescriptLoader();

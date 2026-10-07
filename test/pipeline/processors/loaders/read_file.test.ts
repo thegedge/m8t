@@ -1,6 +1,7 @@
 import path from "node:path";
 import { beforeEach, describe, expect, test } from "vitest";
 
+import { AbortError } from "../../../../src/errors/AbortError.js";
 import { Datum } from "../../../../src/pipeline/Datum.js";
 import { ReadFileLoader } from "../../../../src/pipeline/processors/loaders/read_file.js";
 import { makeContext, writeFixtures, type TestContext } from "../../../helpers.js";
@@ -36,7 +37,22 @@ describe("ReadFileLoader", () => {
     expect(result.content).toEqual("Overwrite me");
   });
 
-  const process = async (filename: string, data: Record<string, unknown> = {}) => {
+  test("stops reading the file when the context's signal aborts", async () => {
+    context.controller.abort(new AbortError("sad"));
+
+    const result = await process("file.txt", {}, context);
+    const content = Promise.try(result.content as any);
+
+    await expect(content).rejects.toThrow(
+      expect.objectContaining({ cause: new AbortError("sad") }),
+    );
+  });
+
+  const process = async (
+    filename: string,
+    data: Record<string, unknown> = {},
+    processContext: TestContext = context,
+  ) => {
     const processor = new ReadFileLoader();
     const result = await processor.processOne(
       new Datum({
@@ -44,7 +60,7 @@ describe("ReadFileLoader", () => {
         filename: path.join(context.root, filename),
         ...data,
       }),
-      context,
+      processContext,
     );
     if (Array.isArray(result)) {
       expect.fail("expected StringProcessor to return a single datum");
