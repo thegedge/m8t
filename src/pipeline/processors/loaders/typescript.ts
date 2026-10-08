@@ -1,5 +1,4 @@
 import { transform, type Loader } from "esbuild";
-import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import path from "node:path/posix";
 import { pathToFileURL } from "node:url";
@@ -9,6 +8,7 @@ import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Datum } from "../../Datum.js";
 import type { DefaultContext } from "../../utils.js";
 
+const decoder = new TextDecoder();
 const loadedFor = Symbol.for("loadedFor");
 const JS_OR_TS_FILE_REGEX = /\.m?[jt]sx?$/;
 
@@ -19,7 +19,7 @@ const JS_OR_TS_FILE_REGEX = /\.m?[jt]sx?$/;
  */
 export class TypescriptLoader implements SingleProcessor {
   transpilersFor(site: Site): Transpiler[] {
-    return [(filename) => this.#compile(filename, site.isDevelopment)];
+    return [(filename, source) => this.#transpile(filename, source, site.isDevelopment)];
   }
 
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {
@@ -40,13 +40,14 @@ export class TypescriptLoader implements SingleProcessor {
     });
   }
 
-  async #compile(filename: string, development = false) {
+  async #transpile(filename: string, bytes: Uint8Array, development = false) {
     if (!JS_OR_TS_FILE_REGEX.test(filename)) {
       return undefined;
     }
 
+    const source = decoder.decode(bytes);
+
     if (process.features.typescript && (filename.endsWith(".ts") || filename.endsWith(".mts"))) {
-      const source = await readFile(filename, "utf8");
       return stripTypeScriptTypes(source, {
         mode: "strip",
         sourceUrl: String(pathToFileURL(filename)),
@@ -71,7 +72,6 @@ export class TypescriptLoader implements SingleProcessor {
         return undefined;
     }
 
-    const source = await readFile(filename, "utf8");
     const { code } = await transform(source, {
       loader,
       jsx: "automatic",

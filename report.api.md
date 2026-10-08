@@ -237,19 +237,6 @@ export class MissingOptionError extends ConfigError {
 }
 
 // @public
-export class ModuleLoader {
-    constructor(options?: ModuleLoaderOptions);
-    load(filename: string): Promise<Record<string, unknown>>;
-    static with(...transpilers: Transpiler[]): ModuleLoader;
-}
-
-// @public
-export type ModuleLoaderOptions = {
-    transpilers?: Transpiler[];
-    context?: Context;
-};
-
-// @public
 export type NonEmptyPipeline = readonly [PipelineStage, ...PipelineStage[]];
 
 // @public
@@ -329,6 +316,9 @@ export class Site {
     load(options?: {
         signal?: AbortSignal;
     }): Promise<SiteData>;
+    // Warning: (ae-forgotten-export) The symbol "ModuleLoader" needs to be exported by the entry point index.d.ts
+    //
+    // @internal
     readonly loader: ModuleLoader;
     readonly mode: "development" | "production";
     readonly out: Filesystem;
@@ -365,6 +355,7 @@ export type SiteOptions = {
     pipelines: Record<string, readonly PipelineStage[]>;
     root?: string;
     static?: string;
+    cache?: boolean | string;
 };
 
 // @public
@@ -381,7 +372,7 @@ export class StringRenderer implements SingleProcessor {
 }
 
 // @public
-export type Transpiler = (filename: string) => MaybePromise<string | undefined>;
+export type Transpiler = (filename: string, source: Uint8Array) => MaybePromise<string | undefined>;
 
 // @public
 export class TypescriptLoader implements SingleProcessor {

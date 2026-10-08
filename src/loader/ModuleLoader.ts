@@ -7,12 +7,26 @@ import vm, { type Module, type SourceTextModule, type Context } from "node:vm";
 import { EnvironmentError } from "../errors/EnvironmentError.js";
 import { LoadError } from "../errors/LoadError.js";
 import type { MaybePromise } from "../types.js";
+import { cacheKey } from "../utils/cache/cacheKey.js";
+import { FilesystemBlobCache } from "../utils/cache/FilesystemBlobCache.js";
+import type { BlobCache } from "../utils/cache/index.js";
+import { NullBlobCache } from "../utils/cache/NullBlobCache.js";
 import { memoize } from "../utils/memoize.js";
 import { canonicalModulePath } from "./canonicalModulePath.js";
 import { Resolver } from "./Resolver.js";
 
-/** A function that takes a URL and maybe transpiles it into javascript */
-export type Transpiler = (filename: string) => MaybePromise<string | undefined>;
+const decoder = new TextDecoder();
+
+/** What a {@link ModuleLoader}'s transpile cache is keyed on */
+type TranspileInput = { filename: string; source: Uint8Array };
+
+/**
+ * A function that maybe transpiles a file into javascript
+ *
+ * `source` holds the file's contents, already read by the loader. Transpile it rather than reading
+ * `filename` again, so the output always matches the bytes any transpile cache is keyed on.
+ */
+export type Transpiler = (filename: string, source: Uint8Array) => MaybePromise<string | undefined>;
 
 /**
  * Options for {@link ModuleLoader} construction.
@@ -26,11 +40,33 @@ export type ModuleLoaderOptions = {
   transpilers?: Transpiler[];
 
   /**
-   * The context the used
+   * The context the used.
    *
-   * @defaultValue undefined (the surrounding context in which the loader was constructed)
+   * Leave undefined to use the context surrounding the caller.
+   *
+   * @defaultValue undefined
    */
   context?: Context;
+
+  /**
+   * Persist transpiled sources on disk
+   *
+   * Leave undefined to use no caching for transpiled results.
+   *
+   * @defaultValue undefined
+   */
+  cache?: {
+    /** Directory to persist the results */
+    dir: string;
+
+    /**
+     * Subdirectory of `dir` where entries are stored
+     *
+     * Must change whenever anything that affects the transpilers' output changes (their options,
+     * tool versions, and so on).
+     */
+    namespace: string;
+  };
 };
 
 /**
@@ -46,11 +82,13 @@ export class ModuleLoader {
     return new ModuleLoader({ transpilers });
   }
 
-  #moduleCache = new Map<string, Promise<Module>>();
-  #linkQueue: [Module, Promise<void>][]; // serialize linking across multiple load calls
   #resolver = new Resolver();
   #transpilers: Transpiler[];
   #context: Context | undefined;
+
+  #moduleCache: Map<string, Promise<Module>>;
+  #transpileCache: BlobCache<TranspileInput>;
+  #linkQueue: [Module, Promise<void>][]; // serialize linking across multiple load calls
 
   /**
    * Construct a loader for the given context.
@@ -70,6 +108,14 @@ export class ModuleLoader {
 
     this.#transpilers = [...(options?.transpilers ?? [])];
     this.#context = options?.context;
+    this.#moduleCache = new Map();
+    this.#transpileCache = options?.cache
+      ? new FilesystemBlobCache({
+          dir: options.cache.dir,
+          namespace: options.cache.namespace,
+          key: ({ filename, source }) => cacheKey(filename, source),
+        })
+      : new NullBlobCache();
     this.#linkQueue = [];
   }
 
@@ -92,13 +138,6 @@ export class ModuleLoader {
 
   /** Asks each provider, in order, for the source of a claimed file. */
   async #loadSource(filename: string): Promise<string | undefined> {
-    for (const transpiler of this.#transpilers) {
-      const source = await transpiler(filename);
-      if (source !== undefined) {
-        return source;
-      }
-    }
-
     if (filename.includes("/node_modules/") || filename.endsWith(".cjs")) {
       // Could be CommonJS, need to let the native system handle.
       // Otherwise, we'd have to parse the exports ourselves. No thank you.
@@ -106,7 +145,23 @@ export class ModuleLoader {
       return undefined;
     }
 
-    return await readFile(filename, "utf8");
+    const source = await readFile(filename);
+    const transpiled = await this.#transpileCache.get({ filename, source }, (input) => {
+      return this.#transpile(input);
+    });
+
+    return decoder.decode(transpiled ?? source);
+  }
+
+  /** Asks each transpiler, in order, to transpile a file. */
+  async #transpile({ filename, source }: TranspileInput): Promise<string | undefined> {
+    for (const transpiler of this.#transpilers) {
+      const transpiled = await transpiler(filename, source);
+      if (transpiled !== undefined) {
+        return transpiled;
+      }
+    }
+    return undefined;
   }
 
   /**

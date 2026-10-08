@@ -1,5 +1,4 @@
 import { compile, type CompileOptions } from "@mdx-js/mdx";
-import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 import { LoadError } from "../../../errors/LoadError.js";
@@ -32,7 +31,7 @@ export class MdxLoader implements SingleProcessor {
   }
 
   transpilersFor(site: Site): Transpiler[] {
-    return [(filename) => this.#compile(filename, site.isDevelopment)];
+    return [(filename, source) => this.#compile(filename, source, site.isDevelopment)];
   }
 
   async processOne(datum: Datum, context: DefaultContext): Promise<Datum> {
@@ -54,14 +53,12 @@ export class MdxLoader implements SingleProcessor {
     });
   }
 
-  async #compile(filename: string, development = false) {
+  async #compile(filename: string, source: Uint8Array, development = false) {
     if (!MARKDOWN_PATH_REGEX.test(filename)) {
       return undefined;
     }
 
-    const fileContents = await readFile(filename);
-
-    const compiled = await compile(fileContents, {
+    const compiled = await compile(source, {
       ...this.#mdxOptions,
       format: filename.endsWith(".mdx") ? "mdx" : "md",
       outputFormat: "program",

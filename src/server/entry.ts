@@ -59,7 +59,7 @@ export const createSiteHandler = (site: Site, siteData: SiteData, redirects: Red
   );
 };
 
-/** @private */
+/** @internal */
 export const runServer = async (site: Site, signal: AbortSignal): Promise<void> => {
   const siteData = await site.load({ signal });
 

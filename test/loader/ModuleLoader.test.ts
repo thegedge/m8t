@@ -2,9 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { setImmediate } from "node:timers/promises";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { ModuleLoader } from "../../src/loader/ModuleLoader.js";
+import { ModuleLoader, type Transpiler } from "../../src/loader/ModuleLoader.js";
 import { dedent } from "../../src/utils/dedent.js";
 import { fixturesRoot, writeFixtures } from "../helpers.js";
 
@@ -108,34 +108,24 @@ describe("ModuleLoader", () => {
         export const b = value + "-B";
       `,
       "shared.mjs": dedent`
-        import esbuild from "esbuild";
-        export const value = esbuild ? "has-esbuild" : "no-esbuild";
+        import lib from "./lib.mjs";
+        export const value = lib ? "has-lib" : "no-lib";
       `,
-      "node_modules/esbuild/package.json": JSON.stringify({
-        name: "esbuild",
-        main: "lib/main.js",
-        engines: {
-          node: ">=18",
-        },
-      }),
-      "node_modules/esbuild/lib/main.js": dedent`
+      "lib.mjs": dedent`
         export default true;
       `,
     });
 
     const entryA = path.join(root, "entryA.mjs");
     const entryB = path.join(root, "entryB.mjs");
-    const shared = path.join(root, "shared.mjs");
+    const lib = path.join(root, "lib.mjs");
 
     const libGate = Promise.withResolvers<void>();
     const libRequested = Promise.withResolvers<void>();
 
+    // Holding up `lib.mjs` leaves `shared.mjs` mid-link for entryA while entryB links too
     const loader = ModuleLoader.with(async (filename) => {
-      if (filename === entryA || filename === entryB || filename === shared) {
-        return await fs.promises.readFile(filename, "utf-8");
-      }
-
-      if (filename.includes(`${path.sep}node_modules${path.sep}esbuild${path.sep}`)) {
+      if (filename === lib) {
         libRequested.resolve();
         await libGate.promise;
       }
@@ -152,8 +142,8 @@ describe("ModuleLoader", () => {
 
     const [namespaceA, namespaceB] = await Promise.all([loadA, loadB]);
 
-    expect(namespaceA).toHaveProperty("a", "has-esbuild-A");
-    expect(namespaceB).toHaveProperty("b", "has-esbuild-B");
+    expect(namespaceA).toHaveProperty("a", "has-lib-A");
+    expect(namespaceB).toHaveProperty("b", "has-lib-B");
   });
 
   test("loads a dependency concurrently while it is being linked as part of its dependent", async () => {
@@ -312,10 +302,133 @@ describe("ModuleLoader", () => {
   });
 
   test("properly captures errors thrown from a transpiler", async () => {
+    await writeFixtures(root, { "test.js": "export const value = 1;\n" });
     const loader = ModuleLoader.with(async (_filename) => {
       throw new Error("this is my error");
     });
 
-    await expect(() => loader.load("test.js")).rejects.toThrow("this is my error");
+    await expect(() => loader.load(path.join(root, "test.js"))).rejects.toThrow("this is my error");
+  });
+
+  test("reuses transpiled sources from its on-disk cache across loaders", async () => {
+    await writeFixtures(root, { "simple.mjs": 'export const value = "hi";\n' });
+
+    const decoder = new TextDecoder();
+    const transpiler = vi.fn<Transpiler>(async (_, source) => decoder.decode(source));
+    const cache = { dir: path.join(root, "cache"), namespace: "ns" };
+    const first = new ModuleLoader({ transpilers: [transpiler], cache });
+    const second = new ModuleLoader({ transpilers: [transpiler], cache });
+
+    await first.load(path.join(root, "simple.mjs"));
+    const namespace = await second.load(path.join(root, "simple.mjs"));
+
+    expect(namespace).toHaveProperty("value", "hi");
+    expect(transpiler).toHaveBeenCalledTimes(1);
+  });
+
+  describe("with a cache", () => {
+    test("never offers node_modules or .cjs files to transpilers, nor caches them", async () => {
+      await writeFixtures(root, {
+        "entry.mjs": dedent`
+          import { dep } from "dep";
+          import common from "./common.cjs";
+          export const value = dep + "-" + common.value;
+        `,
+        "common.cjs": dedent`
+          module.exports = { value: "common" };
+        `,
+        "node_modules/dep/package.json": JSON.stringify({
+          name: "dep",
+          type: "module",
+          exports: "./index.js",
+        }),
+        "node_modules/dep/index.js": dedent`
+          export const dep = "dep";
+        `,
+      });
+      const entry = path.join(root, "entry.mjs");
+      const dir = path.join(root, "cache");
+
+      const transpiler = vi.fn(async (_filename: string, source: Uint8Array) => {
+        return new TextDecoder().decode(source);
+      });
+      const namespace = await new ModuleLoader({
+        transpilers: [transpiler],
+        cache: { dir, namespace: "ns" },
+      }).load(entry);
+
+      expect(namespace).toHaveProperty("value", "dep-common");
+      expect(transpiler.mock.calls.map(([filename]) => filename)).toEqual([entry]);
+      expect(await fs.promises.readdir(path.join(dir, "ns"))).toHaveLength(1);
+    });
+
+    test("doesn't cache files no transpiler handles", async () => {
+      await writeFixtures(root, { "simple.mjs": 'export const value = "hi";\n' });
+      const dir = path.join(root, "cache");
+
+      const namespace = await new ModuleLoader({
+        transpilers: [async () => undefined],
+        cache: { dir, namespace: "ns" },
+      }).load(path.join(root, "simple.mjs"));
+
+      expect(namespace).toHaveProperty("value", "hi");
+      expect(fs.existsSync(dir)).toBe(false);
+    });
+
+    test("doesn't cache transpiler errors", async () => {
+      await writeFixtures(root, { "simple.mjs": 'export const value = "hi";\n' });
+      const filename = path.join(root, "simple.mjs");
+
+      const transpiler = vi
+        .fn(async (filename: string) => await fs.promises.readFile(filename, "utf-8"))
+        .mockRejectedValueOnce(new Error("transpile failed"));
+      const cache = { dir: path.join(root, "cache"), namespace: "ns" };
+
+      await expect(
+        new ModuleLoader({ transpilers: [transpiler], cache }).load(filename),
+      ).rejects.toThrow("transpile failed");
+      const namespace = await new ModuleLoader({ transpilers: [transpiler], cache }).load(filename);
+
+      expect(namespace).toHaveProperty("value", "hi");
+      expect(transpiler).toHaveBeenCalledTimes(2);
+    });
+
+    test("transpiles again when content changes but mtime and size do not", async () => {
+      await writeFixtures(root, { "simple.mjs": 'export const value = "hi";\n' });
+      const filename = path.join(root, "simple.mjs");
+      const { atime, mtime } = await fs.promises.stat(filename);
+
+      const transpiler = vi.fn(async (filename: string) => {
+        return await fs.promises.readFile(filename, "utf-8");
+      });
+      const cache = { dir: path.join(root, "cache"), namespace: "ns" };
+
+      await new ModuleLoader({ transpilers: [transpiler], cache }).load(filename);
+      await fs.promises.writeFile(filename, 'export const value = "yo";\n');
+      await fs.promises.utimes(filename, atime, mtime);
+      const namespace = await new ModuleLoader({ transpilers: [transpiler], cache }).load(filename);
+
+      expect(namespace).toHaveProperty("value", "yo");
+      expect(transpiler).toHaveBeenCalledTimes(2);
+    });
+
+    test("transpiles again when the cache namespace changes", async () => {
+      await writeFixtures(root, { "simple.mjs": 'export const value = "hi";\n' });
+      const filename = path.join(root, "simple.mjs");
+
+      const transpiler = vi.fn(async (filename: string) => {
+        return await fs.promises.readFile(filename, "utf-8");
+      });
+      const dir = path.join(root, "cache");
+
+      await new ModuleLoader({ transpilers: [transpiler], cache: { dir, namespace: "a" } }).load(
+        filename,
+      );
+      await new ModuleLoader({ transpilers: [transpiler], cache: { dir, namespace: "b" } }).load(
+        filename,
+      );
+
+      expect(transpiler).toHaveBeenCalledTimes(2);
+    });
   });
 });
