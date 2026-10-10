@@ -64,7 +64,7 @@ const DATE_REGEX = /^(\d{4}-\d{2}-\d{2})[-_](.+)$/;
  * //   outputPath: "2025-01-01-my-post.html",
  * //   title: "My post",
  * //   slug: "my-post",
- * //   date: new Date(2025, 1, 3),
+ * //   date: new Date("2025-01-01"),
  * // }
  * ```
  *
@@ -109,6 +109,10 @@ export class PageDefaultsTransformer implements SingleProcessor {
 
     // Maybe parse out the date from the prefix of the filename
     let date = datum.get("date");
+    if (typeof date === "string") {
+      date = new Date(date);
+    }
+
     let nameWithoutDate: string = parsed.name;
     const dateMatch = DATE_REGEX.exec(parsed.name);
     if (dateMatch) {

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { PageDefaultsTransformer } from "../../../../src/index.js";
 import { Datum } from "../../../../src/pipeline/Datum.js";
@@ -81,6 +81,69 @@ describe("PageDefaultsTransformer", () => {
     const processed = await process(datum);
 
     expect(processed.get("date")).toEqual(date);
+  });
+
+  describe("date parsing", () => {
+    let originalTz: string | undefined;
+
+    beforeEach(() => {
+      originalTz = globalThis.process.env.TZ;
+    });
+
+    afterEach(() => {
+      if (originalTz === undefined) {
+        delete globalThis.process.env.TZ;
+      } else {
+        globalThis.process.env.TZ = originalTz;
+      }
+    });
+
+    test.each([
+      ["2024-02-29", Date.UTC(2024, 1, 29)],
+      ["2024-02-29T13:45", new Date(2024, 1, 29, 13, 45)],
+      ["2024-02-29 13:45:12", new Date(2024, 1, 29, 13, 45, 12)],
+      ["2024-02-29T13:45:12.5", new Date(2024, 1, 29, 13, 45, 12, 500)],
+      ["2024-02-29T13:45:12.123456", new Date(2024, 1, 29, 13, 45, 12, 123)],
+    ])("parses a string date %s", async (input, expected) => {
+      const datum = new Datum({
+        basePath: "/src",
+        filename: "/src/blog/my-post.mdx",
+        date: input,
+      });
+
+      const processed = await process(datum);
+
+      expect(processed.get("date")).toEqual(new Date(expected));
+    });
+
+    test.each(["2023-02-55", "2024-13-01", "2024-01-01T24:30"])(
+      "produces an invalid date for out-of-range components in %s",
+      async (input) => {
+        const datum = new Datum({
+          basePath: "/src",
+          filename: "/src/blog/my-post.mdx",
+          date: input,
+        });
+
+        const processed = await process(datum);
+
+        const date = processed.get("date");
+        expect(date).toBeInstanceOf(Date);
+        expect(Number.isNaN((date as Date).getTime())).toBe(true);
+      },
+    );
+
+    test("prefers an existing date over one in the filename", async () => {
+      const datum = new Datum({
+        basePath: "/src",
+        filename: "/src/blog/2025-05-07-my-post.mdx",
+        date: "1999-01-13",
+      });
+
+      const processed = await process(datum);
+
+      expect(processed.get("date")).toEqual(new Date(Date.UTC(1999, 0, 13)));
+    });
   });
 
   const process = async (datum: Datum) => {

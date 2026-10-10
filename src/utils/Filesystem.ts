@@ -68,15 +68,26 @@ export class Filesystem {
   /**
    * List all files under the root of the current filesystem.
    *
+   * Entries are sorted by their full path (plain string comparison, not locale-aware), so that the order is
+   * deterministic regardless of the underlying filesystem or the current locale.
+   *
    * @param recursive - if `true`, recurse subdirectories to find files
    * @returns a list of the found files
    */
   async ls(recursive = false) {
-    return await readdir(this.rootPath, {
+    const entries = await readdir(this.rootPath, {
       withFileTypes: true,
       encoding: "utf-8",
       recursive,
     });
+
+    return entries
+      .map((entry) => ({
+        entry,
+        key: pathModule.join(entry.parentPath, entry.name),
+      }))
+      .toSorted((a, b) => a.key.localeCompare(b.key))
+      .map(({ entry }) => entry);
   }
 
   /**

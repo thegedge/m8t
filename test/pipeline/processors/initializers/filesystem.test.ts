@@ -76,18 +76,21 @@ describe("FilesystemInitializer", () => {
     });
   });
 
-  test("loads and merges two data files", async () => {
+  test("loads and merges data files, ordered by sorted filename", async () => {
     await writeFixtures(context.root, {
+      "c.json": JSON.stringify({ title: "c" }),
+      "_data.mjs": "export const value = 'mjs';",
       "a.json": JSON.stringify({ title: "a" }),
-      "_data.mjs": "export const value = 1;",
-      "_data.json": JSON.stringify({ value: "testing" }),
+      "_data.json": JSON.stringify({ value: "json" }),
+      "b.json": JSON.stringify({ title: "b" }),
     });
 
-    const result = await processRoot();
+    const results = await processRoot();
 
-    expect(result).toHaveLength(1);
-    expect(result[0].toRecord()).toHaveProperty("title", "a");
-    expect(result[0].get("value")).toBeOneOf([1, "testing"]);
+    expect(results.map((datum) => datum.get("title"))).toEqual(["a", "b", "c"]);
+    for (const datum of results) {
+      expect(datum.get("value")).toBe("mjs");
+    }
   });
 
   describe("error handling", () => {
