@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/filesystem.js";
 import { TypescriptLoader } from "../../../../src/pipeline/processors/loaders/typescript.js";
-import { LayoutTransformer } from "../../../../src/pipeline/processors/transformers/layout.js";
+import {
+  LayoutTransformer,
+  symLayoutFilename,
+} from "../../../../src/pipeline/processors/transformers/layout.js";
 import { dedent } from "../../../../src/utils/dedent.js";
 import { makeContext, testData, writeFixtures, type TestContext } from "../../../helpers.js";
 
@@ -54,6 +57,12 @@ describe("LayoutTransformer", () => {
 
     expect(datum.get("layoutType")).toEqual("simple");
     expect(datum.get("source")).toEqual("datum");
+  });
+
+  test("records the layout's full path", async () => {
+    const datum = await render("testing", "simple.ts");
+
+    expect(datum.get(symLayoutFilename)).toEqual(path.join(testLayoutRoot, "simple.ts"));
   });
 
   test("will recurse layouts", async () => {

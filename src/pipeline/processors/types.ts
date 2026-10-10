@@ -84,9 +84,10 @@ export class TypesProcessor implements ManyProcessor {
             typeName = `${camelizePath(basePath)}Data`;
           } else if (processedBy instanceof LayoutTransformer) {
             // TODO layouts should ignore all data keys from the data files
-            const basePath = ancestor[symLayoutFilename] as string | undefined;
-            if (basePath) {
-              typeName = `${camelizePath(basePath)}LayoutData`;
+            const layoutFile = ancestor[symLayoutFilename] as string | undefined;
+            if (layoutFile) {
+              const layoutDir = context.site.root.absolute(processedBy.layoutDir);
+              typeName = `${camelizePath(path.relative(layoutDir, layoutFile))}LayoutData`;
             }
           }
 

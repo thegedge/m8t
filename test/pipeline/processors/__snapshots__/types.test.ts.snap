@@ -88,6 +88,48 @@ declare module "test-2.ts" {
 }"
 `;
 
+exports[`TypesProcessor > gives same-named layouts in different directories distinct type names 1`] = `
+"import "path";
+
+export interface RootData {
+  basePath: string;
+    filename: string;
+    title: string;
+}
+
+export interface BlogBaseLayoutData {
+  basePath: string;
+    blogOnly: boolean;
+    filename: string;
+    title: string;
+}
+
+export interface DocsBaseLayoutData {
+  basePath: string;
+    docsOnly: number;
+    filename: string;
+    title: string;
+}
+
+export interface BaseLayoutData {
+  basePath: string;
+    filename: string;
+    homeOnly: string;
+    title: string;
+}
+declare module "blog.ts" {
+  export type DataProps = RootData & BlogBaseLayoutData;
+}
+
+declare module "docs.ts" {
+  export type DataProps = RootData & DocsBaseLayoutData;
+}
+
+declare module "home.ts" {
+  export type DataProps = RootData & BaseLayoutData;
+}"
+`;
+
 exports[`TypesProcessor > properly deals with cycles 1`] = `
 "import "path";
 

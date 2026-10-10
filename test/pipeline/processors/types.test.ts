@@ -2,7 +2,12 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { beforeEach, describe, expect, test } from "vitest";
 
-import { Datum, TypesProcessor } from "../../../src/index.js";
+import { Datum, TypescriptLoader, TypesProcessor } from "../../../src/index.js";
+import { symProcessedBy } from "../../../src/pipeline/Datum.js";
+import {
+  LayoutTransformer,
+  symLayoutFilename,
+} from "../../../src/pipeline/processors/transformers/layout.js";
 import type { TypesProcessorOptions } from "../../../src/pipeline/processors/types.js";
 import { makeContext, type TestContext } from "../../helpers.js";
 
@@ -112,6 +117,39 @@ describe("TypesProcessor", () => {
       }),
     );
 
+    expect(types).toMatchSnapshot();
+  });
+
+  test("gives same-named layouts in different directories distinct type names", async () => {
+    const layoutTransformer = new LayoutTransformer("_layouts", [new TypescriptLoader()]);
+    const layoutAncestor = (layout: string, data: Record<string, unknown>) => ({
+      ...data,
+      [symProcessedBy]: layoutTransformer,
+      [symLayoutFilename]: path.join(context.root, "_layouts", layout),
+    });
+
+    const types = await process(
+      {},
+      context.datum(
+        { filename: "./blog.ts", title: "Blog" },
+        layoutAncestor("blog/base.tsx", { blogOnly: true }),
+        {},
+      ),
+      context.datum(
+        { filename: "./docs.ts", title: "Docs" },
+        layoutAncestor("docs/base.tsx", { docsOnly: 1 }),
+        {},
+      ),
+      context.datum(
+        { filename: "./home.ts", title: "Home" },
+        layoutAncestor("base.tsx", { homeOnly: "yes" }),
+        {},
+      ),
+    );
+
+    expect(types).toContain("export interface BlogBaseLayoutData {");
+    expect(types).toContain("export interface DocsBaseLayoutData {");
+    expect(types).toContain("export interface BaseLayoutData {");
     expect(types).toMatchSnapshot();
   });
 

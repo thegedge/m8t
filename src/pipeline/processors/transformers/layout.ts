@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type { Site } from "../../../site/Site.js";
 import { Datum, symProcessedBy } from "../../Datum.js";
 import type { NonEmptyPipeline, PipelineStage, SingleProcessor } from "../../index.js";
@@ -10,7 +8,7 @@ import { noIndex } from "./search.js";
 const MAX_ITERATIONS = 10;
 
 /**
- * A symbol that is used to store the filename of the layout on a datum.
+ * A symbol that is used to store the absolute filename of the layout on a datum.
  *
  * This is necessary since we delete the layout property during processing, so if you need to know
  * which layout produced some final result in the lineage of a datum, you can look at the value
@@ -115,7 +113,7 @@ export class LayoutTransformer implements SingleProcessor {
           layout: layoutDatum.get("layout"),
           content,
           [symProcessedBy]: this,
-          [symLayoutFilename]: path.basename(layout),
+          [symLayoutFilename]: layoutFile,
         });
       } else {
         // TODO warn when this happens, or maintain the content and merge in other data?
