@@ -1,11 +1,11 @@
 import { isGeneratorFunction } from "node:util/types";
 
+import { BuildError } from "../../../errors/BuildError.js";
 import { LoadError } from "../../../errors/LoadError.js";
 import type { MaybeArray } from "../../../types.js";
 import { Datum, type DatumShape } from "../../Datum.js";
 import type { SingleProcessor } from "../../index.js";
-// oxlint-disable no-unused-vars -- only here for jsdocs
-import type { reprocess } from "../../Pipeline.js";
+import type { reprocess } from "../../Pipeline.js"; // oxlint-disable-line no-unused-vars -- for jsdocs
 import type { DefaultContext } from "../../utils.js";
 
 /**
@@ -16,13 +16,13 @@ import type { DefaultContext } from "../../utils.js";
  * on a blog post).
  *
  * If the content function is a generator function, it will be iterated over and each result will be
- * processed by this transformer. Since we can't map a single URL to all of the results produced
- * by the generator, it is expected that the yielded values are objects with a `url` property.
+ * processed by this transformer. Since we can't map a single URL to all of the results produced by
+ * the generator, each yielded value must be an object with a `url` property.
  *
  * Also, when yielding multiple results from a single file, you'll often want to reprocess the data
  * in this pipeline. For example, you may want new page defaults, or you may yield a content
- * function that we need to run through this transformer again. In these cases, you can also include
- * the {@link reprocess} symbol in the result object.
+ * function that we need to run through this transformer again. In these cases, you can also
+ * include the {@link reprocess} symbol in the result object.
  */
 export class ContentFunctionTransformer implements SingleProcessor {
   async processOne(datum: Datum, context: DefaultContext): Promise<MaybeArray<Datum>> {
@@ -32,21 +32,42 @@ export class ContentFunctionTransformer implements SingleProcessor {
     }
 
     const datumRecord = datum.toRecord();
+    const options = { signal: context.signal };
 
     if (isGeneratorFunction(content)) {
       const filename = datum.get("filename");
       const newData: Datum[] = [];
-      for await (const result of content(datumRecord)) {
+      const seenUrls = new Set<string>();
+      for await (const result of content(datumRecord, options)) {
         switch (typeof result) {
-          case "object":
+          case "object": {
             if (!result) {
               throw new LoadError(`unexpected nil result from content function in ${filename}`, {
                 filename,
               });
             }
 
+            const url: unknown = (result as Record<string, unknown>).url;
+            if (typeof url !== "string" || url === "") {
+              throw new BuildError(
+                `Content function in ${filename} yielded a result without a url (yield #${newData.length + 1})`,
+                {
+                  hint: "Every object yielded from a generator content function needs a unique, non-empty `url` string.",
+                },
+              );
+            }
+
+            if (seenUrls.has(url)) {
+              throw new BuildError(`Content function in ${filename} yielded the url ${url} twice`, {
+                url,
+                hint: "Every object yielded from a generator content function needs a unique `url`.",
+              });
+            }
+            seenUrls.add(url);
+
             newData.push(datum.branch(result as unknown as DatumShape));
             break;
+          }
           default:
             throw new LoadError(
               `Expected object result from content function in ${filename}, but received ${typeof result}`,
@@ -58,6 +79,6 @@ export class ContentFunctionTransformer implements SingleProcessor {
       return newData;
     }
 
-    return datum.with({ content: await content(datumRecord, { signal: context.signal }) });
+    return datum.with({ content: await content(datumRecord, options) });
   }
 }
