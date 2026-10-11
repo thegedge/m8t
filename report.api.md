@@ -128,18 +128,21 @@ export type FileMatcherOptions = {
 
 // @public
 export class Filesystem {
+    [Symbol.asyncDispose](): Promise<void>;
     constructor(path: string);
     absolute(...paths: string[]): string;
-    cd(root: string): Promise<Filesystem>;
+    cd(path: string): Promise<Filesystem>;
     clear(): Promise<void>;
     copyFileFrom(filesystem: Filesystem, path: string): Promise<void>;
     ensureDir(path?: string): Promise<void>;
     exists(path?: string): Promise<false | Stats>;
-    isDirectory(dir: string): Promise<boolean>;
+    isDirectory(path: string): Promise<boolean>;
     ls(recursive?: boolean): Promise<Dirent<string>[]>;
     readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;
-    remove(path: string): Promise<void>;
+    remove(path?: string): Promise<void>;
+    replaceDir(path: string, source: Filesystem): Promise<void>;
     readonly rootPath: string;
+    static temporary(prefix: string): Promise<Filesystem>;
     writeFile(path: string, contents: string | NodeJS.ArrayBufferView | Iterable<string | NodeJS.ArrayBufferView> | AsyncIterable<string | NodeJS.ArrayBufferView>): Promise<void>;
 }
 

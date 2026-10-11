@@ -3,6 +3,7 @@ import path from "node:path";
 import pMap from "p-map";
 
 import { Site } from "../../site/Site.js";
+import { Filesystem } from "../../utils/Filesystem.js";
 
 const log = debug("m8t:build");
 const CONCURRENCY = 8;
@@ -10,14 +11,11 @@ const CONCURRENCY = 8;
 export const run = async (opts: { root: string; signal: AbortSignal }): Promise<number> => {
   const { root, signal } = opts;
   const site = await Site.forRoot(root);
-  await site.out.ensureDir("build");
+  const siteData = await site.load({ signal });
 
-  const out = await site.out.cd("build");
+  await using tmp = await Filesystem.temporary(".build-");
 
-  log(`clearing out directory ${out.rootPath}`);
-  const [siteData] = await Promise.all([site.load({ signal }), out.clear()]);
-
-  log(`write pages to ${out.rootPath}`);
+  log(`write pages to ${tmp.rootPath}`);
   await pMap(
     siteData,
     async (datum) => {
@@ -30,13 +28,15 @@ export const run = async (opts: { root: string; signal: AbortSignal }): Promise<
       const url = datum.maybeGetString("url");
       process.stdout.write(`Building ${url}\n`);
 
-      await out.writeFile(outputPath, content);
+      await tmp.writeFile(outputPath, content);
     },
     { concurrency: CONCURRENCY, signal },
   );
 
   if (await site.static.exists()) {
-    log(`copying static files to ${out.rootPath}`);
+    signal.throwIfAborted();
+
+    log(`copying static files to ${tmp.rootPath}`);
     const staticFiles = await site.static.ls(true);
     await pMap(
       staticFiles,
@@ -45,14 +45,18 @@ export const run = async (opts: { root: string; signal: AbortSignal }): Promise<
           return;
         }
 
-        await out.copyFileFrom(
-          site.static,
-          path.join(path.relative(site.static.rootPath, file.parentPath), file.name),
+        const relativePath = path.join(
+          path.relative(site.static.rootPath, file.parentPath),
+          file.name,
         );
+        await tmp.copyFileFrom(site.static, relativePath);
       },
       { concurrency: CONCURRENCY, signal },
     );
   }
+
+  log(`moving ${tmp.rootPath} to ${site.out.absolute("build")}`);
+  await site.out.replaceDir("build", tmp);
 
   return 0;
 };

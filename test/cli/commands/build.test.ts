@@ -93,4 +93,53 @@ describe("build command", () => {
 
     await expect(fs.stat(path.join(root, "out/build/stale.html"))).rejects.toThrow();
   });
+
+  test("leaves the previous output intact when the build is aborted", async () => {
+    await writeFixtures(root, {
+      "site.ts": siteTsWithPages([{ url: "/", outputPath: "index.html", content: "<h1>New</h1>" }]),
+      "out/build/index.html": "<h1>Old</h1>",
+    });
+
+    await expect(run({ root, signal: AbortSignal.abort(new AbortError("sad")) })).rejects.toThrow(
+      AbortError,
+    );
+
+    await expect(fs.readFile(path.join(root, "out/build/index.html"), "utf-8")).resolves.toBe(
+      "<h1>Old</h1>",
+    );
+    await expect(fs.readdir(path.join(root, "out"))).resolves.toEqual(["build"]);
+  });
+
+  test("leaves the previous output intact when the build fails partway through", async () => {
+    await writeFixtures(root, {
+      "site.ts": siteTsWithPages([
+        { url: "/", outputPath: "index.html", content: "<h1>New</h1>" },
+        { url: "/broken", outputPath: "broken/index.html" },
+      ]),
+      "out/build/index.html": "<h1>Old</h1>",
+    });
+
+    await expect(run({ root, signal: new AbortController().signal })).rejects.toThrow();
+
+    await expect(fs.readFile(path.join(root, "out/build/index.html"), "utf-8")).resolves.toBe(
+      "<h1>Old</h1>",
+    );
+    await expect(fs.readdir(path.join(root, "out"))).resolves.toEqual(["build"]);
+  });
+
+  test("leaves no temporary directories behind after a successful build", async () => {
+    await writeFixtures(root, {
+      "site.ts": siteTsWithPages([
+        { url: "/", outputPath: "index.html", content: "<h1>Home</h1>" },
+      ]),
+      "out/build/index.html": "<h1>Old</h1>",
+    });
+
+    await run({ root, signal: new AbortController().signal });
+
+    await expect(fs.readdir(path.join(root, "out"))).resolves.toEqual(["build"]);
+    await expect(fs.readFile(path.join(root, "out/build/index.html"), "utf-8")).resolves.toBe(
+      "<h1>Home</h1>",
+    );
+  });
 });

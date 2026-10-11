@@ -1,4 +1,16 @@
-import { copyFile, mkdir, readdir, readFile, rm, stat, unlink, writeFile } from "fs/promises";
+import { randomUUID } from "crypto";
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "fs/promises";
+import os from "node:os";
 import pathModule from "path";
 
 import { InternalError } from "../errors/InternalError.js";
@@ -15,6 +27,18 @@ import { isNoEntryError } from "./is.js";
  * Many operations may still work a-o-k if given an absolute path, but it's recommended to stick with relative paths.
  */
 export class Filesystem {
+  /**
+   * Create a new, uniquely named directory.
+   *
+   * It is highly recommended to use `await using` on the created filesystem to ensure it gets cleaned up.
+   *
+   * @param prefix - the prefix for the directory's name
+   * @returns a new filesystem rooted at the created directory
+   */
+  static async temporary(prefix: string) {
+    return new Filesystem(await mkdtemp(pathModule.join(os.tmpdir(), prefix)));
+  }
+
   /** Absolute path of the root for this filesystem */
   readonly rootPath: string;
 
@@ -31,7 +55,7 @@ export class Filesystem {
    * If no path given, checks whether or not the root iteslf exists.
    */
   async exists(path?: string) {
-    const pathToCheck = path === undefined ? this.rootPath : pathModule.join(this.rootPath, path);
+    const pathToCheck = path === undefined ? this.rootPath : this.#normalizePath(path);
     try {
       return await stat(pathToCheck);
     } catch (e) {
@@ -47,12 +71,12 @@ export class Filesystem {
    *
    * @returns a new filesystem rooted at the given directory.
    */
-  async cd(root: string) {
-    const resolvedRoot = pathModule.resolve(this.rootPath, root);
-    if (!(await this.isDirectory(resolvedRoot))) {
-      throw new InternalError(`can't descend into a non-directory ${resolvedRoot}`);
+  async cd(path: string) {
+    const normalizedRoot = this.#normalizePath(path);
+    if (!(await this.isDirectory(normalizedRoot))) {
+      throw new InternalError(`can't descend into a non-directory ${normalizedRoot}`);
     }
-    return new Filesystem(resolvedRoot);
+    return new Filesystem(normalizedRoot);
   }
 
   /**
@@ -60,9 +84,9 @@ export class Filesystem {
    *
    * @returns `true` if the given path is a directory, `false` otherwise
    */
-  async isDirectory(dir: string) {
-    const resolvedDir = pathModule.resolve(this.rootPath, dir);
-    return (await stat(resolvedDir)).isDirectory();
+  async isDirectory(path: string) {
+    const normalizedDir = this.#normalizePath(path);
+    return (await stat(normalizedDir)).isDirectory();
   }
 
   /**
@@ -94,7 +118,7 @@ export class Filesystem {
    * Remove all files under this filesystem.
    */
   async clear() {
-    await rm(this.rootPath, { recursive: true, force: true });
+    await this.remove();
     await this.ensureDir();
   }
 
@@ -105,8 +129,9 @@ export class Filesystem {
    * @param path - the path to the file to copy
    */
   async copyFileFrom(filesystem: Filesystem, path: string) {
-    await this.ensureDir(pathModule.dirname(path));
-    await copyFile(filesystem.absolute(path), this.absolute(path));
+    const normalizedPath = this.#normalizePath(path);
+    await this.ensureDir(pathModule.dirname(normalizedPath));
+    await copyFile(filesystem.absolute(path), normalizedPath);
   }
 
   /**
@@ -117,16 +142,18 @@ export class Filesystem {
    * @param path - the path to ensure (optional)
    */
   async ensureDir(path?: string) {
-    await mkdir(path ? this.absolute(path) : this.rootPath, { recursive: true });
+    await mkdir(path === undefined ? this.rootPath : this.#normalizePath(path), {
+      recursive: true,
+    });
   }
 
   /**
    * Remove the given entry from.
    *
-   * @param path - the path to remove
+   * @param path - the path to remove, or the root if no path given
    */
-  async remove(path: string) {
-    await unlink(path);
+  async remove(path?: string) {
+    await rm(path === undefined ? this.rootPath : this.#normalizePath(path), { recursive: true });
   }
 
   /**
@@ -138,7 +165,7 @@ export class Filesystem {
    */
   async readFile(path: string, encoding: "utf-8" | "utf8"): Promise<string>;
   async readFile(path: string, encoding: BufferEncoding): Promise<string | Buffer> {
-    return await readFile(this.absolute(path), encoding);
+    return await readFile(this.#normalizePath(path), encoding);
   }
 
   /**
@@ -154,8 +181,9 @@ export class Filesystem {
       | Iterable<string | NodeJS.ArrayBufferView>
       | AsyncIterable<string | NodeJS.ArrayBufferView>,
   ) {
-    await this.ensureDir(pathModule.dirname(path));
-    await writeFile(this.absolute(path), contents);
+    const normalizedPath = this.#normalizePath(path);
+    await this.ensureDir(pathModule.dirname(normalizedPath));
+    await writeFile(normalizedPath, contents);
   }
 
   /**
@@ -175,6 +203,52 @@ export class Filesystem {
    * @returns the absolute path
    */
   absolute(...paths: string[]) {
-    return pathModule.resolve(this.rootPath, ...paths);
+    return this.#normalizePath(...paths);
+  }
+
+  /**
+   * Replace the directory at the given path with the root of another filesystem, by renaming.
+   *
+   * The source filesystem should live on the same device as this one (e.g., come from {@link Filesystem.temporary}).
+   * Whatever was previously at `path` is moved aside, then removed only after the source is in place. If
+   * the source can't be moved into place, the previous contents are restored.
+   *
+   * @param path - the path, relative to this filesystem, to replace
+   * @param source - the filesystem whose root will be moved to `path`
+   */
+  async replaceDir(path: string, source: Filesystem) {
+    const relative = pathModule.isAbsolute(path)
+      ? pathModule.relative(source.rootPath, path)
+      : path;
+    const target = this.#normalizePath(relative);
+    const backup = `${target}.old-${randomUUID()}`;
+
+    let hadPrevious = true;
+    try {
+      await rename(target, backup);
+    } catch (e) {
+      if (!isNoEntryError(e)) {
+        throw e;
+      }
+      hadPrevious = false;
+    }
+
+    await this.ensureDir(path);
+    await rename(source.rootPath, target);
+
+    if (hadPrevious) {
+      await rm(backup, { recursive: true, force: true });
+    }
+  }
+
+  /** Destroy this filesystem by removing the root path from disk */
+  async [Symbol.asyncDispose]() {
+    await this.remove().catch(() => {});
+  }
+
+  /** Expands dots and ensures path is under the root path */
+  #normalizePath(...paths: string[]) {
+    const resolved = pathModule.resolve(this.rootPath, ...paths);
+    return resolved.startsWith(this.rootPath) ? resolved : pathModule.join(this.rootPath, resolved);
   }
 }
