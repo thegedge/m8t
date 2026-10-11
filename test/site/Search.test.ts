@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import { Search } from "../src/site/Search.js";
-import { testData } from "./helpers.js";
+import { Search } from "../../src/site/Search.js";
+import { testData } from "../helpers.js";
 
 describe("Search", () => {
   const data = [

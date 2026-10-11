@@ -12,9 +12,7 @@ describe("MdxLoader", () => {
   let context: TestContext;
 
   afterEach(async () => {
-    if (context) {
-      await context[Symbol.asyncDispose]();
-    }
+    await context[Symbol.asyncDispose]();
   });
 
   const writeMdxFixtures = async (files: Record<string, string>) => {

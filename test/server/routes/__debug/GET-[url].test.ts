@@ -6,11 +6,10 @@ import { makeContext, passthrough, type TestContext } from "../../../helpers.js"
 import { waitForM8tResponse } from "../../helpers.js";
 
 describe("debugPageGet", () => {
-  let context: TestContext | undefined;
+  let context: TestContext;
 
   afterEach(async () => {
-    await context?.[Symbol.asyncDispose]();
-    context = undefined;
+    await context[Symbol.asyncDispose]();
   });
 
   const serveDebugPage = async (context: TestContext, url: string) => {

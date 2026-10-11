@@ -1,5 +1,5 @@
 import path from "node:path";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { FilesystemInitializer } from "../../../../src/pipeline/processors/initializers/filesystem.js";
 import { TypescriptLoader } from "../../../../src/pipeline/processors/loaders/typescript.js";
@@ -44,6 +44,10 @@ describe("LayoutTransformer", () => {
         };
       `,
     });
+  });
+
+  afterEach(async () => {
+    await context[Symbol.asyncDispose]();
   });
 
   test("will render the given content inside the layout", async () => {

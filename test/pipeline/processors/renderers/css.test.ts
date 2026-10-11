@@ -1,18 +1,12 @@
 import type postcss from "postcss";
-import { beforeEach, describe, expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 
 import type { DatumShape } from "../../../../src/pipeline/Datum.js";
 import { CssRenderer } from "../../../../src/pipeline/processors/renderers/css.js";
 import { dedent } from "../../../../src/utils/dedent.js";
-import { makeContext, type TestContext } from "../../../helpers.js";
+import { makeContext } from "../../../helpers.js";
 
 describe("CssRenderer", () => {
-  let context: TestContext;
-
-  beforeEach(async () => {
-    context = await makeContext();
-  });
-
   test("throws an error for invalid CSS when plugins given", async () => {
     const processPromise = process(
       {
@@ -73,6 +67,7 @@ describe("CssRenderer", () => {
 
   const process = async (data: Partial<DatumShape>, plugins: postcss.Plugin[] = []) => {
     const processor = new CssRenderer(plugins);
+    await using context = await makeContext();
     const result = await processor.processOne(context.datum(data), context);
 
     if (Array.isArray(result)) {

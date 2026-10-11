@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import { SiteData } from "../src/site/SiteData.js";
-import { testData } from "./helpers.js";
+import { SiteData } from "../../src/site/SiteData.js";
+import { testData } from "../helpers.js";
 
 describe("SiteData", () => {
   test("exposes all data, including data without a url", () => {

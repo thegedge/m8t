@@ -33,7 +33,7 @@ describe("ReadingTimeTransformer", () => {
   });
 
   const wpm = async (content: unknown) => {
-    const context = await makeContext();
+    await using context = await makeContext();
     const transformer = new ReadingTimeTransformer(WPM);
     const datum = await transformer.processOne(testData({ content }), context);
     return (datum as Datum).get("readingTimeMins") as number | undefined;

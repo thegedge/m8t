@@ -1,4 +1,5 @@
 import path from "node:path";
+import { afterEach } from "node:test";
 import { beforeEach, describe, expect, test } from "vitest";
 
 import { AbortError } from "../../../../src/errors/AbortError.js";
@@ -12,6 +13,10 @@ describe("ReadFileLoader", () => {
   beforeEach(async () => {
     context = await makeContext();
     await writeFixtures(context.root, { "file.txt": "Hey, there!" });
+  });
+
+  afterEach(async () => {
+    await context[Symbol.asyncDispose]();
   });
 
   test("can read a file", async () => {

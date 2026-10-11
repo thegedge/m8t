@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { AbortError } from "../src/errors/AbortError.js";
-import { SiteData } from "../src/site/SiteData.js";
-import { makeContext, passthrough, type TestContext } from "./helpers.js";
+import { AbortError } from "../../src/errors/AbortError.js";
+import { SiteData } from "../../src/site/SiteData.js";
+import { makeContext, passthrough, type TestContext } from "../helpers.js";
 
 describe("Site", () => {
   let context: TestContext;

@@ -1,6 +1,6 @@
 import { readFile } from "fs/promises";
 import path from "path";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { Datum, TypescriptLoader, TypesProcessor } from "../../../src/index.js";
 import { symProcessedBy } from "../../../src/pipeline/Datum.js";
@@ -16,6 +16,10 @@ describe("TypesProcessor", () => {
 
   beforeEach(async () => {
     context = await makeContext();
+  });
+
+  afterEach(async () => {
+    await context[Symbol.asyncDispose]();
   });
 
   test("can generate types for all the things", async () => {

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 
 import { Datum, TypescriptLoader } from "../../../../src/index.js";
 import { dedent } from "../../../../src/utils/dedent.js";
@@ -13,6 +13,10 @@ describe("TypescriptLoader", () => {
     loader = new TypescriptLoader();
     context = await makeContext({ pipelines: { "/": [loader] } });
     await linkNodeModules(context.root, "react");
+  });
+
+  afterEach(async () => {
+    await context[Symbol.asyncDispose]();
   });
 
   test.each(["jsx", "mjsx"])("can load JSX from file.%s", async (ext) => {

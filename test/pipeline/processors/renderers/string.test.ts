@@ -23,7 +23,8 @@ describe("StringRenderer", () => {
 
   const render = async (content: unknown) => {
     const renderer = new StringRenderer();
-    const datum = await renderer.processOne(testData({ content }), await makeContext());
+    await using context = await makeContext();
+    const datum = await renderer.processOne(testData({ content }), context);
     if (Array.isArray(datum)) {
       expect.fail("expected StringProcessor to return a single datum");
     }
