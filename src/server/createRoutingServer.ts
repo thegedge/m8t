@@ -7,6 +7,7 @@ import {
 
 import { formatError } from "../cli/formatError.js";
 import type { MaybePromise } from "../index.js";
+import { withEnv } from "../utils/withEnv.js";
 
 /** A route handler */
 export type RouteFunction<T> = (options: {
@@ -194,7 +195,11 @@ export const createRequestHandler = <T extends Record<string, unknown>>(
         if (!response.headersSent) {
           response.writeHead(500, { "Content-Type": "text/plain" });
         }
-        response.end(formatError(error));
+
+        using _a = withEnv("NO_COLOR", "1");
+        using _b = withEnv("NODE_DISABLE_COLORS", "1");
+        using _c = withEnv("FORCE_COLOR", "0");
+        response.end(formatError(error, { verbose: false }));
       }
     }
   };
