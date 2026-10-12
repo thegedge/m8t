@@ -7,6 +7,7 @@ import { Datum, type DatumShape } from "../../Datum.js";
 import type { SingleProcessor } from "../../index.js";
 import type { reprocess } from "../../Pipeline.js"; // oxlint-disable-line no-unused-vars -- for jsdocs
 import type { DefaultContext } from "../../utils.js";
+import type { ContentFunctionOptions } from "../renderers/helpers.js";
 
 /**
  * A transformer that will call the `content` property on a datum, if it is a function.
@@ -79,6 +80,10 @@ export class ContentFunctionTransformer implements SingleProcessor {
       return newData;
     }
 
-    return datum.with({ content: await content(datumRecord, options) });
+    return datum.with({
+      content: async (renderOptions: ContentFunctionOptions) => {
+        return await content(datumRecord, renderOptions);
+      },
+    });
   }
 }

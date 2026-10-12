@@ -146,6 +146,13 @@ export class Datum<Shape extends DatumShape = DatumShape> {
     return (this.#data[key] as V) ?? defaultValue;
   }
 
+  getOrThrow<K extends keyof Shape | string>(key: K): Shape[K] {
+    if (!this.has(key)) {
+      throw new InternalError(`datum does not have expected key "${String(key)}"`);
+    }
+    return this.#data[key];
+  }
+
   maybeGetString(key: string | symbol): string | undefined {
     const data = this.#data[key];
     return typeof data === "string" ? data : undefined;
@@ -160,7 +167,7 @@ export class Datum<Shape extends DatumShape = DatumShape> {
   }
 
   has(key: keyof Shape): boolean {
-    return key in this.#data;
+    return Object.hasOwn(this.#data, key);
   }
 
   get lineage(): readonly Readonly<Shape>[] {

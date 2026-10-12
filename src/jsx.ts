@@ -1,6 +1,6 @@
 import { Writable, type WritableOptions } from "node:stream";
 import { StringDecoder } from "node:string_decoder";
-import { type ReactNode } from "react";
+import { type ReactElement } from "react";
 import { renderToPipeableStream } from "react-dom/server";
 
 class StringWritable extends Writable {
@@ -44,7 +44,7 @@ class StringWritable extends Writable {
  * @returns the HTML string.
  */
 export const renderElementToHTML = async (
-  element: ReactNode,
+  element: ReactElement,
   options: { signal?: AbortSignal } = {},
 ): Promise<string> => {
   const { signal } = options;

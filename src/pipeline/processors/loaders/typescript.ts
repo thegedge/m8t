@@ -12,6 +12,8 @@ const decoder = new TextDecoder();
 const loadedFor = Symbol.for("loadedFor");
 const JS_OR_TS_FILE_REGEX = /\.m?[jt]sx?$/;
 
+const symRenderer = Symbol.for("renderer");
+
 /**
  * A loader that imports TypeScript files as data.
  *
@@ -33,10 +35,12 @@ export class TypescriptLoader implements SingleProcessor {
     }
 
     const { default: defaultExport, ...otherData } = await context.site.loader.load(filename);
+    const content = otherData.content ?? defaultExport;
     return datum.with({
       ...otherData,
-      content: otherData.content ?? defaultExport,
+      content,
       [loadedFor]: filename,
+      [symRenderer]: typeof content == "function" && isMaybeHtml(filename) ? "react" : undefined,
     });
   }
 
@@ -84,3 +88,13 @@ export class TypescriptLoader implements SingleProcessor {
     return code;
   }
 }
+
+/**
+ * Whether a script's output could be HTML, judging by the extension before the script extension.
+ *
+ * For example, `style.css.ts` is not HTML, but `page.tsx` and `index.html.tsx` could be.
+ */
+const isMaybeHtml = (filename: string) => {
+  const extension = path.extname(filename.replace(JS_OR_TS_FILE_REGEX, ""));
+  return extension === "" || extension === ".html" || extension === ".htm";
+};

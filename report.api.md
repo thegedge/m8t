@@ -10,7 +10,7 @@ import { Context } from 'node:vm';
 import type { devices } from 'playwright';
 import { Dirent } from 'node:fs';
 import postcss from 'postcss';
-import { ReactNode } from 'react';
+import { ReactElement } from 'react';
 import type { Readable } from 'node:stream';
 import { Stats } from 'node:fs';
 
@@ -53,6 +53,8 @@ export class Datum<Shape extends DatumShape = DatumShape> {
     get<K extends keyof Shape | string>(key: K): Shape[K];
     // (undocumented)
     getOr<V>(key: string | symbol, defaultValue: V): V;
+    // (undocumented)
+    getOrThrow<K extends keyof Shape | string>(key: K): Shape[K];
     // (undocumented)
     has(key: keyof Shape): boolean;
     // (undocumented)
@@ -109,7 +111,6 @@ export class EnvironmentError extends M8tError {
 // @public
 export type ErrorFormatOptions = {
     verbose?: boolean;
-    color?: boolean;
     maxCauseDepth?: number;
 };
 
@@ -263,13 +264,13 @@ export type PipelineStage = ManyProcessor | ManyProcessorFunction | SingleProces
 // @public
 export class ReactRenderer implements SingleProcessor {
     // (undocumented)
-    processOne(datum: Datum, context: DefaultContext): Promise<MaybeArray<Datum>>;
+    processOne(datum: Datum, _context: DefaultContext): Promise<MaybeArray<Datum>>;
 }
 
 // @public
 export class ReadFileLoader implements SingleProcessor {
     // (undocumented)
-    processOne(datum: Datum, context: DefaultContext): Promise<Datum>;
+    processOne(datum: Datum, _context: DefaultContext): Promise<Datum>;
 }
 
 // @public
@@ -280,7 +281,7 @@ export class ReadingTimeTransformer implements SingleProcessor {
 }
 
 // @public
-export const renderElementToHTML: (element: ReactNode, options?: {
+export const renderElementToHTML: (element: ReactElement, options?: {
     signal?: AbortSignal;
 }) => Promise<string>;
 

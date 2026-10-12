@@ -81,6 +81,23 @@ describe("TypescriptLoader", () => {
     expect(result.content).toBeTypeOf("function");
   });
 
+  test("tags function content as react unless the file is clearly not HTML", async () => {
+    await writeFixtures(context.root, {
+      "page.tsx": `export default () => "page";`,
+      "style.css.ts": `export default () => "a { color: red; }";`,
+      "data.json.ts": `export default () => "{}";`,
+    });
+
+    const symRenderer = Symbol.for("renderer");
+    const page = await process("page.tsx");
+    const css = await process("style.css.ts");
+    const json = await process("data.json.ts");
+
+    expect(page[symRenderer]).toBe("react");
+    expect(css[symRenderer]).toBeUndefined();
+    expect(json[symRenderer]).toBeUndefined();
+  });
+
   const process = async (filename: string) => {
     const processor = new TypescriptLoader();
     const result = await processor.processOne(

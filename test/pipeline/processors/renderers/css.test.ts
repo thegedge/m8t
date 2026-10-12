@@ -4,11 +4,12 @@ import { describe, expect, test } from "vitest";
 import type { DatumShape } from "../../../../src/pipeline/Datum.js";
 import { CssRenderer } from "../../../../src/pipeline/processors/renderers/css.js";
 import { dedent } from "../../../../src/utils/dedent.js";
+import { unthunk } from "../../../../src/utils/unthunk.js";
 import { makeContext } from "../../../helpers.js";
 
 describe("CssRenderer", () => {
   test("throws an error for invalid CSS when plugins given", async () => {
-    const processPromise = process(
+    const datum = await process(
       {
         filename: "./test.css",
         content: "asdjkl",
@@ -16,21 +17,21 @@ describe("CssRenderer", () => {
       [{ postcssPlugin: "remove-comments" }],
     );
 
-    await expect(processPromise).rejects.toThrow();
+    await expect(unthunk(datum.getOrThrow("content"))).rejects.toThrow();
   });
 
   test("passes invalid CSS content through with no plugins", async () => {
-    const value = await process({
+    const datum = await process({
       filename: "./test.css",
       content: "invalid css",
     });
 
-    expect(value.toRecord()).toHaveProperty("mimeType", "text/css");
-    expect(value.toRecord()).toHaveProperty("content", "invalid css");
+    expect(datum.toRecord()).toHaveProperty("mimeType", "text/css");
+    await expect(datum).toHaveContent("invalid css");
   });
 
   test("renders valid CSS when plugins given", async () => {
-    const value = await process(
+    const datum = await process(
       {
         filename: "./test.css",
         content: "a { color: blue; }",
@@ -38,12 +39,12 @@ describe("CssRenderer", () => {
       [{ postcssPlugin: "remove-comments" }],
     );
 
-    expect(value.toRecord()).toHaveProperty("mimeType", "text/css");
-    expect(value.toRecord()).toHaveProperty("content", "a { color: blue; }");
+    expect(datum.toRecord()).toHaveProperty("mimeType", "text/css");
+    await expect(datum).toHaveContent("a { color: blue; }");
   });
 
   test("uses given plugins to render CSS", async () => {
-    const value = await process(
+    const datum = await process(
       {
         filename: "./test.css",
         content: dedent`
@@ -61,8 +62,8 @@ describe("CssRenderer", () => {
       ],
     );
 
-    expect(value.toRecord()).toHaveProperty("mimeType", "text/css");
-    expect(value.toRecord()).toHaveProperty("content", "a { color: red; }");
+    expect(datum.toRecord()).toHaveProperty("mimeType", "text/css");
+    await expect(datum).toHaveContent("a { color: red; }");
   });
 
   const process = async (data: Partial<DatumShape>, plugins: postcss.Plugin[] = []) => {

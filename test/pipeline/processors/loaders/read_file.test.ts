@@ -23,14 +23,14 @@ describe("ReadFileLoader", () => {
     const result = await process("file.txt");
 
     expect(result.content).toBeTypeOf("function");
-    expect(await (result.content as any)()).toEqual("Hey, there!");
+    expect(await (result.content as any)({ signal: context.signal })).toEqual("Hey, there!");
   });
 
   test("overrides the given datum's content", async () => {
     const result = await process("file.txt", { content: "Overwrite me" });
 
     expect(result.content).toBeTypeOf("function");
-    expect(await (result.content as any)()).toEqual("Hey, there!");
+    expect(await (result.content as any)({ signal: context.signal })).toEqual("Hey, there!");
   });
 
   test("returns the datum as-is if already loaded by someone else", async () => {
@@ -42,11 +42,12 @@ describe("ReadFileLoader", () => {
     expect(result.content).toEqual("Overwrite me");
   });
 
-  test("stops reading the file when the context's signal aborts", async () => {
-    context.controller.abort(new AbortError("sad"));
+  test("stops reading the file when the render-time signal aborts", async () => {
+    const controller = new AbortController();
+    controller.abort(new AbortError("sad"));
 
     const result = await process("file.txt", {}, context);
-    const content = Promise.try(result.content as any);
+    const content = Promise.try(result.content as any, { signal: controller.signal });
 
     await expect(content).rejects.toThrow(
       expect.objectContaining({ cause: new AbortError("sad") }),

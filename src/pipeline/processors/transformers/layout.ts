@@ -1,8 +1,10 @@
 import type { Site } from "../../../site/Site.js";
 import { Datum, symProcessedBy } from "../../Datum.js";
+import { resolveDerived } from "../../derived.js";
 import type { NonEmptyPipeline, PipelineStage, SingleProcessor } from "../../index.js";
 import { Pipeline } from "../../Pipeline.js";
 import type { DefaultContext } from "../../utils.js";
+import { unthunked } from "../renderers/helpers.js";
 import { noIndex } from "./search.js";
 
 const MAX_ITERATIONS = 10;
@@ -96,29 +98,31 @@ export class LayoutTransformer implements SingleProcessor {
       );
 
       const layoutContent = layoutDatum.get("content");
-      if (typeof layoutContent === "function") {
-        const resultRecord = resultDatum.toRecord();
-        const layoutRecord = layoutDatum.toRecord();
-        const content = await layoutContent(
-          {
-            ...layoutRecord,
-            ...resultRecord,
-            children: resultDatum.get("content"),
-          },
-          { signal: context.signal },
-        );
-        resultDatum = resultDatum.set({
-          ...layoutRecord, // layout data is lower priority, so that's why we can't use `with`
-          ...resultRecord,
-          layout: layoutDatum.get("layout"),
-          content,
-          [symProcessedBy]: this,
-          [symLayoutFilename]: layoutFile,
-        });
-      } else {
-        // TODO warn when this happens, or maintain the content and merge in other data?
+      if (typeof layoutContent !== "function") {
+        // TODO warn when this happens? maintain the content and merge in other data?
         return datum;
       }
+
+      const baseData = {
+        ...layoutDatum.toRecord(), // layout data is lower priority, so that's why we can't use `with`
+        ...resultDatum.toRecord(),
+      };
+
+      resultDatum = resultDatum.set({
+        ...baseData,
+        [symProcessedBy]: this,
+        [symLayoutFilename]: layoutFile,
+        layout: layoutDatum.get("layout"),
+        content: unthunked(resultDatum, async (children, options) => {
+          return await layoutContent(
+            {
+              ...(await resolveDerived(baseData, options)),
+              children,
+            },
+            options,
+          );
+        }),
+      });
     }
 
     return resultDatum;

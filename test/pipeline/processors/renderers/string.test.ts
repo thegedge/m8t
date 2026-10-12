@@ -5,20 +5,20 @@ import { makeContext, testData } from "../../../helpers.js";
 
 describe("StringRenderer", () => {
   test("renders a given datum to a string by calling toString", async () => {
-    expect(await render("testing")).toEqual("testing");
-    expect(await render(["a", "b"])).toEqual("a,b");
-    expect(await render({})).toEqual("[object Object]");
-    expect(await render({ [Symbol.toStringTag]: "String" })).toEqual("[object String]");
-    expect(await render({ toString: () => "stringy" })).toEqual("stringy");
+    await expect(await render("testing")).toHaveContent("testing");
+    await expect(await render(["a", "b"])).toHaveContent("a,b");
+    await expect(await render({})).toHaveContent("[object Object]");
+    await expect(await render({ [Symbol.toStringTag]: "String" })).toHaveContent("[object String]");
+    await expect(await render({ toString: () => "stringy" })).toHaveContent("stringy");
   });
 
   test("renders null-ish values to an empty string", async () => {
-    expect(await render(undefined)).toEqual("");
-    expect(await render(null)).toEqual("");
-    expect(await render("")).toEqual("");
-    expect(await render(0)).toEqual("0");
-    expect(await render([])).toEqual("");
-    expect(await render(false)).toEqual("false");
+    await expect(await render(undefined)).toHaveContent("");
+    await expect(await render(null)).toHaveContent("");
+    await expect(await render("")).toHaveContent("");
+    await expect(await render(0)).toHaveContent("0");
+    await expect(await render([])).toHaveContent("");
+    await expect(await render(false)).toHaveContent("false");
   });
 
   const render = async (content: unknown) => {
@@ -28,7 +28,8 @@ describe("StringRenderer", () => {
     if (Array.isArray(datum)) {
       expect.fail("expected StringProcessor to return a single datum");
     }
+
     expect(datum.get("mimeType")).toBe("text/plain");
-    return datum.get("content");
+    return datum;
   };
 });

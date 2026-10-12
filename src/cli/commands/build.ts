@@ -2,8 +2,10 @@ import debug from "debug";
 import path from "node:path";
 import pMap from "p-map";
 
+import { BuildError } from "../../errors/BuildError.js";
 import { Site } from "../../site/Site.js";
 import { Filesystem } from "../../utils/Filesystem.js";
+import { unthunk } from "../../utils/unthunk.js";
 
 const log = debug("m8t:build");
 const CONCURRENCY = 8;
@@ -23,11 +25,22 @@ export const run = async (opts: { root: string; signal: AbortSignal }): Promise<
         return;
       }
 
-      const outputPath = datum.stringOrThrow("outputPath");
-      const content = datum.stringOrThrow("content");
       const url = datum.maybeGetString("url");
-      process.stdout.write(`Building ${url}\n`);
+      const outputPath = datum.stringOrThrow("outputPath");
 
+      if (!datum.has("content")) {
+        process.stdout.write(`skipping ${url ?? outputPath}\n`);
+        return;
+      }
+
+      const content = await unthunk(datum.getOrThrow("content"), { signal });
+      if (typeof content !== "string") {
+        throw new BuildError(
+          `datum with url ${url} has non-string content (type = ${typeof content})`,
+        );
+      }
+
+      process.stdout.write(`writing ${url ?? outputPath}\n`);
       await tmp.writeFile(outputPath, content);
     },
     { concurrency: CONCURRENCY, signal },

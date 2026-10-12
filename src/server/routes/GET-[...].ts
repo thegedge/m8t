@@ -4,6 +4,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 import { pipeline } from "node:stream";
 
+import { unthunk } from "../../utils/unthunk.js";
 import type { MateRoute } from "./types.js";
 
 export const defaultRoute: MateRoute = async ({
@@ -24,14 +25,25 @@ export const defaultRoute: MateRoute = async ({
       continue;
     }
 
-    const data = siteData.byUrl(url);
-    if (!data) {
+    const datum = siteData.byUrl(url);
+    if (!datum) {
       continue;
     }
 
-    const content = data.stringOrThrow("content");
-    const mimeType = data.maybeGetString("mimeType") || mime.lookup(url) || "text/plain";
+    if (!datum.has("content")) {
+      response.writeHead(204);
+      response.end();
+      return;
+    }
 
+    const content = await unthunk(datum.get("content"), { signal: request.signal });
+    if (typeof content !== "string") {
+      response.writeHead(204);
+      response.end();
+      return;
+    }
+
+    const mimeType = datum.maybeGetString("mimeType") || mime.lookup(url) || "text/plain";
     response.writeHead(200, { "content-type": mimeType });
     response.end(content);
     return;

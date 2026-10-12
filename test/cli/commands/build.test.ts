@@ -7,6 +7,8 @@ import { AbortError } from "../../../src/errors/AbortError.js";
 import { LoadError } from "../../../src/errors/LoadError.js";
 import { fixturesRoot, siteTsWithPages, writeFixtures } from "../../helpers.js";
 
+// TODO drop siteTsWithPages, replace with something that stubs out `Site.forRoot` instead
+
 describe("build command", () => {
   let root: string;
 
@@ -114,7 +116,7 @@ describe("build command", () => {
     await writeFixtures(root, {
       "site.ts": siteTsWithPages([
         { url: "/", outputPath: "index.html", content: "<h1>New</h1>" },
-        { url: "/broken", outputPath: "broken/index.html" },
+        { url: "/broken", outputPath: "broken/index.html", content: 5 }, // non-string content
       ]),
       "out/build/index.html": "<h1>Old</h1>",
     });

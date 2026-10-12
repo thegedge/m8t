@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { BuildError } from "../../../../src/errors/BuildError.js";
 import { ContentFunctionTransformer } from "../../../../src/index.js";
 import type { DatumShape } from "../../../../src/pipeline/Datum.js";
+import { unthunk } from "../../../../src/utils/unthunk.js";
 import { makeContext, type TestContext } from "../../../helpers.js";
 
 describe("ContentFunctionTransformer", () => {
@@ -19,20 +20,16 @@ describe("ContentFunctionTransformer", () => {
 
   test("runs a content function and set content on the result", async () => {
     const result = await processOne({
-      content: () => "this is the content",
+      content: async () => Promise.resolve().then(() => "this is the content"),
     });
 
-    expect(result.toRecord()).toMatchObject({
-      content: "this is the content",
-    });
+    await expect(result).toHaveContent("this is the content");
   });
 
   test("returns a datum as-is if no content function", async () => {
     const result = await processOne({ content: "this is the content" });
 
-    expect(result.toRecord()).toMatchObject({
-      content: "this is the content",
-    });
+    await expect(result).toHaveContent("this is the content");
   });
 
   test("returns all results yielded from a generator function", async () => {
@@ -51,16 +48,21 @@ describe("ContentFunctionTransformer", () => {
     ]);
   });
 
-  test("passes the abort signal to a content function", async () => {
+  test("passes the render-time abort signal to a content function", async () => {
     let received: unknown;
-    await processOne({
+    const datum = await processOne({
       content: (_data: unknown, options: { signal: AbortSignal }) => {
         received = options.signal;
-        return "";
+        return "test";
       },
     });
 
-    expect(received).toBe(context.signal);
+    const renderSignal = new AbortController().signal;
+    await expect(unthunk(datum.getOrThrow("content"), { signal: renderSignal })).resolves.toBe(
+      "test",
+    );
+    expect(received).toBe(renderSignal);
+    expect(received).not.toBe(context.signal);
   });
 
   test("passes the abort signal to a generator content function", async () => {

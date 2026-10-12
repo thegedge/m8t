@@ -5,7 +5,7 @@ import { LoadError } from "../../../errors/LoadError.js";
 import type { Transpiler } from "../../../loader/ModuleLoader.js";
 import type { Site } from "../../../site/Site.js";
 import type { Datum } from "../../Datum.js";
-import type { SingleProcessor } from "../../index.js";
+import { type SingleProcessor } from "../../index.js";
 import type { DefaultContext } from "../../utils.js";
 
 export type MdxOptions = Omit<
@@ -16,6 +16,8 @@ export type MdxOptions = Omit<
 // TODO maybe we can make this an import hook instead?
 
 const MARKDOWN_PATH_REGEX = /\.mdx?$/;
+
+const symRenderer = Symbol.for("renderer");
 
 /**
  * A loader that processes markdown and MDX files.
@@ -49,7 +51,8 @@ export class MdxLoader implements SingleProcessor {
 
     return datum.with({
       ...mdxData,
-      content: (props: any) => mdxContent(props),
+      [symRenderer]: "react",
+      content: mdxContent,
     });
   }
 

@@ -1,6 +1,7 @@
 import { HtmlValidate, type Message, type RuleConfig } from "html-validate";
 
 import type { Datum } from "../pipeline/Datum.js";
+import { unthunk } from "./unthunk.js";
 
 export { type Result } from "html-validate";
 
@@ -56,11 +57,18 @@ export class Validator {
       return null;
     }
 
-    const { signal } = options;
-    signal?.throwIfAborted();
+    if (!datum.has("content")) {
+      return null;
+    }
+
+    const content = await unthunk(datum.get("content"), options);
+    if (typeof content !== "string") {
+      return null;
+    }
 
     const filename = datum.stringOrThrow("filename");
-    const content = datum.stringOrThrow("content");
+    const { signal } = options;
+    signal?.throwIfAborted();
 
     let rules: RuleConfig | undefined = undefined;
     if (datum.has("htmlValidateRules")) {
